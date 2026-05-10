@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Learning Hub</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --sidebar-bg: #161b2e;
+  --card-bg: #1e2340;
+  --card-border: #2d3561;
+  --accent: #5b8af5;
+  --accent2: #a78bfa;
+  --green: #34d399;
+  --red: #f87171;
+  --yellow: #fbbf24;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --code-bg: #0d1117;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+/* SIDEBAR */
+#sidebar {
+  width: 260px; min-width: 260px; background: var(--sidebar-bg);
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--card-border); overflow-y: auto;
+}
+.sidebar-header { padding: 20px 16px 12px; }
+.sidebar-header h1 { font-size: 1.1rem; color: var(--accent); font-weight: 700; }
+.sidebar-header p { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+.progress-bar-wrap { margin: 0 16px 12px; background: #2d3561; border-radius: 99px; height: 6px; }
+.progress-bar-fill { height: 6px; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width 0.4s; }
+.progress-label { padding: 0 16px; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 10px; }
+.sidebar-section { padding: 6px 10px 2px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 16px; cursor: pointer; border-radius: 6px;
+  margin: 1px 8px; font-size: 0.82rem; color: var(--text-muted);
+  transition: all 0.15s; position: relative;
+}
+.nav-item:hover { background: rgba(91,138,245,0.1); color: var(--text); }
+.nav-item.active { background: rgba(91,138,245,0.18); color: var(--accent); font-weight: 600; }
+.nav-item .check { margin-left: auto; color: var(--green); font-size: 0.75rem; }
+.nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+.nav-item-chapter { font-weight: 700; color: var(--text); font-size: 0.84rem; }
+.nav-item-sub { padding-left: 34px; font-size: 0.8rem; }
+.chapter-arrow { margin-left: auto; font-size: 0.65rem; color: var(--text-muted); transition: transform 0.25s; display: inline-block; }
+.chapter-arrow.collapsed { transform: rotate(-90deg); }
+.nav-chapter-items { overflow: hidden; }
+.nav-chapter-items.collapsed { display: none; }
+
+/* MAIN */
+#main { flex: 1; overflow-y: auto; background: var(--bg); }
+.page { display: none; padding: 32px 40px; max-width: 900px; }
+.page.active { display: block; }
+
+/* TYPOGRAPHY */
+h2 { font-size: 1.6rem; margin-bottom: 6px; color: var(--text); }
+h3 { font-size: 1.1rem; margin: 24px 0 10px; color: var(--accent); }
+h4 { font-size: 0.9rem; margin: 18px 0 8px; color: var(--accent2); }
+p { line-height: 1.7; color: var(--text-muted); margin-bottom: 12px; font-size: 0.9rem; }
+.subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 24px; }
+ul, ol { padding-left: 20px; }
+ul li, ol li { color: var(--text-muted); font-size: 0.88rem; line-height: 1.8; }
+
+/* CARDS */
+.card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.card-grid .card { margin-bottom: 0; }
+.key-concept { border-left: 3px solid var(--accent); padding-left: 14px; margin: 10px 0; }
+.key-concept .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin-bottom: 4px; }
+.key-concept p { margin: 0; font-size: 0.85rem; }
+
+/* CODE */
+.code-block { background: var(--code-bg); border: 1px solid #2d3561; border-radius: 8px; padding: 16px; margin: 14px 0; overflow-x: auto; }
+.code-block pre { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.8rem; color: #c9d1d9; line-height: 1.6; white-space: pre; }
+.kw { color: #ff7b72; } .fn { color: #d2a8ff; } .st { color: #a5d6ff; } .cm { color: #8b949e; } .nu { color: #79c0ff; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.83rem; }
+th { background: var(--card-bg); padding: 10px 14px; text-align: left; color: var(--accent); border-bottom: 1px solid var(--card-border); font-weight: 600; }
+td { padding: 9px 14px; border-bottom: 1px solid rgba(45,53,97,0.5); color: var(--text-muted); }
+tr:hover td { background: rgba(91,138,245,0.04); }
+
+/* BADGES */
+.badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 0.7rem; font-weight: 600; margin: 2px; }
+.badge-blue { background: rgba(91,138,245,0.15); color: var(--accent); }
+.badge-purple { background: rgba(167,139,250,0.15); color: var(--accent2); }
+.badge-green { background: rgba(52,211,153,0.15); color: var(--green); }
+.badge-red { background: rgba(248,113,113,0.15); color: var(--red); }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; text-decoration: none; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #7aa5f7; }
+.btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.btn-outline:hover { background: rgba(91,138,245,0.1); }
+.btn-green { background: var(--green); color: #0a1628; }
+.btn-green:hover { opacity: 0.85; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0 0; }
+
+/* OVERVIEW GRID */
+.topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin: 20px 0; }
+.topic-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 18px; cursor: pointer; transition: all 0.2s; }
+.topic-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.topic-card .week-num { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.topic-card h4 { color: var(--text); font-size: 0.92rem; margin: 6px 0 8px; }
+.topic-card p { font-size: 0.78rem; margin: 0; }
+
+/* QUIZ */
+#quiz-container { max-width: 680px; }
+.quiz-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.quiz-progress-text { color: var(--text-muted); font-size: 0.82rem; }
+.quiz-score-badge { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 99px; padding: 4px 14px; font-size: 0.8rem; color: var(--green); font-weight: 600; }
+.question-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 24px; }
+.question-topic { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent2); margin-bottom: 10px; }
+.question-text { font-size: 1rem; color: var(--text); font-weight: 500; line-height: 1.5; margin-bottom: 20px; }
+.options { display: flex; flex-direction: column; gap: 10px; }
+.option-btn {
+  display: flex; align-items: flex-start; gap: 12px; padding: 13px 16px;
+  background: rgba(255,255,255,0.03); border: 1px solid var(--card-border);
+  border-radius: 8px; cursor: pointer; transition: all 0.15s; text-align: left;
+  color: var(--text-muted); font-size: 0.87rem; line-height: 1.5;
+}
+.option-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text); background: rgba(91,138,245,0.08); }
+.option-btn.correct { border-color: var(--green); background: rgba(52,211,153,0.08); color: var(--green); }
+.option-btn.wrong { border-color: var(--red); background: rgba(248,113,113,0.08); color: var(--red); }
+.option-btn:disabled { cursor: default; }
+.option-letter { width: 24px; height: 24px; min-width: 24px; border-radius: 50%; background: var(--card-border); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
+.option-btn.correct .option-letter { background: var(--green); color: #0a1628; }
+.option-btn.wrong .option-letter { background: var(--red); color: white; }
+.explanation-box { margin-top: 16px; padding: 14px; background: rgba(91,138,245,0.08); border: 1px solid rgba(91,138,245,0.2); border-radius: 8px; font-size: 0.85rem; color: var(--text-muted); display: none; line-height: 1.6; }
+.explanation-box strong { color: var(--accent); }
+.quiz-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+.quiz-topic-select { margin-bottom: 24px; }
+.quiz-topic-select label { font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 8px; }
+.topic-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.topic-chip { padding: 6px 14px; border-radius: 99px; font-size: 0.78rem; cursor: pointer; border: 1px solid var(--card-border); color: var(--text-muted); background: var(--card-bg); transition: all 0.15s; }
+.topic-chip:hover, .topic-chip.selected { border-color: var(--accent); color: var(--accent); background: rgba(91,138,245,0.1); }
+.topic-chip.selected-all { border-color: var(--accent2); color: var(--accent2); background: rgba(167,139,250,0.1); }
+.chip-chapter { margin-top: 14px; }
+.chip-chapter-label { font-size: 0.7rem; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+
+/* RESULTS */
+.results-card { text-align: center; padding: 40px; }
+.score-circle { width: 120px; height: 120px; border-radius: 50%; border: 4px solid; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 20px; }
+.score-num { font-size: 2rem; font-weight: 800; }
+.score-denom { font-size: 0.75rem; color: var(--text-muted); }
+.result-breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin-top: 20px; }
+.rb-item { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 12px; }
+.rb-item .rb-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.rb-item .rb-value { font-size: 1.1rem; font-weight: 700; margin-top: 2px; }
+
+/* FLASHCARDS */
+.flashcard-controls { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.fc-topic-select { display: flex; gap: 8px; flex-wrap: wrap; }
+.flashcard-wrap { perspective: 1000px; height: 280px; margin-bottom: 20px; cursor: pointer; }
+.flashcard { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s; }
+.flashcard.flipped { transform: rotateY(180deg); }
+.card-face {
+  position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 30px; text-align: center;
+}
+.card-back { transform: rotateY(180deg); border-color: var(--accent); }
+.card-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 14px; }
+.card-content { font-size: 1.05rem; font-weight: 600; color: var(--text); line-height: 1.5; }
+.card-back .card-content { font-size: 0.9rem; font-weight: 400; color: var(--text-muted); }
+.card-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 16px; }
+.fc-nav { display: flex; align-items: center; gap: 14px; justify-content: center; }
+.fc-counter { font-size: 0.85rem; color: var(--text-muted); }
+.fc-progress { flex: 1; height: 4px; background: var(--card-border); border-radius: 99px; }
+.fc-progress-fill { height: 4px; background: var(--accent); border-radius: 99px; transition: width 0.3s; }
+
+/* ALERT */
+.alert { padding: 12px 16px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 16px; }
+.alert-info { background: rgba(91,138,245,0.1); border: 1px solid rgba(91,138,245,0.2); color: var(--accent); }
+.alert-warn { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); color: var(--yellow); }
+
+/* DIVIDER */
+hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 99px; }
+
+/* TOPIC QUIZ INLINE */
+.inline-quiz { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 20px; margin-top: 24px; }
+.inline-quiz h3 { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="sidebar-header">
+    <h1>🧠 ML Learning Hub</h1>
+    <p>Introduction to Machine Learning</p>
+  </div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="global-progress-bar" style="width:0%"></div></div>
+  <div class="progress-label" id="global-progress-label">0 of 8 modules visited</div>
+
+  <div class="sidebar-section">Chapters</div>
+  <div class="nav-item nav-item-chapter" onclick="toggleChapter('lessons')"><span class="icon">📚</span> Foundation<span class="chapter-arrow" id="arrow-lessons">▾</span></div>
+  <div class="nav-chapter-items" id="chapter-lessons">
+    <div class="nav-item nav-item-sub active" onclick="nav('overview')"><span class="icon">🏠</span> Overview</div>
+    <div class="nav-item nav-item-sub" onclick="nav('w1')" id="nav-w1"><span class="icon">🧹</span> L1: Data Preprocessing<span class="check" id="check-w1"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w2')" id="nav-w2"><span class="icon">⚙️</span> L2: Feature Engineering<span class="check" id="check-w2"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w3')" id="nav-w3"><span class="icon">📉</span> L3: Linear Regression (GD)<span class="check" id="check-w3"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w4')" id="nav-w4"><span class="icon">🔢</span> L4: OLS Method<span class="check" id="check-w4"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w5')" id="nav-w5"><span class="icon">🎓</span> L5: Supervised Learning<span class="check" id="check-w5"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w6')" id="nav-w6"><span class="icon">📋</span> L6: Assumptions<span class="check" id="check-w6"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w7')" id="nav-w7"><span class="icon">🔧</span> L7: Scikit-Learn<span class="check" id="check-w7"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w8')" id="nav-w8"><span class="icon">🔭</span> L8: PCA<span class="check" id="check-w8"></span></div>
+  </div>
+
+  <div class="sidebar-section" style="margin-top:10px">Practice</div>
+  <div class="nav-item" onclick="nav('quiz')"><span class="icon">📝</span> Quiz</div>
+  <div class="nav-item" onclick="nav('flashcards')"><span class="icon">🃏</span> Flashcards</div>
+  <div class="nav-item" onclick="nav('progress')"><span class="icon">📊</span> My Progress</div>
+</div>
+
+<div id="main">
+
+<!-- OVERVIEW -->
+<div class="page active" id="page-overview">
+  <h2>Foundation of Machine Learning</h2>
+  <p class="subtitle">Your complete guide to the foundations of machine learning. Build from data preprocessing through to dimensionality reduction. Work through each module, test yourself, and track your progress.</p>
+
+  <div class="card">
+    <h3 style="margin-top:0">📚 Module Structure</h3>
+    <p>This foundation course covers 8 core modules in machine learning, from cleaning your data through to dimensionality reduction. Each module builds on the last, creating a complete understanding of ML fundamentals. Advanced modules will build on this foundation.</p>
+  </div>
+
+  <div class="topic-grid">
+    <div class="topic-card" onclick="nav('w1')">
+      <div class="week-num">Lesson 1</div>
+      <h4>🧹 Data Preprocessing</h4>
+      <p>One-hot encoding, scaling, imputation, outlier detection</p>
+      <div style="margin-top:10px"><span class="badge badge-blue">Discrete data</span><span class="badge badge-purple">Continuous data</span></div>
+    </div>
+    <div class="topic-card" onclick="nav('w2')">
+      <div class="week-num">Lesson 2</div>
+      <h4>⚙️ Feature Engineering</h4>
+      <p>Non-linear features, polynomial expansion, binning</p>
+      <div style="margin-top:10px"><span class="badge badge-blue">Polynomial</span><span class="badge badge-purple">Sinusoids</span></div>
+    </div>
+    <div class="topic-card" onclick="nav('w3')">
+      <div class="week-num">Lesson 3</div>
+      <h4>📉 Linear Regression (GD)</h4>
+      <p>MSE, gradient descent, R², predictions</p>
+      <div style="margin-top:10px"><span class="badge badge-blue">MSE</span><span class="badge badge-purple">R²</span></div>
+    </div>
+    <div class="topic-card" onclick="nav('w4')">
+      <div class="week-num">Lesson 4</div>
+      <h4>🔢 OLS Method</h4>
+      <p>Closed-form solution, matrix algebra, statsmodels</p>
+      <div style="margin-top:10px"><span class="badge badge-blue">OLS formula</span><span class="badge badge-purple">P-values</span></div>
+    </div>
+    <div class="topic-card" onclick="nav('w5')">
+      <div class="week-num">Lesson 5</div>
+      <h4>🎓 Supervised Learning</h4>
+      <p>Train-test split, overfitting, Ridge, Lasso</p>
+      <div style="margin-top:10px"><span class="badge badge-blue">Regularisation</span><span class="badge badge-purple">Bias-Variance</span></div>
+    </div>
+    <div class="topic-card" onclick="nav('w6')">
+      <div class="week-num">Lesson 6</div>
+      <h4>📋 Assumptions</h4>
+      <p>5 assumptions of linear regression, residual analysis</p>
+      <div style="margin-top:10px"><span class="badge badge-blue">Linearity</span><span class="badge badge-purple">Homoscedasticity</span></div>
+    </div>
+    <div class="topic-card" onclick="nav('w7')">
+      <div class="week-num">Lesson 7</div>
+      <h4>🔧 Scikit-Learn</h4>
+      <p>The sklearn API, abstraction, fit/predict/score</p>
+      <div style="margin-top:10px"><span class="badge badge-blue">Classes</span><span class="badge badge-purple">Abstraction</span></div>
+    </div>
+    <div class="topic-card" onclick="nav('w8')">
+      <div class="week-num">Lesson 8</div>
+      <h4>🔭 PCA</h4>
+      <p>Dimensionality reduction, principal directions, explained variance</p>
+      <div style="margin-top:10px"><span class="badge badge-blue">Unsupervised</span><span class="badge badge-purple">Latent factors</span></div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="nav('quiz')">📝 Start Quiz</button>
+    <button class="btn btn-outline" onclick="nav('flashcards')">🃏 Flashcard Revision</button>
+  </div>
+</div>
+
+<!-- WEEK 1 -->
+<div class="page" id="page-w1">
+  <h2>🧹 Data Preprocessing</h2>
+  <p class="subtitle">Getting raw data ready for machine learning models.</p>
+
+  <div class="alert alert-info">💡 Preprocessing is not glamorous — but it's the difference between a model that works and one that doesn't.</div>
+
+  <h3>Why Preprocessing?</h3>
+  <p>Most ML algorithms only understand numbers, can't handle missing values, and are sensitive to scale differences. Preprocessing fixes all of this before training begins.</p>
+
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Discrete Data</div><p>Data from a fixed set of categories (text labels). Needs to be converted to numbers before a model can use it.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Continuous Data</div><p>Real-valued numbers (prices, heights). Needs scaling so different features are on the same range.</p></div></div>
+  </div>
+
+  <h3>One-Hot Encoding</h3>
+  <p>Converts a categorical column into multiple binary (0/1) columns — one per unique category. Only one column is "on" at a time.</p>
+  <table>
+    <tr><th>Original</th><th>is_hot</th><th>is_cold</th><th>is_low</th><th>is_mid</th><th>is_high</th></tr>
+    <tr><td>hot, mid</td><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td></tr>
+    <tr><td>cold, high</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td></tr>
+  </table>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> OneHotEncoder
+encoder = <span class="fn">OneHotEncoder</span>()
+encoder.<span class="fn">fit</span>(data)          <span class="cm"># learn categories</span>
+encoder.<span class="fn">transform</span>(data)   <span class="cm"># convert to binary vectors</span></pre></div>
+
+  <h3>Scaling Continuous Data</h3>
+  <table>
+    <tr><th>Method</th><th>Formula</th><th>Result</th><th>Use when</th></tr>
+    <tr><td><strong>StandardScaler</strong></td><td>(x − μ) / σ</td><td>Mean=0, Std=1</td><td>Data is roughly normal</td></tr>
+    <tr><td><strong>MinMaxScaler</strong></td><td>(x − min) / (max − min)</td><td>Range [0, 1]</td><td>No outliers</td></tr>
+    <tr><td><strong>RobustScaler</strong></td><td>(x − median) / IQR</td><td>Outlier-resistant</td><td>Data has outliers</td></tr>
+  </table>
+
+  <h3>Missing Data — Imputation</h3>
+  <div class="card">
+    <ul>
+      <li><strong>Drop the row</strong> — only if missing is random and you have enough data</li>
+      <li><strong>Fill with mean</strong> — good default for symmetric data</li>
+      <li><strong>Fill with median</strong> — better when outliers are present</li>
+      <li><strong>Interpolate</strong> — for time series, fill using neighbouring values</li>
+    </ul>
+  </div>
+  <div class="code-block"><pre>data.<span class="fn">dropna</span>(subset=[<span class="st">'review_scores_rating'</span>], inplace=<span class="kw">True</span>)
+<span class="cm"># Only drop rows where this specific column is NaN</span></pre></div>
+
+  <h3>Outlier Detection — Z-Score</h3>
+  <p>A z-score measures how many standard deviations a value is from the mean. Values with |z| > 3 are flagged as outliers.</p>
+  <div class="code-block"><pre><span class="kw">def</span> <span class="fn">zscore</span>(sample):
+    <span class="kw">return</span> (sample - sample.<span class="fn">mean</span>()) / sample.<span class="fn">std</span>()
+
+outliers = data[<span class="fn">zscore</span>(data[<span class="st">'price'</span>]).<span class="fn">abs</span>() > <span class="nu">3</span>]</pre></div>
+
+  <div class="alert alert-warn">⚠️ Look-ahead bias: always fit your scaler on training data only. Never fit on the whole dataset before splitting.</div>
+
+  <div class="inline-quiz">
+    <h3>🧪 Quick Check</h3>
+    <div id="inline-q-w1"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w1')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w2')">Next: Feature Engineering →</button>
+  </div>
+</div>
+
+<!-- WEEK 2 -->
+<div class="page" id="page-w2">
+  <h2>⚙️ Feature Engineering</h2>
+  <p class="subtitle">Creating better inputs so your model can learn more.</p>
+
+  <h3>The Core Problem</h3>
+  <p>Linear models can only fit straight lines. If the relationship between your input and output is curved, a linear model will always underperform — no matter how much data you have.</p>
+  <p>Feature engineering is the solution: <strong>create new features</strong> from your existing ones so the model can capture non-linear patterns while still being a linear model.</p>
+
+  <div class="card">
+    <div class="key-concept"><div class="label">Key Insight</div><p>A linear model is linear in its <em>weights</em>, not in its features. You can feed it x², log(x), or sin(x) — it will still use them linearly, but the result is a curve.</p></div>
+  </div>
+
+  <h3>Types of Feature Transformations</h3>
+  <table>
+    <tr><th>Method</th><th>Example</th><th>Best for</th></tr>
+    <tr><td><strong>Threshold / Step</strong></td><td>temperature &gt; 22 → 1 or 0</td><td>Sudden switches in behaviour</td></tr>
+    <tr><td><strong>Polynomial</strong></td><td>x, x², x³, x⁴</td><td>Smooth curves</td></tr>
+    <tr><td><strong>Log / Sqrt</strong></td><td>log(x), sqrt(x)</td><td>Rapidly growing relationships</td></tr>
+    <tr><td><strong>Sinusoidal</strong></td><td>sin(x), cos(x)</td><td>Periodic / seasonal patterns</td></tr>
+    <tr><td><strong>Binning</strong></td><td>age → young/middle/elderly</td><td>Step changes across ranges</td></tr>
+  </table>
+
+  <h3>Polynomial Features in Code</h3>
+  <div class="code-block"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+X2 = np.<span class="fn">hstack</span>((
+    np.<span class="fn">ones</span>((<span class="nu">200</span>, <span class="nu">1</span>)),   <span class="cm"># bias column</span>
+    x,                      <span class="cm"># x¹</span>
+    x**<span class="nu">2</span>,                   <span class="cm"># x²</span>
+    x**<span class="nu">3</span>                    <span class="cm"># x³</span>
+))
+model = <span class="fn">LinearRegression</span>().<span class="fn">fit</span>(X2, y)</pre></div>
+
+  <h3>Automated with Sklearn</h3>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> PolynomialFeatures
+
+poly = <span class="fn">PolynomialFeatures</span>(degree=<span class="nu">3</span>)
+X_poly = poly.<span class="fn">fit_transform</span>(X)  <span class="cm"># creates 1, x, x², x³ automatically</span></pre></div>
+
+  <div class="card">
+    <h4 style="margin-top:0">Data Augmentation</h4>
+    <p>A related idea — artificially increasing training data by adding small variations or noise. Especially useful for images in neural networks. Helps models generalise better.</p>
+  </div>
+
+  <div class="inline-quiz">
+    <h3>🧪 Quick Check</h3>
+    <div id="inline-q-w2"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w2')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w3')">Next: Linear Regression →</button>
+  </div>
+</div>
+
+<!-- WEEK 3 -->
+<div class="page" id="page-w3">
+  <h2>📉 Linear Regression (Gradient Descent)</h2>
+  <p class="subtitle">Finding the line of best fit through iteration.</p>
+
+  <h3>The Goal</h3>
+  <p>Predict a continuous output from one or more inputs by finding a straight line (or hyperplane) through the data. The model: <strong>ŷ = w·x + b</strong></p>
+
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Weight (w)</div><p>The slope. How much does ŷ change per unit increase in x?</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Bias (b)</div><p>The intercept. The baseline prediction when x = 0.</p></div></div>
+  </div>
+
+  <h3>Mean Squared Error (MSE)</h3>
+  <p>The cost function — measures how wrong the model is. Lower = better.</p>
+  <div class="card">
+    <div style="text-align:center; padding: 10px 0; font-size: 1.1rem; color: var(--accent); font-family: monospace;">MSE = (1/N) × Σ(yᵢ − ŷᵢ)²</div>
+    <p style="text-align:center; font-size:0.8rem; margin:0">Square each error (prevents cancellation), average across all N samples.</p>
+  </div>
+
+  <h3>Gradient Descent Algorithm</h3>
+  <p>Instead of trying random values, we use calculus to find which direction reduces MSE fastest and step in that direction repeatedly.</p>
+
+  <table>
+    <tr><th>Element</th><th>Description</th><th>Typical value</th></tr>
+    <tr><td><strong>Gradient</strong></td><td>Direction to step (from derivative of MSE)</td><td>Calculated each iteration</td></tr>
+    <tr><td><strong>Learning rate (η)</strong></td><td>How far to step each iteration</td><td>0.0001</td></tr>
+    <tr><td><strong>Starting point</strong></td><td>Initial guess for w and b</td><td>w=0, b=0</td></tr>
+    <tr><td><strong>Stopping criterion</strong></td><td>When to stop</td><td>100,000 iterations</td></tr>
+  </table>
+
+  <h3>Gradient Descent in Python</h3>
+  <div class="code-block"><pre>w, b = <span class="nu">0</span>, <span class="nu">0</span>
+eta = <span class="nu">0.0001</span>
+
+<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nu">100000</span>):
+    y_pred = w*x + b
+    D_w = (-<span class="nu">2</span>/n) * <span class="fn">sum</span>(x * (y - y_pred))
+    D_b = (-<span class="nu">2</span>/n) * <span class="fn">sum</span>(y - y_pred)
+    w = w - eta * D_w
+    b = b - eta * D_b</pre></div>
+
+  <h3>R² — Coefficient of Determination</h3>
+  <div class="card">
+    <div style="text-align:center; padding: 10px 0; font-size: 1.05rem; color: var(--accent); font-family: monospace;">R² = 1 − SSE / SST</div>
+  </div>
+  <table>
+    <tr><th>R² value</th><th>Meaning</th></tr>
+    <tr><td>1.0</td><td>Perfect fit</td></tr>
+    <tr><td>0.9</td><td>Model explains 90% of variation — very good</td></tr>
+    <tr><td>0.0</td><td>No better than predicting the mean every time</td></tr>
+    <tr><td>&lt; 0</td><td>Worse than the mean — something is wrong</td></tr>
+  </table>
+
+  <div class="inline-quiz">
+    <h3>🧪 Quick Check</h3>
+    <div id="inline-q-w3"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w3')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w4')">Next: OLS Method →</button>
+  </div>
+</div>
+
+<!-- WEEK 4 -->
+<div class="page" id="page-w4">
+  <h2>🔢 Linear Regression — OLS Method</h2>
+  <p class="subtitle">Finding the exact optimal parameters in one calculation.</p>
+
+  <h3>OLS vs Gradient Descent</h3>
+  <table>
+    <tr><th></th><th>Gradient Descent</th><th>OLS</th></tr>
+    <tr><td><strong>Approach</strong></td><td>Iterative — thousands of steps</td><td>Direct — one formula</td></tr>
+    <tr><td><strong>Result</strong></td><td>Approximate (converges)</td><td>Exact optimal</td></tr>
+    <tr><td><strong>Speed</strong></td><td>Slow for large data</td><td>Fast for moderate data</td></tr>
+    <tr><td><strong>Requires</strong></td><td>Learning rate tuning</td><td>Matrix to be invertible</td></tr>
+  </table>
+
+  <h3>The OLS Formula</h3>
+  <div class="card" style="text-align:center; padding:24px">
+    <div style="font-size:1.3rem; color:var(--accent); font-family:monospace; margin-bottom:10px">β* = (XᵀX)⁻¹ Xᵀy</div>
+    <p style="margin:0; font-size:0.82rem">One equation. Gives you the exact optimal weights in a single calculation.</p>
+  </div>
+
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Xᵀ</div><p>Transpose — flip rows and columns of the data matrix X.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">(XᵀX)⁻¹</div><p>Matrix inverse — the matrix equivalent of dividing.</p></div></div>
+  </div>
+
+  <h3>OLS in Python</h3>
+  <div class="code-block"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+X = np.<span class="fn">hstack</span>((np.<span class="fn">ones</span>((n, <span class="nu">1</span>)), x))  <span class="cm"># add bias column of 1s</span>
+
+beta = np.linalg.<span class="fn">inv</span>(X.T @ X) @ np.<span class="fn">dot</span>(X.T, y)
+
+Y_pred = X @ beta  <span class="cm"># predictions</span></pre></div>
+
+  <h3>Using Statsmodels for Hypothesis Testing</h3>
+  <div class="code-block"><pre><span class="kw">import</span> statsmodels.api <span class="kw">as</span> sm
+
+X = sm.<span class="fn">add_constant</span>(x)     <span class="cm"># adds column of 1s</span>
+results = sm.<span class="fn">OLS</span>(y, X).<span class="fn">fit</span>()
+<span class="fn">print</span>(results.<span class="fn">summary</span>())   <span class="cm"># p-values, R², F-stat</span></pre></div>
+
+  <div class="card">
+    <h4 style="margin-top:0">Reading the Summary Table</h4>
+    <ul>
+      <li><strong>coef</strong> — the learned β weights</li>
+      <li><strong>P&gt;|t|</strong> — p-value: if &lt; 0.05, the feature is statistically significant</li>
+      <li><strong>R-squared</strong> — proportion of variance explained</li>
+      <li><strong>F-statistic</strong> — is the overall model better than just predicting the mean?</li>
+    </ul>
+  </div>
+
+  <div class="inline-quiz">
+    <h3>🧪 Quick Check</h3>
+    <div id="inline-q-w4"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w4')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w5')">Next: Supervised Learning →</button>
+  </div>
+</div>
+
+<!-- WEEK 5 -->
+<div class="page" id="page-w5">
+  <h2>🎓 Supervised Learning with Linear Regression</h2>
+  <p class="subtitle">The full ML pipeline: split, train, evaluate, regularise.</p>
+
+  <h3>ML vs Statistics Mindset</h3>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Statistics asks</div><p>Why does this relationship exist? Are parameters significant?</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">ML asks</div><p>How well does this predict <em>unseen</em> data?</p></div></div>
+  </div>
+
+  <h3>Train-Test Split</h3>
+  <p>Never evaluate your model on the data it trained on. Split first — always.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    X, y, test_size=<span class="nu">0.2</span>, random_state=<span class="nu">42</span>
+)
+model.<span class="fn">fit</span>(X_train, y_train)        <span class="cm"># train only on train data</span>
+model.<span class="fn">score</span>(X_test, y_test)        <span class="cm"># evaluate only on test data</span></pre></div>
+
+  <h3>Bias-Variance Tradeoff</h3>
+  <table>
+    <tr><th>Situation</th><th>Train score</th><th>Test score</th><th>Problem</th></tr>
+    <tr><td>Underfitting (High Bias)</td><td>Low</td><td>Low</td><td>Model too simple</td></tr>
+    <tr><td>Good fit</td><td>High</td><td>High</td><td>None ✓</td></tr>
+    <tr><td>Overfitting (High Variance)</td><td>Very high</td><td>Low</td><td>Model memorised noise</td></tr>
+  </table>
+
+  <h3>Regularisation</h3>
+  <p>Add a penalty to the cost function to discourage large weights and prevent overfitting.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <h4 style="margin-top:0">Ridge (L2)</h4>
+      <div style="text-align:center; font-family:monospace; color:var(--accent); margin:10px 0">Cost = MSE + λ × Σβⱼ²</div>
+      <ul>
+        <li>Shrinks all weights towards zero</li>
+        <li>Never removes a feature entirely</li>
+        <li>Use when all features matter</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">Lasso (L1)</h4>
+      <div style="text-align:center; font-family:monospace; color:var(--accent2); margin:10px 0">Cost = MSE + λ × Σ|βⱼ|</div>
+      <ul>
+        <li>Can push weights to exactly zero</li>
+        <li>Automatic feature selection</li>
+        <li>Use when many features are irrelevant</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> Ridge, Lasso
+
+ridge = <span class="fn">Ridge</span>(alpha=<span class="nu">0.5</span>)   <span class="cm"># lambda = 0.5</span>
+lasso = <span class="fn">Lasso</span>(alpha=<span class="nu">0.5</span>)   <span class="cm"># lambda = 0.5</span>
+
+ridge.<span class="fn">fit</span>(X_train, y_train)
+ridge.<span class="fn">predict</span>(X_test)</pre></div>
+
+  <div class="inline-quiz">
+    <h3>🧪 Quick Check</h3>
+    <div id="inline-q-w5"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w5')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w6')">Next: Assumptions →</button>
+  </div>
+</div>
+
+<!-- WEEK 6 -->
+<div class="page" id="page-w6">
+  <h2>📋 Assumptions of Linear Regression</h2>
+  <p class="subtitle">When can you trust your model? Know the rules it relies on.</p>
+
+  <h3>The Error Term</h3>
+  <p>Every linear model has: <strong>y = wx + b + ε</strong>. The error ε represents everything the model cannot explain. If the model is correct, ε is pure random noise — no pattern at all. The 5 assumptions describe what ε should look like.</p>
+
+  <h3>The 5 Assumptions</h3>
+
+  <div class="card" style="margin-bottom:10px">
+    <h4 style="margin-top:0; color:var(--green)">1. Linearity</h4>
+    <p>Each feature has a constant, linear effect on the output regardless of its value.</p>
+    <p><strong>Check:</strong> scatter plot each feature vs target. <strong>Fix:</strong> feature engineering.</p>
+  </div>
+  <div class="card" style="margin-bottom:10px">
+    <h4 style="margin-top:0; color:var(--green)">2. Homoscedasticity (Constant Variance)</h4>
+    <p>The spread of errors is the same everywhere — not larger for bigger predictions.</p>
+    <p><strong>Check:</strong> residual vs prediction plot — should be a horizontal band. <strong>Fix:</strong> log-transform target.</p>
+  </div>
+  <div class="card" style="margin-bottom:10px">
+    <h4 style="margin-top:0; color:var(--yellow)">3. Independence</h4>
+    <p>Each observation's error is independent of every other observation's error.</p>
+    <p><strong>Violated by:</strong> time series data, spatial data. <strong>Fix:</strong> use time-series models.</p>
+  </div>
+  <div class="card" style="margin-bottom:10px">
+    <h4 style="margin-top:0; color:var(--yellow)">4. Normality</h4>
+    <p>The error terms follow a normal distribution.</p>
+    <p><strong>Check:</strong> Shapiro-Wilk test (p &lt; 0.05 = non-normal). <strong>Note:</strong> less critical for pure prediction tasks.</p>
+  </div>
+  <div class="card" style="margin-bottom:10px">
+    <h4 style="margin-top:0; color:var(--red)">5. No Multicollinearity</h4>
+    <p>Input features should not be highly correlated with each other.</p>
+    <p><strong>Check:</strong> correlation heatmap — values above 0.7 or below −0.7 are problematic. <strong>Fix:</strong> remove one feature, use PCA, or use Lasso.</p>
+  </div>
+
+  <h3>Diagnosing with Residual Plots</h3>
+  <table>
+    <tr><th>What you see in residual plot</th><th>Assumption violated</th></tr>
+    <tr><td>Random horizontal band</td><td>All good ✓</td></tr>
+    <tr><td>Clear curve or wave</td><td>Linearity</td></tr>
+    <tr><td>Fan/funnel shape (spread grows)</td><td>Homoscedasticity</td></tr>
+    <tr><td>Repeating pattern</td><td>Independence</td></tr>
+    <tr><td>Heavy tails in distribution</td><td>Normality</td></tr>
+  </table>
+
+  <div class="inline-quiz">
+    <h3>🧪 Quick Check</h3>
+    <div id="inline-q-w6"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w6')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w7')">Next: Scikit-Learn →</button>
+  </div>
+</div>
+
+<!-- WEEK 7 -->
+<div class="page" id="page-w7">
+  <h2>🔧 Scikit-Learn for Machine Learning</h2>
+  <p class="subtitle">The professional Python ML library — one API for everything.</p>
+
+  <h3>Why sklearn?</h3>
+  <p>sklearn contains hundreds of ML algorithms all sharing the same interface. This means you can swap models with almost no code changes — the same 5-step pattern works for everything.</p>
+
+  <h3>The Universal Pattern</h3>
+  <div class="code-block"><pre><span class="cm"># 1. Import</span>
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LinearRegression
+
+<span class="cm"># 2. Create (set hyperparameters here)</span>
+model = <span class="fn">LinearRegression</span>()
+
+<span class="cm"># 3. Fit on training data</span>
+model.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="cm"># 4. Predict on new data</span>
+y_pred = model.<span class="fn">predict</span>(X_test)
+
+<span class="cm"># 5. Evaluate</span>
+score = model.<span class="fn">score</span>(X_test, y_test)</pre></div>
+
+  <h3>Naming Conventions</h3>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Classes — PascalCase</div><p>LinearRegression, StandardScaler, Ridge<br>Objects with memory — create an instance, call methods.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Functions — snake_case</div><p>train_test_split, make_regression, mean_squared_error<br>One-shot actions — call and get a result.</p></div></div>
+  </div>
+
+  <h3>Hyperparameters vs Learned Parameters</h3>
+  <table>
+    <tr><th>Type</th><th>Set by</th><th>Example</th><th>Access</th></tr>
+    <tr><td><strong>Hyperparameter</strong></td><td>You, before training</td><td>Ridge(alpha=0.5)</td><td>model.get_params()</td></tr>
+    <tr><td><strong>Learned parameter</strong></td><td>Model, during fit()</td><td>The β weights</td><td>model.coef_ (note _)</td></tr>
+  </table>
+
+  <h3>Abstraction — Swapping Models</h3>
+  <div class="code-block"><pre><span class="cm"># Linear Regression</span>
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LinearRegression
+model = <span class="fn">LinearRegression</span>()
+
+<span class="cm"># Decision Tree — swap just 2 lines</span>
+<span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeRegressor
+model = <span class="fn">DecisionTreeRegressor</span>()
+
+<span class="cm"># Neural Network — same 2 lines</span>
+<span class="kw">from</span> sklearn.neural_network <span class="kw">import</span> MLPRegressor
+model = <span class="fn">MLPRegressor</span>()
+
+<span class="cm"># Everything else is identical:</span>
+model.<span class="fn">fit</span>(X_train, y_train)
+model.<span class="fn">predict</span>(X_test)
+model.<span class="fn">score</span>(X_test, y_test)</pre></div>
+
+  <div class="alert alert-warn">⚠️ sklearn makes it easy to use models without understanding them. The theory you've built over 8 lessons is what separates good ML from dangerous ML.</div>
+
+  <div class="inline-quiz">
+    <h3>🧪 Quick Check</h3>
+    <div id="inline-q-w7"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w7')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w8')">Next: PCA →</button>
+  </div>
+</div>
+
+<!-- WEEK 8 -->
+<div class="page" id="page-w8">
+  <h2>🔭 Dimensionality Reduction — PCA</h2>
+  <p class="subtitle">Finding hidden structure in unlabelled data.</p>
+
+  <h3>Unsupervised Learning</h3>
+  <p>No target variable. No predictions. Instead, the question is: <em>"What is the underlying structure of my data?"</em></p>
+
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Supervised (Lessons 5-8)</div><p>Inputs → predict Target. Labelled data required.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Unsupervised (PCA)</div><p>Find structure in all variables together. No labels needed.</p></div></div>
+  </div>
+
+  <h3>The Core Intuition</h3>
+  <p>If French and Spanish scores are correlated, there's likely a hidden <strong>latent factor</strong> — language aptitude — driving both. PCA finds these hidden directions automatically.</p>
+  <p>The key rule: <strong>the best direction to summarise data is the one that maximises the variance of the projections.</strong> High variance = more information kept.</p>
+
+  <h3>Principal Components</h3>
+  <table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td><strong>Principal direction</strong></td><td>A direction through the data ordered by variance explained (most first)</td></tr>
+    <tr><td><strong>Component scores</strong></td><td>Where each data point lands when projected onto a principal direction</td></tr>
+    <tr><td><strong>Explained variance ratio</strong></td><td>% of total variance captured by k components</td></tr>
+  </table>
+
+  <h3>PCA in Sklearn</h3>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA
+
+pca = <span class="fn">PCA</span>(n_components=<span class="nu">2</span>)
+pca.<span class="fn">fit</span>(X_train)                     <span class="cm"># fit on training data only!</span>
+
+X_train_reduced = pca.<span class="fn">transform</span>(X_train)
+X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
+
+<span class="fn">print</span>(pca.explained_variance_ratio_)  <span class="cm"># e.g. [0.72, 0.15]</span>
+<span class="fn">print</span>(pca.components_)               <span class="cm"># the principal directions</span></pre></div>
+
+  <h3>How Much to Reduce?</h3>
+  <div class="card">
+    <p>Plot explained variance per component (scree plot) and look for the "elbow" — the point where adding more components gives diminishing returns.</p>
+    <ul>
+      <li>Explained variance ≈ 0.5 → little to gain, data nearly uncorrelated</li>
+      <li>Explained variance ≈ 0.9+ → you've kept most information in far fewer dimensions</li>
+    </ul>
+  </div>
+
+  <h3>When to Use PCA</h3>
+  <table>
+    <tr><th>Reason</th><th>Explanation</th></tr>
+    <tr><td>Multicollinearity</td><td>PCA components are always uncorrelated by design</td></tr>
+    <tr><td>Too many features</td><td>Compress d features to k &lt;&lt; d without losing much information</td></tr>
+    <tr><td>Visualisation</td><td>Reduce to 2-3 components to plot and spot clusters</td></tr>
+  </table>
+
+  <div class="alert alert-warn">⚠️ Always standardise your data before PCA. Features with larger scales will dominate the variance calculation purely because their numbers are bigger.</div>
+
+  <div class="inline-quiz">
+    <h3>🧪 Quick Check</h3>
+    <div id="inline-q-w8"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w8')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('quiz')">📝 Take Mixed Quiz</button>
+  </div>
+</div>
+
+<!-- QUIZ PAGE -->
+<div class="page" id="page-quiz">
+  <h2>📝 Quiz</h2>
+  <p class="subtitle">Test your knowledge — choose topics or mix everything together.</p>
+  <div id="quiz-setup">
+    <div class="quiz-topic-select">
+      <label>Select topics to include:</label>
+      <div class="topic-chips">
+        <div class="topic-chip selected-all" id="chip-all" onclick="toggleChip('all')">🌐 All Topics</div>
+      </div>
+      <div class="chip-chapter">
+        <div class="chip-chapter-label">📚 Foundation</div>
+        <div class="topic-chips">
+          <div class="topic-chip" id="chip-w1" onclick="toggleChip('w1')">L1: Preprocessing</div>
+          <div class="topic-chip" id="chip-w2" onclick="toggleChip('w2')">L2: Feature Eng.</div>
+          <div class="topic-chip" id="chip-w3" onclick="toggleChip('w3')">L3: Linear Reg. (GD)</div>
+          <div class="topic-chip" id="chip-w4" onclick="toggleChip('w4')">L4: OLS</div>
+          <div class="topic-chip" id="chip-w5" onclick="toggleChip('w5')">L5: Supervised</div>
+          <div class="topic-chip" id="chip-w6" onclick="toggleChip('w6')">L6: Assumptions</div>
+          <div class="topic-chip" id="chip-w7" onclick="toggleChip('w7')">L7: Sklearn</div>
+          <div class="topic-chip" id="chip-w8" onclick="toggleChip('w8')">L8: PCA</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="max-width:400px">
+      <p style="margin:0 0 6px; font-size:0.82rem; color:var(--text-muted)">Number of questions</p>
+      <input type="range" id="q-count-slider" min="5" max="40" value="15" style="width:100%; accent-color:var(--accent)">
+      <p style="margin:6px 0 0; font-size:0.85rem; color:var(--accent)" id="q-count-label">15 questions</p>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="startQuiz()">▶ Start Quiz</button>
+    </div>
+  </div>
+  <div id="quiz-container" style="display:none">
+    <div class="quiz-header">
+      <div class="quiz-progress-text" id="quiz-progress-text">Question 1 of 15</div>
+      <div class="quiz-score-badge" id="quiz-score-badge">Score: 0</div>
+    </div>
+    <div style="margin-bottom:16px"><div class="progress-bar-wrap" style="margin:0"><div class="progress-bar-fill" id="quiz-progress-bar" style="width:0%"></div></div></div>
+    <div class="question-card">
+      <div class="question-topic" id="q-topic"></div>
+      <div class="question-text" id="q-text"></div>
+      <div class="options" id="q-options"></div>
+      <div class="explanation-box" id="q-explanation"></div>
+    </div>
+    <div class="quiz-nav">
+      <button class="btn btn-outline" onclick="nav('quiz'); resetQuiz()">✕ Exit</button>
+      <button class="btn btn-primary" id="q-next-btn" onclick="nextQuestion()" style="display:none">Next →</button>
+    </div>
+  </div>
+  <div id="quiz-results" style="display:none">
+    <div class="question-card results-card">
+      <div class="score-circle" id="score-circle">
+        <div class="score-num" id="score-num">0</div>
+        <div class="score-denom" id="score-denom">/ 15</div>
+      </div>
+      <h3 id="score-message" style="margin:0 0 8px"></h3>
+      <p id="score-detail" style="margin:0 0 20px"></p>
+      <div class="result-breakdown" id="result-breakdown"></div>
+    </div>
+    <div class="btn-row" style="justify-content:center; margin-top:20px">
+      <button class="btn btn-primary" onclick="startQuiz()">🔄 Retake</button>
+      <button class="btn btn-outline" onclick="nav('flashcards')">🃏 Flashcard Revision</button>
+      <button class="btn btn-outline" onclick="resetQuiz()">← Back to Setup</button>
+    </div>
+  </div>
+</div>
+
+<!-- FLASHCARDS PAGE -->
+<div class="page" id="page-flashcards">
+  <h2>🃏 Flashcard Revision</h2>
+  <p class="subtitle">Click a card to reveal the answer. Great for quick revision.</p>
+  <div class="fc-topic-select" style="margin-bottom:20px">
+    <label style="font-size:0.82rem; color:var(--text-muted); display:block; margin-bottom:8px">Filter by topic:</label>
+    <div class="topic-chips">
+      <div class="topic-chip selected-all" id="fc-chip-all" onclick="fcFilter('all')">🌐 All</div>
+    </div>
+    <div class="chip-chapter">
+      <div class="chip-chapter-label">📚 Foundation</div>
+      <div class="topic-chips">
+        <div class="topic-chip" id="fc-chip-w1" onclick="fcFilter('w1')">L1: Preprocessing</div>
+        <div class="topic-chip" id="fc-chip-w2" onclick="fcFilter('w2')">L2: Feature Eng.</div>
+        <div class="topic-chip" id="fc-chip-w3" onclick="fcFilter('w3')">L3: Linear Reg.</div>
+        <div class="topic-chip" id="fc-chip-w4" onclick="fcFilter('w4')">L4: OLS</div>
+        <div class="topic-chip" id="fc-chip-w5" onclick="fcFilter('w5')">L5: Supervised</div>
+        <div class="topic-chip" id="fc-chip-w6" onclick="fcFilter('w6')">L6: Assumptions</div>
+        <div class="topic-chip" id="fc-chip-w7" onclick="fcFilter('w7')">L7: Sklearn</div>
+        <div class="topic-chip" id="fc-chip-w8" onclick="fcFilter('w8')">L8: PCA</div>
+      </div>
+    </div>
+  </div>
+  <div class="fc-progress" style="margin-bottom:12px"><div class="fc-progress-fill" id="fc-progress-fill" style="width:0%"></div></div>
+  <div style="text-align:center; font-size:0.78rem; color:var(--text-muted); margin-bottom:16px" id="fc-counter-top">Card 1 of 40</div>
+  <div class="flashcard-wrap" onclick="flipCard()">
+    <div class="flashcard" id="flashcard">
+      <div class="card-face card-front">
+        <div class="card-label" id="fc-topic-label">Week 3 · Data Preprocessing</div>
+        <div class="card-content" id="fc-front"></div>
+        <div class="card-hint">Click to reveal answer</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-label">Answer</div>
+        <div class="card-content" id="fc-back"></div>
+      </div>
+    </div>
+  </div>
+  <div class="fc-nav">
+    <button class="btn btn-outline" onclick="fcNav(-1)">← Prev</button>
+    <span class="fc-counter" id="fc-counter">1 / 40</span>
+    <button class="btn btn-primary" onclick="fcNav(1)">Next →</button>
+  </div>
+  <div class="btn-row" style="justify-content:center; margin-top:16px">
+    <button class="btn btn-outline" onclick="shuffleCards()">🔀 Shuffle</button>
+  </div>
+</div>
+
+<!-- PROGRESS PAGE -->
+<div class="page" id="page-progress">
+  <h2>📊 My Progress</h2>
+  <p class="subtitle">Track what you've covered and your quiz performance.</p>
+  <div id="progress-content"></div>
+  <div class="btn-row">
+    <button class="btn btn-outline" onclick="clearProgress()" style="color:var(--red); border-color:var(--red)">🗑 Reset Progress</button>
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+// ===================== DATA =====================
+
+const TOPICS = {
+  w1: 'L1: Data Preprocessing',
+  w2: 'L2: Feature Engineering',
+  w3: 'L3: Linear Regression (GD)',
+  w4: 'L4: OLS Method',
+  w5: 'L5: Supervised Learning',
+  w6: 'L6: Assumptions',
+  w7: 'L7: Scikit-Learn',
+  w8: 'L8: PCA'
+};
+
+const ALL_QUESTIONS = [
+  // W1
+  {t:'w1', q:'What does one-hot encoding do to a categorical column with 4 unique values?', opts:['Creates 1 new numeric column','Creates 4 new binary columns','Replaces values with numbers 1–4','Removes the column'], ans:1, exp:'One-hot encoding creates one binary (0/1) column per unique category. With 4 categories → 4 new columns. Only one is "on" (1) at a time.'},
+  {t:'w1', q:'Which scaler should you use when your data has significant outliers?', opts:['StandardScaler','MinMaxScaler','RobustScaler','NormalScaler'], ans:2, exp:'RobustScaler uses the median and IQR instead of mean and std, making it resistant to outliers distorting the scaling.'},
+  {t:'w1', q:'What is look-ahead bias in the context of data preprocessing?', opts:['Using too many input features','Fitting a scaler on the full dataset before splitting into train/test','Predicting too far into the future','Using a training set that is too small'], ans:1, exp:'Look-ahead bias occurs when your preprocessing (e.g. StandardScaler) learns information from the test set. Always fit transformers on training data only.'},
+  {t:'w1', q:'What is imputation?', opts:['Removing rows with missing values','Removing columns with missing values','Filling in missing values using available data','Scaling values to a range of 0 to 1'], ans:2, exp:'Imputation fills NaN values using strategies like mean, median, mode, or interpolation so the model can still use those rows.'},
+  {t:'w1', q:'What does data.dropna(subset=[\'col\']) do?', opts:['Drops the column \'col\'','Drops rows where \'col\' has a NaN','Drops rows where any column has a NaN','Fills NaN in \'col\' with zero'], ans:1, exp:'subset= restricts dropna to only look at the named column. Rows are dropped only if that specific column is NaN.'},
+  {t:'w1', q:'After StandardScaler, a column will approximately have:', opts:['Values between 0 and 1','Mean=1, Std=0','Mean=0, Std=1','All values equal to 0'], ans:2, exp:'StandardScaler applies z = (x − mean) / std. The result always has mean ≈ 0 and standard deviation ≈ 1.'},
+  {t:'w1', q:'Why do we square errors in the z-score outlier formula rather than keeping them raw?', opts:['To make all values positive and penalise extreme values more','To speed up computation','Because negative z-scores are impossible','To normalise to the range 0–1'], ans:0, exp:'In the z-score formula we use (x−mean)/std — we don\'t actually square. But squaring errors in MSE prevents positive/negative cancellation and penalises large errors heavily.'},
+
+  // W2
+  {t:'w2', q:'Why can\'t a linear model capture non-linear relationships automatically?', opts:['It doesn\'t have enough parameters','Its output is always a straight-line function of its inputs','It needs more training data','Linear models can capture any relationship'], ans:1, exp:'Linear regression is linear in its parameters, meaning the predicted output is always a weighted sum of inputs — a straight line. Non-linear patterns can\'t be captured without transformation.'},
+  {t:'w2', q:'What does polynomial feature expansion of degree 2 on feature x produce?', opts:['x and x²','x and 2x','x² only','sqrt(x)'], ans:0, exp:'Degree-2 polynomial features add x² alongside x, allowing the model to fit parabolas (curved lines).'},
+  {t:'w2', q:'What is binning?', opts:['Removing outliers from a dataset','Converting continuous values into discrete categories','Scaling values between 0 and 1','Combining two features into one'], ans:1, exp:'Binning groups a continuous variable into discrete ranges or buckets, e.g. converting age into young/middle-aged/elderly categories.'},
+  {t:'w2', q:'Which transformation is best for capturing seasonal or periodic patterns in data?', opts:['Polynomial features','Log transformation','Sinusoidal features (sin, cos)','Binning'], ans:2, exp:'Sine and cosine functions are periodic — they repeat on a cycle — making them ideal for seasonal or cyclical data like monthly trends.'},
+  {t:'w2', q:'Why does feature engineering help even non-linear models like neural networks?', opts:['It makes the model smaller','It improves data efficiency by encoding prior knowledge','It always improves performance','It reduces training time'], ans:1, exp:'Feature engineering encodes domain knowledge so the model doesn\'t have to discover patterns from scratch. This is especially valuable with limited data.'},
+  {t:'w2', q:'np.hstack is used in feature engineering to:', opts:['Stack arrays vertically (add rows)','Stack arrays horizontally (add columns)','Multiply matrices','Compute polynomial features automatically'], ans:1, exp:'np.hstack stacks arrays side-by-side as new columns, building up the feature matrix X from individual feature columns like x, x², x³.'},
+
+  // W3
+  {t:'w3', q:'What does MSE measure?', opts:['The maximum error across all predictions','The average squared difference between predictions and true values','The proportion of variance explained','The direction of steepest descent'], ans:1, exp:'MSE = (1/N) × Σ(y − ŷ)². It averages the squared error across all data points — lower is better.'},
+  {t:'w3', q:'What is the learning rate (η) in gradient descent?', opts:['The number of iterations the algorithm runs','How far to step in the direction of the gradient each iteration','The initial value of the weights','The rate at which new data is learned'], ans:1, exp:'The learning rate controls step size. Too large → overshoot the minimum. Too small → very slow convergence.'},
+  {t:'w3', q:'What does R² = 0 mean?', opts:['The model has zero error','The model is no better than predicting the mean every time','The model is perfectly wrong','The data has no variance'], ans:1, exp:'R² = 1 − SSE/SST. When R² = 0, SSE = SST, meaning your model explains nothing — it\'s equivalent to always predicting the average.'},
+  {t:'w3', q:'Why do we square errors in MSE rather than just summing them?', opts:['To prevent positive/negative errors cancelling and to penalise large errors more','To make calculations faster','Because negative errors don\'t exist','To normalise the scale'], ans:0, exp:'Without squaring, +50 and −50 cancel to 0, making a wrong model look perfect. Squaring also penalises large errors disproportionately, which is usually desirable.'},
+  {t:'w3', q:'What does the gradient tell us in gradient descent?', opts:['The optimal value of the parameter','The direction to step to reduce the error','How many iterations to run','The learning rate to use'], ans:1, exp:'The gradient is the derivative of the loss — it points uphill. We subtract it (step in the opposite direction) to move towards the minimum error.'},
+  {t:'w3', q:'What is the difference between interpolation and extrapolation?', opts:['They are the same thing','Interpolation = predictions within training range; extrapolation = outside it','Interpolation uses more data points','Extrapolation is always more accurate'], ans:1, exp:'Interpolation is safer — predicting within the range the model has seen. Extrapolation (predicting beyond training data) is riskier as patterns may not hold.'},
+
+  // W4
+  {t:'w4', q:'What is the OLS closed-form formula for optimal parameters?', opts:['β = X × y','β = (XᵀX)⁻¹ Xᵀy','β = Xᵀ × (Xy)⁻¹','β = gradient descent result'], ans:1, exp:'The OLS formula β* = (XᵀX)⁻¹ Xᵀy gives the exact optimal parameters in one calculation using matrix algebra.'},
+  {t:'w4', q:'What is the main advantage of OLS over gradient descent?', opts:['It works for any size dataset','It gives the exact optimal solution in one step — no iterations','It uses less memory','It handles non-linear data better'], ans:1, exp:'OLS is a closed-form solution. One matrix calculation gives the exact answer. Gradient descent approximates it over thousands of iterations.'},
+  {t:'w4', q:'Why do we add a column of 1s to the X matrix in OLS?', opts:['To make the matrix invertible','To account for the bias (intercept) term β₀','To normalise the data','numpy requires it'], ans:1, exp:'Multiplying the column of 1s by β₀ gives the intercept term. Without it, the regression line is forced through the origin.'},
+  {t:'w4', q:'What does the @ operator do in Python?', opts:['Raises a matrix to a power','Performs matrix multiplication','Calculates the matrix transpose','Computes the matrix inverse'], ans:1, exp:'@ is Python\'s matrix multiplication operator (PEP 465). np.linalg.inv() computes the inverse and .T transposes.'},
+  {t:'w4', q:'What does a p-value < 0.05 tell us about a model parameter?', opts:['The parameter is very large in magnitude','The feature is statistically significant — we reject H₀','The model has a good R² score','We should remove this feature'], ans:1, exp:'p < 0.05 means less than 5% probability the observed effect happened by chance. We reject the null hypothesis (feature has no effect) and conclude it\'s significant.'},
+  {t:'w4', q:'What does the F-statistic test in a linear regression summary?', opts:['Whether each individual parameter is zero','Whether the overall model is better than just predicting the mean','Whether the residuals are normally distributed','Whether features are correlated with each other'], ans:1, exp:'The F-test compares your full model to an intercept-only model (just predicting the mean). A significant F-statistic means your features collectively improve predictions.'},
+
+  // W5
+  {t:'w5', q:'Why do we split data into training and test sets?', opts:['To have more data to work with','To evaluate performance on unseen data and avoid overfitting','Because sklearn requires it','To reduce training time'], ans:1, exp:'The test set represents real-world unseen data. Evaluating on it tells you true generalisation performance — not how well the model memorised training data.'},
+  {t:'w5', q:'What is overfitting?', opts:['When the model is too simple to capture the pattern','When the model performs well on training data but poorly on test data','When you use too many training samples','When MSE is too high on training data'], ans:1, exp:'Overfitting = high variance. The model memorises the training data including its noise, and fails to generalise to new data.'},
+  {t:'w5', q:'What is the key difference between Ridge and Lasso regularisation?', opts:['Ridge is for classification, Lasso is for regression','Lasso can reduce weights to exactly zero, Ridge cannot','Ridge uses a larger penalty than Lasso','They are mathematically identical'], ans:1, exp:'Lasso uses |β| penalty which pushes small weights to exactly zero (feature selection). Ridge uses β² which shrinks but never eliminates a weight completely.'},
+  {t:'w5', q:'What happens when you set λ (alpha) very high in Ridge regression?', opts:['The model overfits more','The weights are barely penalised','The weights are heavily shrunk — model may underfit','All weights become negative'], ans:2, exp:'High λ means the penalty dominates the cost function, forcing all weights close to zero. This produces a very simple model that may underfit.'},
+  {t:'w5', q:'High bias (underfitting) produces which pattern?', opts:['High train score, low test score','Low train score, low test score','High train score, high test score','Low train score, high test score'], ans:1, exp:'An underfitting model hasn\'t learned the pattern — it performs poorly on both training and test data. The model is too simple for the data.'},
+  {t:'w5', q:'What is regularisation?', opts:['Normalising input features before training','Adding a penalty term to the cost function to discourage large weights','Splitting data into train and test sets','Removing correlated features from the dataset'], ans:1, exp:'Regularisation = MSE + λ × penalty. It forces the model to keep weights small, reducing overfitting by trading some training accuracy for better generalisation.'},
+
+  // W6
+  {t:'w6', q:'Which assumption states each feature has a constant, straight-line effect on the output?', opts:['Homoscedasticity','Normality','Linearity','Independence'], ans:2, exp:'The linearity assumption: each feature\'s effect on y is constant — a unit increase in x always changes y by the same amount, regardless of other features.'},
+  {t:'w6', q:'What is homoscedasticity?', opts:['Features are uncorrelated with each other','The variance of the error term is constant across all predictions','Residuals are normally distributed','Observations are independent of each other'], ans:1, exp:'Homoscedasticity = constant error variance. If the error spread grows or shrinks with predictions (fan shape in residual plot), this assumption is violated.'},
+  {t:'w6', q:'How do you detect a violation of homoscedasticity?', opts:['Look at the correlation heatmap between features','Plot residuals against predictions — look for a fan/funnel shape','Run a Shapiro-Wilk test on the residuals','Check if R² is above 0.9'], ans:1, exp:'The residual vs prediction plot should show a random horizontal band. A fan or funnel shape indicates the error variance changes with the prediction (heteroscedasticity).'},
+  {t:'w6', q:'What does multicollinearity mean?', opts:['Multiple target variables in one model','Strong correlation between input features','Non-linear relationship between features and target','Non-normal distribution of residuals'], ans:1, exp:'Multicollinearity = high correlation between input features. It makes individual weights unreliable for interpretation and significance testing.'},
+  {t:'w6', q:'What is the recommended fix for heteroscedasticity when predicting prices?', opts:['Use Ridge regression','Remove the outliers','Log-transform the target variable','Add more features'], ans:2, exp:'Prices have proportional errors — error grows with the price. Log-transforming the target makes errors additive and constant in scale, fixing heteroscedasticity.'},
+  {t:'w6', q:'The Shapiro-Wilk test with p-value < 0.05 tells us:', opts:['The model fits well','The residuals are NOT normally distributed','The features are correlated','The model is overfitting'], ans:1, exp:'Shapiro-Wilk tests H₀: residuals are normal. p < 0.05 means we reject H₀ — the residuals are not normally distributed.'},
+
+  // W7
+  {t:'w7', q:'In sklearn naming conventions, PascalCase (e.g. LinearRegression) indicates:', opts:['A function','A module','A class','A parameter'], ans:2, exp:'Classes use PascalCase (LinearRegression, StandardScaler). Functions use snake_case (train_test_split, mean_squared_error).'},
+  {t:'w7', q:'What does the trailing underscore _ mean on sklearn attributes like coef_?', opts:['It\'s a private attribute','It\'s optional','It was learned from data during fit()','It must not be modified'], ans:2, exp:'Trailing underscore signals estimated attributes — values learned from data during fit(). This distinguishes them from hyperparameters you set yourself.'},
+  {t:'w7', q:'What is abstraction in the context of sklearn?', opts:['Making models more complex','Using models without needing to understand their internal implementation','Removing unnecessary features','Reducing the number of parameters'], ans:1, exp:'Abstraction: the same fit/predict/score interface works for any model. Like a steering wheel — you use it without understanding the engine.'},
+  {t:'w7', q:'Which sklearn module contains train_test_split?', opts:['sklearn.preprocessing','sklearn.metrics','sklearn.model_selection','sklearn.datasets'], ans:2, exp:'sklearn.model_selection contains tools for splitting data and validating model performance, including train_test_split and cross-validation.'},
+  {t:'w7', q:'What is a hyperparameter, and how does it differ from a learned parameter?', opts:['They are the same thing','Hyperparameters are set before training; learned parameters are found during fit()','Hyperparameters are found during training; learned parameters are preset','Hyperparameters only exist in neural networks'], ans:1, exp:'You set hyperparameters (Ridge(alpha=0.5)) before training. Learned parameters (coef_, intercept_) are estimated from data during fit().'},
+  {t:'w7', q:'Why is abstraction in sklearn potentially dangerous?', opts:['It makes models slower','It hides errors from the user','It allows models to be used without understanding their assumptions and limitations','It uses too much memory'], ans:2, exp:'Easy-to-use APIs can mask bad practices. Without understanding the theory — assumptions, look-ahead bias, overfitting — correct-looking code can produce meaningless results.'},
+
+  // W8
+  {t:'w8', q:'PCA is an example of what type of machine learning?', opts:['Supervised learning','Reinforcement learning','Unsupervised learning','Semi-supervised learning'], ans:2, exp:'PCA has no target variable — it finds structure in unlabelled data. That makes it unsupervised learning.'},
+  {t:'w8', q:'What does the first principal direction capture?', opts:['The direction of least variance','The direction perpendicular to all others','The direction of maximum variance in the data','The mean of the data'], ans:2, exp:'PCA orders directions from most to least variance. The first principal direction captures more variance than any other possible direction through the data.'},
+  {t:'w8', q:'What is explained variance ratio in PCA?', opts:['The R² score of the PCA model','The proportion of total variance captured by the selected components','The ratio of training to test variance','The amount of data lost during compression'], ans:1, exp:'Explained variance ratio = variance in k components / total variance. 0.90 means 90% of the information is retained in the reduced representation.'},
+  {t:'w8', q:'Why must you standardise data before applying PCA?', opts:['PCA only accepts values between 0 and 1','Features with larger scales would dominate the variance calculation','sklearn\'s PCA requires it','To ensure explained variance sums to 1'], ans:1, exp:'Variance is scale-dependent. A salary feature (thousands) would dominate over age (tens) purely because of scale, distorting the principal directions.'},
+  {t:'w8', q:'What is a latent factor?', opts:['A feature you forgot to include','A hidden variable that drives correlations between observed variables','The weight assigned to a feature','A principal component score'], ans:1, exp:'Latent factors are unobserved variables causing the correlations we see. E.g., language aptitude drives both French and Spanish scores.'},
+  {t:'w8', q:'When using PCA before linear regression, on which data should you fit the PCA?', opts:['The entire dataset','The test set only','The training set only','Both training and test sets together'], ans:2, exp:'Fitting PCA on the whole dataset leaks test information (look-ahead bias). Fit on training data only, then transform both sets with the same fitted PCA.'},
+];
+
+const FLASHCARDS = [
+  {t:'w1', front:'What is one-hot encoding?', back:'Converting a categorical column into multiple binary (0/1) columns — one per unique category. Only one is "on" at a time.'},
+  {t:'w1', front:'What does StandardScaler do?', back:'Transforms data to have mean = 0 and standard deviation = 1 using: z = (x − mean) / std'},
+  {t:'w1', front:'What is imputation?', back:'Filling in missing (NaN) values using strategies: mean, median, mode, or interpolation for time series.'},
+  {t:'w1', front:'What is look-ahead bias?', back:'When your model learns from data it shouldn\'t have access to (e.g. fitting a scaler on test data). Always fit transformers on training data only.'},
+  {t:'w1', front:'When should you use RobustScaler?', back:'When your data has significant outliers. It uses median and IQR instead of mean and std, so outliers don\'t distort the scaling.'},
+  {t:'w1', front:'What is a z-score outlier threshold?', back:'|z| > 3 — a value more than 3 standard deviations from the mean. Only ~0.3% of normally distributed data falls here.'},
+  {t:'w1', front:'What does inplace=True do in pandas?', back:'Modifies the DataFrame directly instead of returning a new one. Without it, the operation is discarded unless saved: df = df.dropna()'},
+  {t:'w2', front:'Why do we need feature engineering?', back:'Linear models can only fit straight lines. Feature engineering creates new inputs (x², log x, thresholds) so linear models can capture non-linear patterns.'},
+  {t:'w2', front:'What is binning?', back:'Converting a continuous variable into discrete categories, e.g. age → young/middle-aged/elderly. Useful when behaviour changes across ranges.'},
+  {t:'w2', front:'What is np.hstack?', back:'Horizontal stack — joins arrays side by side as new columns. Used to build a feature matrix from individual feature columns.'},
+  {t:'w2', front:'What are sinusoidal features used for?', back:'Capturing periodic or seasonal patterns in data. sin(x) and cos(x) repeat on a cycle, matching seasonal trends.'},
+  {t:'w2', front:'What does PolynomialFeatures(degree=3) produce for one feature x?', back:'Columns for 1, x, x², x³ — a bias term plus polynomial terms up to degree 3.'},
+  {t:'w3', front:'What is the MSE formula?', back:'MSE = (1/N) × Σ(yᵢ − ŷᵢ)² — average squared difference between true values and predictions.'},
+  {t:'w3', front:'What is gradient descent?', back:'An optimisation algorithm that iteratively adjusts parameters by stepping in the direction that reduces the loss function most (downhill on the error surface).'},
+  {t:'w3', front:'What does R² = 0.9 mean?', back:'The model explains 90% of the variation in the target variable. 10% remains unexplained.'},
+  {t:'w3', front:'What is the learning rate (η)?', back:'The step size in gradient descent. Too large → overshoot minimum. Too small → very slow convergence.'},
+  {t:'w3', front:'What are the 4 elements of gradient descent?', back:'1. Gradient (direction to step)\n2. Learning rate (step size)\n3. Starting point (initial w, b)\n4. Stopping criterion (iterations)'},
+  {t:'w3', front:'What is the difference between interpolation and extrapolation?', back:'Interpolation: predicting within the range of training data (safer). Extrapolation: predicting beyond it (riskier — patterns may not hold).'},
+  {t:'w4', front:'What is the OLS formula?', back:'β* = (XᵀX)⁻¹ Xᵀy — gives the exact optimal parameters in one matrix calculation without iteration.'},
+  {t:'w4', front:'Why do we add a column of 1s to X in OLS?', back:'To account for the bias (intercept) term β₀. Multiplying that column by β₀ gives the intercept in the prediction.'},
+  {t:'w4', front:'OLS vs Gradient Descent — key difference?', back:'OLS: exact solution in one step. Gradient descent: iterative approximation over thousands of steps. OLS is preferred when the matrix is invertible and data is manageable.'},
+  {t:'w4', front:'What does p-value < 0.05 mean for a coefficient?', back:'The feature is statistically significant — we reject H₀ (feature has no effect). Less than 5% probability the effect happened by chance.'},
+  {t:'w4', front:'What does the F-statistic test?', back:'Whether the overall model is better than just predicting the mean. Significant F-statistic = your features collectively improve predictions.'},
+  {t:'w5', front:'Why split into train and test sets?', back:'To evaluate on unseen data. Training performance can be misleadingly high (overfitting). Test performance estimates real-world generalisation.'},
+  {t:'w5', front:'What is overfitting?', back:'The model memorises training data (including noise) and performs well on training but poorly on new data. High variance, low generalisation.'},
+  {t:'w5', front:'What is underfitting?', back:'The model is too simple — performs poorly on both training and test data. High bias. Solution: add more features or use a more complex model.'},
+  {t:'w5', front:'What is the bias-variance tradeoff?', back:'Simpler models → high bias (underfit). Complex models → high variance (overfit). Goal: find the sweet spot with good performance on both train and test.'},
+  {t:'w5', front:'What is the Ridge regression penalty?', back:'λ × Σβⱼ² — sum of squared weights. Shrinks all weights towards zero but never to exactly zero.'},
+  {t:'w5', front:'What is the Lasso regression penalty?', back:'λ × Σ|βⱼ| — sum of absolute weights. Can push weights to exactly zero, performing automatic feature selection.'},
+  {t:'w5', front:'What does λ (alpha) control in regularisation?', back:'The strength of the penalty. λ=0 → no regularisation (plain regression). Large λ → heavy shrinkage, simpler model, risk of underfitting.'},
+  {t:'w6', front:'Name the 5 assumptions of linear regression', back:'1. Linearity\n2. Homoscedasticity (constant variance)\n3. Independence\n4. Normality of residuals\n5. No multicollinearity'},
+  {t:'w6', front:'What is homoscedasticity?', back:'Constant error variance — the spread of residuals is the same regardless of the prediction value. Violation shows as a fan shape in residual plots.'},
+  {t:'w6', front:'What is multicollinearity?', back:'High correlation between input features. Makes individual weights unreliable for interpretation. Detected with a correlation heatmap.'},
+  {t:'w6', front:'What does a fan shape in a residual plot indicate?', back:'Heteroscedasticity — the error variance is not constant. It grows (or shrinks) with the prediction value.'},
+  {t:'w6', front:'What is the Shapiro-Wilk test used for?', back:'Testing whether residuals are normally distributed. p < 0.05 means non-normal residuals (normality assumption violated).'},
+  {t:'w6', front:'What is the fix for heteroscedasticity in price prediction?', back:'Log-transform the target variable. Prices have proportional errors — log makes them additive and constant.'},
+  {t:'w7', front:'What is the sklearn pattern for using any model?', back:'1. Import\n2. model = ModelClass(hyperparams)\n3. model.fit(X_train, y_train)\n4. model.predict(X_test)\n5. model.score(X_test, y_test)'},
+  {t:'w7', front:'PascalCase vs snake_case in sklearn?', back:'PascalCase (LinearRegression) = class — create an instance, has memory.\nsnake_case (train_test_split) = function — one-shot call, returns result.'},
+  {t:'w7', front:'What does the trailing _ mean on sklearn attributes?', back:'The attribute was estimated (learned) from data during fit(). E.g. coef_, mean_, var_'},
+  {t:'w7', front:'Hyperparameter vs learned parameter?', back:'Hyperparameter: you set before training (Ridge(alpha=0.5)).\nLearned parameter: model finds during fit() (coef_, intercept_).'},
+  {t:'w8', front:'What is unsupervised learning?', back:'Finding structure in data without a target variable. Examples: clustering, PCA. No labels required.'},
+  {t:'w8', front:'What is a principal direction?', back:'A direction through the data that captures variance. The first captures the most variance, the second the next most, and so on. Always perpendicular to each other.'},
+  {t:'w8', front:'What is explained variance ratio?', back:'The proportion of total data variance captured by k principal components. 0.90 = 90% of information retained.'},
+  {t:'w8', front:'What is a latent factor?', back:'A hidden, unobserved variable that drives correlations between observed variables. E.g. language aptitude drives French and Spanish scores.'},
+  {t:'w8', front:'Why standardise before PCA?', back:'Variance is scale-dependent. Features with larger scales dominate the principal directions purely due to scale, not information content.'},
+  {t:'w8', front:'On which data do you fit PCA?', back:'Training data only. Fitting on the full dataset leaks test information (look-ahead bias). Transform both train and test with the same fitted PCA.'},
+];
+
+// ===================== STATE =====================
+let visited = JSON.parse(localStorage.getItem('ml_visited') || '[]');
+let quizHistory = JSON.parse(localStorage.getItem('ml_quiz_history') || '[]');
+let quizState = { questions: [], current: 0, score: 0, answers: [], topicScores: {} };
+let selectedTopics = ['all'];
+let fcCards = [...FLASHCARDS];
+let fcIdx = 0;
+let fcFlipped = false;
+let fcTopicFilter = 'all';
+
+// ===================== NAVIGATION =====================
+function toggleChapter(id) {
+  const items = document.getElementById('chapter-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  const isCollapsed = items.classList.toggle('collapsed');
+  arrow.classList.toggle('collapsed', isCollapsed);
+}
+
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('main').scrollTop = 0;
+  const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
+  if (navEl) navEl.classList.add('active');
+  if (['w1','w2','w3','w4','w5','w6','w7','w8'].includes(page)) {
+    markVisited(page);
+    renderInlineQuiz(page);
+  }
+  if (page === 'progress') renderProgress();
+  if (page === 'flashcards') renderFlashcard();
+}
+
+function markVisited(w) {
+  if (!visited.includes(w)) {
+    visited.push(w);
+    localStorage.setItem('ml_visited', JSON.stringify(visited));
+  }
+  document.getElementById('check-' + w).textContent = '✓';
+  updateGlobalProgress();
+}
+
+function updateGlobalProgress() {
+  const pct = Math.round((visited.length / 8) * 100);
+  document.getElementById('global-progress-bar').style.width = pct + '%';
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 8 topics visited`;
+}
+
+// ===================== INLINE QUIZ =====================
+function renderInlineQuiz(topic) {
+  const container = document.getElementById('inline-q-' + topic);
+  if (!container || container.dataset.rendered) return;
+  container.dataset.rendered = '1';
+  const qs = ALL_QUESTIONS.filter(q => q.t === topic);
+  const q = qs[Math.floor(Math.random() * qs.length)];
+  container.innerHTML = renderQuestion(q, 'inline');
+}
+
+function renderQuestion(q, mode) {
+  const letters = ['A','B','C','D'];
+  let opts = q.opts.map((o, i) => `<button class="option-btn" onclick="selectInlineAnswer(this,${i},${q.ans})"><span class="option-letter">${letters[i]}</span>${escHtml(o)}</button>`).join('');
+  return `<p style="font-size:0.9rem; color:var(--text); margin-bottom:14px">${escHtml(q.q)}</p><div class="options" data-exp="${escHtml(q.exp)}">${opts}</div><div class="explanation-box" id="inline-exp-${mode}"></div>`;
+}
+
+function selectInlineAnswer(btn, idx, ans) {
+  const opts = btn.parentElement.querySelectorAll('.option-btn');
+  const exp = btn.parentElement.dataset.exp;
+  opts.forEach((b, i) => {
+    b.disabled = true;
+    if (i === ans) b.classList.add('correct');
+    else if (i === idx && idx !== ans) b.classList.add('wrong');
+    b.querySelector('.option-letter').textContent = ['A','B','C','D'][i];
+  });
+  const expBox = btn.parentElement.nextElementSibling;
+  if (expBox) {
+    expBox.style.display = 'block';
+    expBox.innerHTML = `<strong>${idx === ans ? '✓ Correct!' : '✗ Incorrect.'}</strong> ${exp}`;
+  }
+}
+
+// ===================== MAIN QUIZ =====================
+function startTopicQuiz(topic) {
+  selectedTopics = [topic];
+  nav('quiz');
+  startQuiz();
+}
+
+function startQuiz() {
+  const count = parseInt(document.getElementById('q-count-slider')?.value || 15);
+  let pool = ALL_QUESTIONS;
+  if (!selectedTopics.includes('all') && selectedTopics.length > 0) {
+    pool = ALL_QUESTIONS.filter(q => selectedTopics.includes(q.t));
+  }
+  if (pool.length === 0) { alert('No questions for selected topics.'); return; }
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  quizState.questions = shuffled.slice(0, Math.min(count, shuffled.length));
+  quizState.current = 0;
+  quizState.score = 0;
+  quizState.answers = [];
+  quizState.topicScores = {};
+  document.getElementById('quiz-setup').style.display = 'none';
+  document.getElementById('quiz-container').style.display = 'block';
+  document.getElementById('quiz-results').style.display = 'none';
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion() {
+  const total = quizState.questions.length;
+  const cur = quizState.current;
+  const q = quizState.questions[cur];
+  const pct = Math.round((cur / total) * 100);
+  document.getElementById('quiz-progress-text').textContent = `Question ${cur+1} of ${total}`;
+  document.getElementById('quiz-score-badge').textContent = `Score: ${quizState.score}`;
+  document.getElementById('quiz-progress-bar').style.width = pct + '%';
+  document.getElementById('q-topic').textContent = TOPICS[q.t] || q.t;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('q-explanation').style.display = 'none';
+  document.getElementById('q-next-btn').style.display = 'none';
+  const letters = ['A','B','C','D'];
+  document.getElementById('q-options').innerHTML = q.opts.map((o, i) =>
+    `<button class="option-btn" onclick="selectAnswer(this,${i})">${'<span class="option-letter">'+letters[i]+'</span>'}${escHtml(o)}</button>`
+  ).join('');
+}
+
+function selectAnswer(btn, idx) {
+  const q = quizState.questions[quizState.current];
+  const opts = document.getElementById('q-options').querySelectorAll('.option-btn');
+  opts.forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.ans) b.classList.add('correct');
+    else if (i === idx && idx !== q.ans) b.classList.add('wrong');
+  });
+  const correct = idx === q.ans;
+  if (correct) quizState.score++;
+  if (!quizState.topicScores[q.t]) quizState.topicScores[q.t] = {c:0, t:0};
+  quizState.topicScores[q.t].t++;
+  if (correct) quizState.topicScores[q.t].c++;
+  quizState.answers.push({q: quizState.current, selected: idx, correct});
+  const exp = document.getElementById('q-explanation');
+  exp.style.display = 'block';
+  exp.innerHTML = `<strong>${correct ? '✓ Correct!' : '✗ Incorrect.'}</strong> ${q.exp}`;
+  document.getElementById('q-next-btn').style.display = 'inline-flex';
+  document.getElementById('quiz-score-badge').textContent = `Score: ${quizState.score}`;
+}
+
+function nextQuestion() {
+  quizState.current++;
+  if (quizState.current >= quizState.questions.length) {
+    showResults();
+  } else {
+    renderQuizQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('quiz-container').style.display = 'none';
+  document.getElementById('quiz-results').style.display = 'block';
+  const total = quizState.questions.length;
+  const score = quizState.score;
+  const pct = Math.round((score / total) * 100);
+  const circle = document.getElementById('score-circle');
+  circle.style.borderColor = pct >= 80 ? 'var(--green)' : pct >= 60 ? 'var(--yellow)' : 'var(--red)';
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-denom').textContent = `/ ${total}`;
+  document.getElementById('score-message').textContent = pct >= 80 ? '🎉 Excellent work!' : pct >= 60 ? '👍 Good effort!' : '📚 Keep studying!';
+  document.getElementById('score-detail').textContent = `${score} correct out of ${total} questions (${pct}%)`;
+  const breakdown = document.getElementById('result-breakdown');
+  breakdown.innerHTML = Object.entries(quizState.topicScores).map(([t, s]) => {
+    const p = Math.round((s.c/s.t)*100);
+    return `<div class="rb-item"><div class="rb-label">${TOPICS[t]||t}</div><div class="rb-value" style="color:${p>=80?'var(--green)':p>=60?'var(--yellow)':'var(--red)'}">${s.c}/${s.t} (${p}%)</div></div>`;
+  }).join('');
+  quizHistory.push({date: new Date().toISOString(), score, total, pct});
+  localStorage.setItem('ml_quiz_history', JSON.stringify(quizHistory));
+}
+
+function resetQuiz() {
+  document.getElementById('quiz-setup').style.display = 'block';
+  document.getElementById('quiz-container').style.display = 'none';
+  document.getElementById('quiz-results').style.display = 'none';
+  selectedTopics = ['all'];
+  document.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('chip-all').classList.add('selected-all');
+}
+
+// ===================== TOPIC CHIPS =====================
+function toggleChip(t) {
+  if (t === 'all') {
+    selectedTopics = ['all'];
+    document.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('selected'));
+    document.getElementById('chip-all').classList.add('selected-all');
+    return;
+  }
+  document.getElementById('chip-all').classList.remove('selected-all');
+  selectedTopics = selectedTopics.filter(x => x !== 'all');
+  const chip = document.getElementById('chip-' + t);
+  if (selectedTopics.includes(t)) {
+    selectedTopics = selectedTopics.filter(x => x !== t);
+    chip.classList.remove('selected');
+  } else {
+    selectedTopics.push(t);
+    chip.classList.add('selected');
+  }
+  if (selectedTopics.length === 0) {
+    selectedTopics = ['all'];
+    document.getElementById('chip-all').classList.add('selected-all');
+  }
+}
+
+// ===================== FLASHCARDS =====================
+function fcFilter(t) {
+  fcTopicFilter = t;
+  document.querySelectorAll('[id^="fc-chip-"]').forEach(c => { c.classList.remove('selected','selected-all'); });
+  const el = document.getElementById('fc-chip-' + t);
+  if (t === 'all') el.classList.add('selected-all'); else el.classList.add('selected');
+  fcCards = t === 'all' ? [...FLASHCARDS] : FLASHCARDS.filter(c => c.t === t);
+  fcIdx = 0;
+  renderFlashcard();
+}
+
+function renderFlashcard() {
+  if (!fcCards.length) return;
+  const card = fcCards[fcIdx];
+  document.getElementById('fc-front').textContent = card.front;
+  document.getElementById('fc-back').textContent = card.back;
+  document.getElementById('fc-topic-label').textContent = TOPICS[card.t] || card.t;
+  document.getElementById('fc-counter').textContent = `${fcIdx+1} / ${fcCards.length}`;
+  document.getElementById('fc-counter-top').textContent = `Card ${fcIdx+1} of ${fcCards.length}`;
+  document.getElementById('fc-progress-fill').style.width = `${((fcIdx+1)/fcCards.length)*100}%`;
+  const fc = document.getElementById('flashcard');
+  fc.classList.remove('flipped');
+  fcFlipped = false;
+}
+
+function flipCard() {
+  const fc = document.getElementById('flashcard');
+  fc.classList.toggle('flipped');
+  fcFlipped = !fcFlipped;
+}
+
+function fcNav(dir) {
+  fcIdx = (fcIdx + dir + fcCards.length) % fcCards.length;
+  renderFlashcard();
+}
+
+function shuffleCards() {
+  fcCards.sort(() => Math.random() - 0.5);
+  fcIdx = 0;
+  renderFlashcard();
+}
+
+// ===================== PROGRESS =====================
+function renderProgress() {
+  const content = document.getElementById('progress-content');
+  const topicCards = Object.keys(TOPICS).map(t => {
+    const done = visited.includes(t);
+    return `<div class="card" style="display:flex; align-items:center; gap:16px; margin-bottom:10px">
+      <div style="width:40px; height:40px; border-radius:50%; background:${done?'rgba(52,211,153,0.1)':'var(--card-bg)'}; border:2px solid ${done?'var(--green)':'var(--card-border)'}; display:flex; align-items:center; justify-content:center; font-size:1.2rem">${done?'✓':'○'}</div>
+      <div><div style="font-weight:600; font-size:0.9rem">${TOPICS[t]}</div><div style="font-size:0.75rem; color:var(--text-muted)">${done?'Visited':'Not yet visited'}</div></div>
+      <div style="margin-left:auto"><button class="btn btn-outline" style="padding:6px 14px; font-size:0.78rem" onclick="nav('${t}')">Go →</button></div>
+    </div>`;
+  }).join('');
+
+  const recentQuizzes = quizHistory.slice(-5).reverse().map(r => {
+    const date = new Date(r.date).toLocaleDateString();
+    return `<tr><td>${date}</td><td>${r.score}/${r.total}</td><td style="color:${r.pct>=80?'var(--green)':r.pct>=60?'var(--yellow)':'var(--red)'}">${r.pct}%</td></tr>`;
+  }).join('') || '<tr><td colspan="3" style="text-align:center; color:var(--text-muted)">No quizzes taken yet</td></tr>';
+
+  content.innerHTML = `
+    <h3>Topic Progress</h3>
+    ${topicCards}
+    <h3>Recent Quiz Results</h3>
+    <table>
+      <tr><th>Date</th><th>Score</th><th>Percentage</th></tr>
+      ${recentQuizzes}
+    </table>
+  `;
+}
+
+function clearProgress() {
+  if (!confirm('Reset all progress? This cannot be undone.')) return;
+  visited = [];
+  quizHistory = [];
+  localStorage.removeItem('ml_visited');
+  localStorage.removeItem('ml_quiz_history');
+  document.querySelectorAll('[id^="check-"]').forEach(el => el.textContent = '');
+  updateGlobalProgress();
+  renderProgress();
+}
+
+// ===================== UTILS =====================
+function escHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ===================== INIT =====================
+document.getElementById('q-count-slider')?.addEventListener('input', function() {
+  document.getElementById('q-count-label').textContent = this.value + ' questions';
+});
+
+visited.forEach(w => {
+  const el = document.getElementById('check-' + w);
+  if (el) el.textContent = '✓';
+});
+updateGlobalProgress();
+</script>
+</body>
+</html>
