@@ -193,82 +193,9 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
 /* TOPIC QUIZ INLINE */
 .inline-quiz { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 20px; margin-top: 24px; }
 .inline-quiz h3 { margin-top: 0; }
-
-/* MOBILE HAMBURGER */
-#mobile-topbar {
-  display: none;
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  background: var(--sidebar-bg); border-bottom: 1px solid var(--card-border);
-  padding: 12px 16px; align-items: center; gap: 12px;
-}
-#hamburger-btn {
-  background: none; border: none; cursor: pointer;
-  color: var(--text); font-size: 1.4rem; line-height: 1;
-  padding: 4px; display: flex; align-items: center;
-}
-#mobile-title { font-size: 1rem; font-weight: 700; color: var(--accent); }
-
-/* SIDEBAR OVERLAY (mobile) */
-#sidebar-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-  z-index: 300;
-}
-#sidebar-overlay.active { display: block; }
-
-/* MOBILE BREAKPOINT */
-@media (max-width: 768px) {
-  body { flex-direction: column; height: auto; overflow: auto; }
-
-  #mobile-topbar { display: flex; }
-
-  #sidebar {
-    position: fixed; top: 0; left: 0; bottom: 0;
-    width: 280px; z-index: 400;
-    transform: translateX(-100%);
-    transition: transform 0.28s ease;
-    padding-top: 60px;
-  }
-  #sidebar.open { transform: translateX(0); }
-
-  #main {
-    flex: 1; overflow-y: auto;
-    margin-top: 52px; /* height of topbar */
-  }
-
-  .page { padding: 20px 16px; max-width: 100%; }
-
-  .card-grid { grid-template-columns: 1fr; }
-
-  .topic-grid { grid-template-columns: 1fr; }
-
-  .result-breakdown { grid-template-columns: 1fr; }
-
-  .code-block { overflow-x: auto; }
-
-  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-  .flashcard-wrap { height: 220px; }
-
-  .quiz-nav { flex-direction: column; gap: 10px; align-items: stretch; }
-  .quiz-nav .btn { justify-content: center; }
-
-  h2 { font-size: 1.3rem; }
-  h3 { font-size: 1rem; }
-
-  .btn-row { flex-direction: column; }
-  .btn-row .btn { justify-content: center; }
-}
 </style>
 </head>
 <body>
-
-<!-- Mobile top bar -->
-<div id="mobile-topbar">
-  <button id="hamburger-btn" onclick="toggleSidebar()" aria-label="Open menu">&#9776;</button>
-  <span id="mobile-title">🧠 ML Learning Hub</span>
-</div>
-<!-- Sidebar overlay for mobile -->
-<div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <div id="sidebar">
   <div class="sidebar-header">
@@ -276,7 +203,7 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
     <p>Introduction to Machine Learning</p>
   </div>
   <div class="progress-bar-wrap"><div class="progress-bar-fill" id="global-progress-bar" style="width:0%"></div></div>
-  <div class="progress-label" id="global-progress-label">0 of 8 modules visited</div>
+  <div class="progress-label" id="global-progress-label">0 of 16 lessons visited</div>
 
   <div class="sidebar-section">Chapters</div>
   <div class="nav-item nav-item-chapter" onclick="toggleChapter('lessons')"><span class="icon">📚</span> Foundation<span class="chapter-arrow" id="arrow-lessons">▾</span></div>
@@ -290,6 +217,18 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
     <div class="nav-item nav-item-sub" onclick="nav('w6')" id="nav-w6"><span class="icon">📋</span> L6: Assumptions<span class="check" id="check-w6"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('w7')" id="nav-w7"><span class="icon">🔧</span> L7: Scikit-Learn<span class="check" id="check-w7"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('w8')" id="nav-w8"><span class="icon">🔭</span> L8: PCA<span class="check" id="check-w8"></span></div>
+  </div>
+
+  <div class="nav-item nav-item-chapter" onclick="toggleChapter('classification')"><span class="icon">📚</span> Supervised Classification<span class="chapter-arrow" id="arrow-classification">▾</span></div>
+  <div class="nav-chapter-items" id="chapter-classification">
+    <div class="nav-item nav-item-sub" onclick="nav('w9')"  id="nav-w9" ><span class="icon">🎯</span> L9: Intro to Classification<span class="check" id="check-w9"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w10')" id="nav-w10"><span class="icon">📈</span> L10: Logistic Regression<span class="check" id="check-w10"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w11')" id="nav-w11"><span class="icon">📊</span> L11: Evaluation Metrics<span class="check" id="check-w11"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w12')" id="nav-w12"><span class="icon">🌳</span> L12: Decision Trees<span class="check" id="check-w12"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w13')" id="nav-w13"><span class="icon">🌲</span> L13: Random Forests<span class="check" id="check-w13"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w14')" id="nav-w14"><span class="icon">📍</span> L14: KNN<span class="check" id="check-w14"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w15')" id="nav-w15"><span class="icon">↔️</span> L15: SVM<span class="check" id="check-w15"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w16')" id="nav-w16"><span class="icon">🔄</span> L16: Full Pipeline<span class="check" id="check-w16"></span></div>
   </div>
 
   <div class="sidebar-section" style="margin-top:10px">Practice</div>
@@ -896,6 +835,19 @@ X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
           <div class="topic-chip" id="chip-w8" onclick="toggleChip('w8')">L8: PCA</div>
         </div>
       </div>
+      <div class="chip-chapter">
+        <div class="chip-chapter-label">📚 Supervised Classification</div>
+        <div class="topic-chips">
+          <div class="topic-chip" id="chip-w9"  onclick="toggleChip('w9')">L9: Intro</div>
+          <div class="topic-chip" id="chip-w10" onclick="toggleChip('w10')">L10: Logistic Reg.</div>
+          <div class="topic-chip" id="chip-w11" onclick="toggleChip('w11')">L11: Metrics</div>
+          <div class="topic-chip" id="chip-w12" onclick="toggleChip('w12')">L12: Decision Trees</div>
+          <div class="topic-chip" id="chip-w13" onclick="toggleChip('w13')">L13: Random Forests</div>
+          <div class="topic-chip" id="chip-w14" onclick="toggleChip('w14')">L14: KNN</div>
+          <div class="topic-chip" id="chip-w15" onclick="toggleChip('w15')">L15: SVM</div>
+          <div class="topic-chip" id="chip-w16" onclick="toggleChip('w16')">L16: Pipeline</div>
+        </div>
+      </div>
     </div>
     <div class="card" style="max-width:400px">
       <p style="margin:0 0 6px; font-size:0.82rem; color:var(--text-muted)">Number of questions</p>
@@ -963,6 +915,19 @@ X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
         <div class="topic-chip" id="fc-chip-w8" onclick="fcFilter('w8')">L8: PCA</div>
       </div>
     </div>
+    <div class="chip-chapter">
+      <div class="chip-chapter-label">📚 Supervised Classification</div>
+      <div class="topic-chips">
+        <div class="topic-chip" id="fc-chip-w9"  onclick="fcFilter('w9')">L9: Intro</div>
+        <div class="topic-chip" id="fc-chip-w10" onclick="fcFilter('w10')">L10: Logistic Reg.</div>
+        <div class="topic-chip" id="fc-chip-w11" onclick="fcFilter('w11')">L11: Metrics</div>
+        <div class="topic-chip" id="fc-chip-w12" onclick="fcFilter('w12')">L12: Decision Trees</div>
+        <div class="topic-chip" id="fc-chip-w13" onclick="fcFilter('w13')">L13: Random Forests</div>
+        <div class="topic-chip" id="fc-chip-w14" onclick="fcFilter('w14')">L14: KNN</div>
+        <div class="topic-chip" id="fc-chip-w15" onclick="fcFilter('w15')">L15: SVM</div>
+        <div class="topic-chip" id="fc-chip-w16" onclick="fcFilter('w16')">L16: Pipeline</div>
+      </div>
+    </div>
   </div>
   <div class="fc-progress" style="margin-bottom:12px"><div class="fc-progress-fill" id="fc-progress-fill" style="width:0%"></div></div>
   <div style="text-align:center; font-size:0.78rem; color:var(--text-muted); margin-bottom:16px" id="fc-counter-top">Card 1 of 40</div>
@@ -999,32 +964,437 @@ X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
   </div>
 </div>
 
+<!-- LESSON 9 -->
+<div class="page" id="page-w9">
+  <h2>🎯 Introduction to Classification</h2>
+  <p class="subtitle">Predicting categories, not numbers — the other half of supervised learning.</p>
+
+  <h3>Classification vs Regression</h3>
+  <table>
+    <tr><th>Task</th><th>Output</th><th>Example</th></tr>
+    <tr><td><strong>Regression</strong></td><td>Continuous number</td><td>Predict house price: £342,000</td></tr>
+    <tr><td><strong>Classification</strong></td><td>Discrete class label</td><td>Predict email: Spam / Not Spam</td></tr>
+  </table>
+
+  <h3>Binary vs Multiclass</h3>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Binary</div><p>Exactly 2 classes — one positive, one negative. E.g. Fraud / Not Fraud.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Multiclass</div><p>3 or more classes. E.g. Handwritten digit: 0–9. Needs special strategies (One-vs-Rest, Softmax).</p></div></div>
+  </div>
+
+  <h3>The Decision Boundary</h3>
+  <p>A classifier learns a boundary in feature space. Points on one side are predicted as class A, the other as class B. The shape depends on the algorithm.</p>
+  <div class="card">
+    <ul>
+      <li><strong>Linear boundary</strong> — Logistic Regression, linear SVM: a straight line or hyperplane</li>
+      <li><strong>Non-linear boundary</strong> — Decision Trees, Random Forests, SVM (RBF): curves and complex shapes</li>
+    </ul>
+  </div>
+
+  <h3>Real-World Classification Tasks</h3>
+  <table>
+    <tr><th>Problem</th><th>Classes</th><th>Key Features</th></tr>
+    <tr><td>Email spam detection</td><td>Spam / Not Spam</td><td>Word frequencies, sender</td></tr>
+    <tr><td>Fraud detection</td><td>Fraud / Legitimate</td><td>Amount, location, time</td></tr>
+    <tr><td>Medical diagnosis</td><td>Disease / Healthy</td><td>Test results, age, vitals</td></tr>
+    <tr><td>Digit recognition</td><td>0, 1, 2 … 9</td><td>Pixel intensities</td></tr>
+    <tr><td>Customer churn</td><td>Churns / Stays</td><td>Usage, tenure, complaints</td></tr>
+  </table>
+
+  <h3>Class Imbalance</h3>
+  <p>Real classification problems are rarely balanced. Fraud is 0.1% of transactions. A model that always predicts "not fraud" gets 99.9% accuracy — and is completely useless.</p>
+  <div class="alert alert-warn">⚠️ Never rely on accuracy alone for imbalanced data. Use precision, recall, and F1 instead — covered in L11.</div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w9"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w9')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w10')">Next: Logistic Regression →</button>
+  </div>
+</div>
+
+<!-- LESSON 10 -->
+<div class="page" id="page-w10">
+  <h2>📈 Logistic Regression</h2>
+  <p class="subtitle">The simplest classifier — linear boundary, probability output.</p>
+
+  <h3>The Sigmoid Function</h3>
+  <p>Linear regression output is unbounded. To get a probability (0–1), pass the linear output through the sigmoid:</p>
+  <div class="card" style="text-align:center; padding:20px">
+    <div style="font-size:1.2rem; color:var(--accent); font-family:monospace; margin-bottom:8px">σ(z) = 1 / (1 + e<sup>−z</sup>)&nbsp;&nbsp; where z = wx + b</div>
+    <p style="margin:0; font-size:0.82rem">Always outputs between 0 and 1. Interpreted as P(y = 1 | x).</p>
+  </div>
+
+  <h3>Thresholding — Probability → Class</h3>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">P(y=1) ≥ 0.5</div><p>Predict class 1 (positive). Default threshold.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">P(y=1) &lt; 0.5</div><p>Predict class 0 (negative).</p></div></div>
+  </div>
+  <p>You can tune the threshold. <strong>Lower it</strong> → catch more positives (higher recall, more false alarms). <strong>Raise it</strong> → be more certain before predicting positive (higher precision, fewer alarms).</p>
+
+  <h3>Loss Function — Log Loss</h3>
+  <p>MSE doesn't work for classification. Instead: <strong>binary cross-entropy</strong>.</p>
+  <div class="card" style="text-align:center; padding:16px">
+    <div style="font-size:0.95rem; color:var(--accent); font-family:monospace">Loss = −(1/N) Σ [yᵢ log(ŷᵢ) + (1−yᵢ) log(1−ŷᵢ)]</div>
+    <p style="margin:8px 0 0; font-size:0.8rem">Heavily penalises confident wrong predictions. Predicting P=0.99 when truth is 0 = huge loss.</p>
+  </div>
+
+  <h3>The C Parameter (Regularisation)</h3>
+  <p>sklearn uses <strong>C = 1/λ</strong> — the inverse of regularisation strength.</p>
+  <table>
+    <tr><th>C value</th><th>Regularisation</th><th>Effect</th></tr>
+    <tr><td>Small (e.g. 0.01)</td><td>Strong</td><td>Simple boundary — risk of underfitting</td></tr>
+    <tr><td>1.0 (default)</td><td>Moderate</td><td>Good starting point</td></tr>
+    <tr><td>Large (e.g. 100)</td><td>Weak</td><td>Complex boundary — risk of overfitting</td></tr>
+  </table>
+
+  <h3>Logistic Regression in Code</h3>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
+
+model = <span class="fn">LogisticRegression</span>(C=<span class="nu">1.0</span>)
+model.<span class="fn">fit</span>(X_train, y_train)
+
+proba = model.<span class="fn">predict_proba</span>(X_test)  <span class="cm"># [[0.82, 0.18], ...]  shape: (n, 2)</span>
+pred  = model.<span class="fn">predict</span>(X_test)          <span class="cm"># [1, 0, 1, ...]</span></pre></div>
+
+  <div class="alert alert-info">💡 Despite the name, logistic regression is a classifier. Its decision boundary is always linear — a straight line in 2D, a hyperplane in higher dimensions.</div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w10"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w10')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w11')">Next: Evaluation Metrics →</button>
+  </div>
+</div>
+
+<!-- LESSON 11 -->
+<div class="page" id="page-w11">
+  <h2>📊 Evaluation Metrics for Classification</h2>
+  <p class="subtitle">Accuracy is a trap. Learn how to actually measure classifier performance.</p>
+
+  <h3>The Confusion Matrix</h3>
+  <div class="card" style="text-align:center; padding:20px">
+    <table style="max-width:400px; margin:0 auto">
+      <tr><th></th><th>Predicted Positive</th><th>Predicted Negative</th></tr>
+      <tr><td><strong>Actual Positive</strong></td><td style="color:var(--green)">TP — True Positive</td><td style="color:var(--red)">FN — False Negative</td></tr>
+      <tr><td><strong>Actual Negative</strong></td><td style="color:var(--red)">FP — False Positive</td><td style="color:var(--green)">TN — True Negative</td></tr>
+    </table>
+  </div>
+  <div class="card-grid" style="margin-top:12px">
+    <div class="card"><div class="key-concept"><div class="label">False Positive (Type I)</div><p>Predicted positive, actually negative. E.g. flagging a legitimate email as spam.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">False Negative (Type II)</div><p>Predicted negative, actually positive. E.g. missing a cancer diagnosis.</p></div></div>
+  </div>
+
+  <h3>The Four Metrics</h3>
+  <table>
+    <tr><th>Metric</th><th>Formula</th><th>Meaning</th></tr>
+    <tr><td><strong>Accuracy</strong></td><td>(TP+TN) / total</td><td>Overall correctness — misleading when imbalanced</td></tr>
+    <tr><td><strong>Precision</strong></td><td>TP / (TP+FP)</td><td>Of predicted positives, how many were right? Minimise false alarms.</td></tr>
+    <tr><td><strong>Recall</strong></td><td>TP / (TP+FN)</td><td>Of actual positives, how many did we catch? Minimise missed cases.</td></tr>
+    <tr><td><strong>F1 Score</strong></td><td>2·(P·R)/(P+R)</td><td>Harmonic mean of precision and recall. Use when both matter.</td></tr>
+  </table>
+
+  <h3>Precision–Recall Tradeoff</h3>
+  <p>Lowering the decision threshold → more positives predicted → <strong>higher recall, lower precision</strong>. Raising it → the reverse. Choose based on the cost of each error type.</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Prioritise Recall when…</div><p>Missing a positive is costly. Cancer screening, fraud, fault detection.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Prioritise Precision when…</div><p>False alarms are costly. Spam filters, content moderation.</p></div></div>
+  </div>
+
+  <h3>ROC-AUC</h3>
+  <p>The <strong>ROC curve</strong> plots True Positive Rate vs False Positive Rate at every threshold. <strong>AUC</strong> (Area Under the Curve) summarises the whole curve in one number.</p>
+  <table>
+    <tr><th>AUC</th><th>Meaning</th></tr>
+    <tr><td>1.0</td><td>Perfect — ranks all positives above all negatives</td></tr>
+    <tr><td>0.9+</td><td>Excellent</td></tr>
+    <tr><td>0.5</td><td>No better than random guessing</td></tr>
+    <tr><td>&lt; 0.5</td><td>Worse than random — flip predictions</td></tr>
+  </table>
+
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report, confusion_matrix, roc_auc_score
+
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_pred))     <span class="cm"># precision, recall, F1 per class</span>
+<span class="fn">print</span>(<span class="fn">confusion_matrix</span>(y_test, y_pred))
+<span class="fn">print</span>(<span class="fn">roc_auc_score</span>(y_test, model.<span class="fn">predict_proba</span>(X_test)[:, <span class="nu">1</span>]))</pre></div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w11"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w11')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w12')">Next: Decision Trees →</button>
+  </div>
+</div>
+
+<!-- LESSON 12 -->
+<div class="page" id="page-w12">
+  <h2>🌳 Decision Trees</h2>
+  <p class="subtitle">Learning a flowchart from data — highly interpretable, prone to overfitting.</p>
+
+  <h3>How a Decision Tree Works</h3>
+  <p>A tree repeatedly splits the data on one feature at a time, choosing the split that best separates the classes. Each leaf node holds a class prediction.</p>
+  <div class="card">
+    <div class="key-concept"><div class="label">Algorithm (simplified)</div>
+      <p>1. At the current node, try every possible split on every feature.<br>
+         2. Choose the split that minimises impurity (Gini or Entropy).<br>
+         3. Recurse on each child node until a stopping criterion is met.</p>
+    </div>
+  </div>
+
+  <h3>Splitting Criteria</h3>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Gini Impurity</div><p>Gini = 1 − Σpᵢ². Equal to 0 when all samples belong to one class (pure node). Default in sklearn.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Entropy (Information Gain)</div><p>H = −Σ pᵢ log₂(pᵢ). Measures disorder. The split with the most information gain is chosen.</p></div></div>
+  </div>
+
+  <h3>Overfitting and Depth</h3>
+  <p>A fully grown tree creates a split for every training point — it memorises the data perfectly but generalises terribly. Depth is the key lever.</p>
+  <table>
+    <tr><th>max_depth</th><th>Bias</th><th>Variance</th><th>Effect</th></tr>
+    <tr><td>None (unlimited)</td><td>Low</td><td>Very high</td><td>Memorises training data — overfits</td></tr>
+    <tr><td>3–10</td><td>Moderate</td><td>Moderate</td><td>Usually best range — tune with CV</td></tr>
+    <tr><td>1 (stump)</td><td>Very high</td><td>Low</td><td>Underfits — only one split</td></tr>
+  </table>
+
+  <h3>Feature Importance</h3>
+  <p>Measures how much each feature reduced impurity across all splits, weighted by samples affected. Values sum to 1.</p>
+
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier
+
+tree = <span class="fn">DecisionTreeClassifier</span>(max_depth=<span class="nu">5</span>, random_state=<span class="nu">42</span>)
+tree.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="fn">print</span>(tree.feature_importances_)    <span class="cm"># importance per feature, sums to 1</span>
+tree.<span class="fn">score</span>(X_test, y_test)           <span class="cm"># accuracy on test set</span></pre></div>
+
+  <div class="alert alert-warn">⚠️ A single decision tree is high-variance — small changes to training data can produce a completely different tree. Use Random Forests (L13) for stability.</div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w12"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w12')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w13')">Next: Random Forests →</button>
+  </div>
+</div>
+
+<!-- LESSON 13 -->
+<div class="page" id="page-w13">
+  <h2>🌲 Random Forests</h2>
+  <p class="subtitle">Turn one unstable tree into hundreds of stable ones — ensembling at its best.</p>
+
+  <h3>The Core Idea: Bagging</h3>
+  <p><strong>Bootstrap Aggregating (Bagging)</strong>: train many models on different random samples of the data, then combine their predictions. Diversity between models is the key.</p>
+  <div class="card">
+    <div class="key-concept"><div class="label">Why does bagging work?</div>
+      <p>Each individual tree overfits differently. When you average many differently-overfitted models, the errors cancel out and the signal remains. Variance drops dramatically.</p>
+    </div>
+  </div>
+
+  <h3>Random Forests = Bagging + Feature Randomness</h3>
+  <p>Random Forests add one extra step: at each split, only a <strong>random subset of features</strong> is considered. This decorrelates the trees — if one feature dominates, not all trees will rely on it.</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Classification vote</div><p>Each tree predicts a class. The majority vote across all trees is the final prediction.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Regression average</div><p>Each tree predicts a number. The mean across all trees is the final prediction.</p></div></div>
+  </div>
+
+  <h3>Key Hyperparameters</h3>
+  <table>
+    <tr><th>Parameter</th><th>What it controls</th><th>Typical range</th></tr>
+    <tr><td><strong>n_estimators</strong></td><td>Number of trees</td><td>100–500; more is better (diminishing returns)</td></tr>
+    <tr><td><strong>max_depth</strong></td><td>Max depth of each tree</td><td>None (let trees grow) or 5–20</td></tr>
+    <tr><td><strong>max_features</strong></td><td>Features considered per split</td><td>'sqrt' (default for classification)</td></tr>
+    <tr><td><strong>min_samples_split</strong></td><td>Minimum samples to split a node</td><td>2–20; higher = simpler trees</td></tr>
+  </table>
+
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier
+
+rf = <span class="fn">RandomForestClassifier</span>(n_estimators=<span class="nu">200</span>, max_depth=<span class="nu">10</span>, random_state=<span class="nu">42</span>)
+rf.<span class="fn">fit</span>(X_train, y_train)
+
+rf.<span class="fn">score</span>(X_test, y_test)
+<span class="fn">print</span>(rf.feature_importances_)   <span class="cm"># aggregated across all trees</span></pre></div>
+
+  <div class="alert alert-info">💡 Unlike increasing tree depth, adding more trees (n_estimators) cannot cause overfitting. It only improves stability — the cost is just training time.</div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w13"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w13')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w14')">Next: KNN →</button>
+  </div>
+</div>
+
+<!-- LESSON 14 -->
+<div class="page" id="page-w14">
+  <h2>📍 K-Nearest Neighbours (KNN)</h2>
+  <p class="subtitle">No training, no model — just memory and distance.</p>
+
+  <h3>How KNN Works</h3>
+  <p>KNN is the simplest classifier conceptually: to classify a new point, <strong>find its K nearest training points and take a majority vote</strong>.</p>
+  <div class="card">
+    <div class="key-concept"><div class="label">Step by step</div>
+      <p>1. Compute the distance from the new point to all training points.<br>
+         2. Select the K closest neighbours.<br>
+         3. Predict the majority class among those K neighbours.</p>
+    </div>
+  </div>
+
+  <h3>Choosing K</h3>
+  <table>
+    <tr><th>K value</th><th>Bias</th><th>Variance</th><th>Boundary</th></tr>
+    <tr><td>K = 1</td><td>Very low</td><td>Very high</td><td>Jagged — memorises training data</td></tr>
+    <tr><td>K = 5–20</td><td>Low</td><td>Moderate</td><td>Smooth — usually best range</td></tr>
+    <tr><td>K = N (all)</td><td>Very high</td><td>Very low</td><td>Always predicts majority class</td></tr>
+  </table>
+  <p>Tune K with cross-validation. Odd K avoids ties in binary classification.</p>
+
+  <h3>Why KNN is a "Lazy Learner"</h3>
+  <p>There is <strong>no training step</strong>. KNN simply stores all training data. All computation — finding neighbours, voting — happens at prediction time. Training is instant; prediction is slow on large datasets.</p>
+
+  <h3>The Curse of Dimensionality</h3>
+  <p>As dimensions increase, all points become roughly equidistant. The concept of "nearest neighbour" loses meaning — every point is equally far from every other. KNN degrades in high-dimensional spaces.</p>
+  <div class="alert alert-warn">⚠️ Always scale your features before KNN. Euclidean distance is sensitive to scale — a salary feature (thousands) will dominate a binary feature (0/1).</div>
+
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.neighbors <span class="kw">import</span> KNeighborsClassifier
+
+knn = <span class="fn">KNeighborsClassifier</span>(n_neighbors=<span class="nu">7</span>)
+knn.<span class="fn">fit</span>(X_train, y_train)
+knn.<span class="fn">score</span>(X_test, y_test)</pre></div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w14"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w14')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w15')">Next: SVM →</button>
+  </div>
+</div>
+
+<!-- LESSON 15 -->
+<div class="page" id="page-w15">
+  <h2>↔️ Support Vector Machines (SVM)</h2>
+  <p class="subtitle">Find the boundary that keeps classes as far apart as possible.</p>
+
+  <h3>The Margin</h3>
+  <p>SVM doesn't just find any decision boundary — it finds the one that <strong>maximises the margin</strong>: the perpendicular distance between the boundary and the nearest training points from each class.</p>
+  <div class="card">
+    <div class="key-concept"><div class="label">Why maximise the margin?</div>
+      <p>A wider margin means the model is further from uncertainty at the boundary. This gives better generalisation to unseen data — the model is more confident everywhere except the boundary zone.</p>
+    </div>
+  </div>
+
+  <h3>Support Vectors</h3>
+  <p>The <strong>support vectors</strong> are the training points that lie directly on the margin boundary. Only these points define the decision boundary — the rest of the training data could be removed without changing the model.</p>
+
+  <h3>The C Parameter</h3>
+  <table>
+    <tr><th>C value</th><th>Margin</th><th>Misclassifications</th><th>Risk</th></tr>
+    <tr><td>Small C (e.g. 0.01)</td><td>Wide</td><td>More allowed</td><td>Underfitting</td></tr>
+    <tr><td>Large C (e.g. 1000)</td><td>Narrow</td><td>Few allowed</td><td>Overfitting</td></tr>
+  </table>
+
+  <h3>The Kernel Trick — Non-Linear Boundaries</h3>
+  <p>For data that isn't linearly separable, SVM uses a <strong>kernel</strong> to implicitly map data to a higher-dimensional space where it becomes separable — without ever computing the transformation directly.</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Linear kernel</div><p>Standard SVM. Fast. Best when data is linearly separable or you have many features.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">RBF kernel</div><p>Radial Basis Function. Creates curved boundaries. Default choice for non-linear data. Controlled by γ (gamma).</p></div></div>
+  </div>
+
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.svm <span class="kw">import</span> SVC
+
+svm = <span class="fn">SVC</span>(kernel=<span class="st">'rbf'</span>, C=<span class="nu">1.0</span>, gamma=<span class="st">'scale'</span>, probability=<span class="kw">True</span>)
+svm.<span class="fn">fit</span>(X_train, y_train)
+svm.<span class="fn">score</span>(X_test, y_test)</pre></div>
+
+  <div class="alert alert-warn">⚠️ Always scale features before SVM. The margin calculation is distance-based and highly sensitive to feature scales.</div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w15"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w15')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w16')">Next: Full Pipeline →</button>
+  </div>
+</div>
+
+<!-- LESSON 16 -->
+<div class="page" id="page-w16">
+  <h2>🔄 The Full Classification Pipeline</h2>
+  <p class="subtitle">Cross-validation, GridSearch, and Pipelines — the professional way to build and tune classifiers.</p>
+
+  <h3>Cross-Validation</h3>
+  <p>A single train-test split can be lucky or unlucky. <strong>K-fold cross-validation</strong> gives a more reliable estimate by rotating which part of the data is the test set.</p>
+  <div class="card">
+    <div class="key-concept"><div class="label">K-Fold CV — how it works</div>
+      <p>Split data into K folds. Train on K-1, test on the remaining fold. Repeat K times (each fold is the test set once). Average the K scores.</p>
+    </div>
+  </div>
+  <div class="alert alert-warn">⚠️ Use <strong>stratified</strong> k-fold for classification — it preserves the class ratio in each fold, essential for imbalanced datasets.</div>
+
+  <h3>GridSearchCV — Hyperparameter Tuning</h3>
+  <p>Tries every combination of hyperparameters from a grid, using cross-validation to evaluate each. Returns the best configuration.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> GridSearchCV
+
+param_grid = {<span class="st">'C'</span>: [<span class="nu">0.1</span>, <span class="nu">1</span>, <span class="nu">10</span>], <span class="st">'kernel'</span>: [<span class="st">'linear'</span>, <span class="st">'rbf'</span>]}
+search = <span class="fn">GridSearchCV</span>(<span class="fn">SVC</span>(), param_grid, cv=<span class="nu">5</span>, scoring=<span class="st">'f1'</span>)
+search.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="fn">print</span>(search.best_params_)       <span class="cm"># {'C': 1, 'kernel': 'rbf'}</span>
+<span class="fn">print</span>(search.best_score_)        <span class="cm"># best CV F1 score</span></pre></div>
+
+  <h3>sklearn Pipeline — Preventing Leakage</h3>
+  <p>Wrapping preprocessing and a model in a <strong>Pipeline</strong> ensures the scaler is fitted only on training folds — not the test fold — inside cross-validation.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier
+
+pipe = <span class="fn">Pipeline</span>([
+    (<span class="st">'scaler'</span>, <span class="fn">StandardScaler</span>()),
+    (<span class="st">'model'</span>,  <span class="fn">RandomForestClassifier</span>(n_estimators=<span class="nu">200</span>))
+])
+
+pipe.<span class="fn">fit</span>(X_train, y_train)
+pipe.<span class="fn">score</span>(X_test, y_test)</pre></div>
+
+  <h3>End-to-End Example</h3>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split, GridSearchCV
+<span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+<span class="kw">from</span> sklearn.svm <span class="kw">import</span> SVC
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report
+
+<span class="cm"># 1. Split</span>
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(X, y, test_size=<span class="nu">0.2</span>, stratify=y)
+
+<span class="cm"># 2. Pipeline</span>
+pipe = <span class="fn">Pipeline</span>([(<span class="st">'scaler'</span>, <span class="fn">StandardScaler</span>()), (<span class="st">'svm'</span>, <span class="fn">SVC</span>(probability=<span class="kw">True</span>))])
+
+<span class="cm"># 3. Tune with GridSearch</span>
+grid = <span class="fn">GridSearchCV</span>(pipe, {<span class="st">'svm__C'</span>: [<span class="nu">0.1</span>, <span class="nu">1</span>, <span class="nu">10</span>]}, cv=<span class="nu">5</span>, scoring=<span class="st">'f1'</span>)
+grid.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="cm"># 4. Evaluate on held-out test set</span>
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, grid.<span class="fn">predict</span>(X_test)))</pre></div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w16"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('w16')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('quiz')">📝 Take Mixed Quiz</button>
+  </div>
+</div>
+
 </div><!-- end main -->
 
 <script>
-// ===================== MOBILE SIDEBAR =====================
-function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  const isOpen = sidebar.classList.toggle('open');
-  overlay.classList.toggle('active', isOpen);
-}
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebar-overlay').classList.remove('active');
-}
-
 // ===================== DATA =====================
 
 const TOPICS = {
-  w1: 'L1: Data Preprocessing',
-  w2: 'L2: Feature Engineering',
-  w3: 'L3: Linear Regression (GD)',
-  w4: 'L4: OLS Method',
-  w5: 'L5: Supervised Learning',
-  w6: 'L6: Assumptions',
-  w7: 'L7: Scikit-Learn',
-  w8: 'L8: PCA'
+  w1:  'L1: Data Preprocessing',
+  w2:  'L2: Feature Engineering',
+  w3:  'L3: Linear Regression (GD)',
+  w4:  'L4: OLS Method',
+  w5:  'L5: Supervised Learning',
+  w6:  'L6: Assumptions',
+  w7:  'L7: Scikit-Learn',
+  w8:  'L8: PCA',
+  w9:  'L9: Intro to Classification',
+  w10: 'L10: Logistic Regression',
+  w11: 'L11: Evaluation Metrics',
+  w12: 'L12: Decision Trees',
+  w13: 'L13: Random Forests',
+  w14: 'L14: KNN',
+  w15: 'L15: SVM',
+  w16: 'L16: Full Pipeline'
 };
 
 const ALL_QUESTIONS = [
@@ -1092,6 +1462,65 @@ const ALL_QUESTIONS = [
   {t:'w8', q:'Why must you standardise data before applying PCA?', opts:['PCA only accepts values between 0 and 1','Features with larger scales would dominate the variance calculation','sklearn\'s PCA requires it','To ensure explained variance sums to 1'], ans:1, exp:'Variance is scale-dependent. A salary feature (thousands) would dominate over age (tens) purely because of scale, distorting the principal directions.'},
   {t:'w8', q:'What is a latent factor?', opts:['A feature you forgot to include','A hidden variable that drives correlations between observed variables','The weight assigned to a feature','A principal component score'], ans:1, exp:'Latent factors are unobserved variables causing the correlations we see. E.g., language aptitude drives both French and Spanish scores.'},
   {t:'w8', q:'When using PCA before linear regression, on which data should you fit the PCA?', opts:['The entire dataset','The test set only','The training set only','Both training and test sets together'], ans:2, exp:'Fitting PCA on the whole dataset leaks test information (look-ahead bias). Fit on training data only, then transform both sets with the same fitted PCA.'},
+
+  // L9
+  {t:'w9', q:'What is the key difference between classification and regression?', opts:['Classification uses more data','Classification predicts a discrete class label; regression predicts a continuous number','Regression is more accurate','Classification cannot use sklearn'], ans:1, exp:'Both are supervised learning, but regression predicts numbers (e.g. house price) while classification predicts categories (e.g. spam/not spam).'},
+  {t:'w9', q:'What is a decision boundary?', opts:['The edge of the training dataset','The line or surface that separates classes in feature space','The maximum depth of a decision tree','The threshold used to evaluate accuracy'], ans:1, exp:'A decision boundary divides feature space into regions — each region is assigned to one class. Its shape depends on the algorithm.'},
+  {t:'w9', q:'A dataset where 98% of examples are class A and 2% are class B is called:', opts:['Overfitted','Class imbalanced','Underfitted','Multiclass'], ans:1, exp:'Class imbalance occurs when one class dominates the dataset. A model predicting all class A achieves 98% accuracy while completely missing class B.'},
+  {t:'w9', q:'Which of the following is a classification task?', opts:['Predicting tomorrow\'s temperature','Predicting annual rainfall in mm','Predicting whether an email is spam','Predicting a house sale price'], ans:2, exp:'Spam detection predicts a category (Spam / Not Spam). The others predict continuous numbers — those are regression tasks.'},
+  {t:'w9', q:'Why is accuracy alone misleading on imbalanced datasets?', opts:['Accuracy is computationally expensive','A model predicting the majority class every time achieves high accuracy while being useless','Accuracy requires balanced classes to compute','sklearn does not support accuracy on imbalanced data'], ans:1, exp:'On a 99/1 imbalanced dataset, predicting the majority class always gives 99% accuracy. The model never finds the rare class — which is usually the one that matters most.'},
+  {t:'w9', q:'What distinguishes multiclass from binary classification?', opts:['Multiclass requires more data','Multiclass predicts one of three or more classes; binary predicts one of two','Binary is always more accurate','They are mathematically identical'], ans:1, exp:'Binary classification has exactly 2 classes. Multiclass has 3+ classes (e.g. digit 0–9). Strategies like One-vs-Rest are needed for multiclass.'},
+
+  // L10
+  {t:'w10', q:'What function does logistic regression use to convert a linear output to a probability?', opts:['ReLU','Softmax','Sigmoid','Hyperbolic tangent'], ans:2, exp:'The sigmoid σ(z) = 1/(1+e^−z) maps any real number to (0,1), producing a valid probability.'},
+  {t:'w10', q:'What is the default decision threshold in logistic regression?', opts:['0.3','0.75','0.5','1.0'], ans:2, exp:'By default, P(y=1) ≥ 0.5 → predict class 1. You can adjust this threshold to trade off precision and recall.'},
+  {t:'w10', q:'What is the loss function used in logistic regression?', opts:['Mean Squared Error','Mean Absolute Error','Log Loss (binary cross-entropy)','Hinge loss'], ans:2, exp:'Log loss penalises confident wrong predictions heavily. MSE does not work well for classification because the loss surface becomes non-convex.'},
+  {t:'w10', q:'In sklearn\'s LogisticRegression, C=0.01 compared to C=100 means:', opts:['C=0.01 applies stronger regularisation','C=100 applies stronger regularisation','Both apply the same regularisation','C has no effect on logistic regression'], ans:0, exp:'C = 1/λ. Small C = strong regularisation = simpler model. Large C = weak regularisation = more complex model with overfitting risk.'},
+  {t:'w10', q:'Which sklearn method returns probability estimates from a classifier?', opts:['model.score()','model.predict()','model.predict_proba()','model.fit()'], ans:2, exp:'model.predict_proba() returns shape (n_samples, n_classes) with probability per class. model.predict() returns hard class labels after applying the threshold.'},
+  {t:'w10', q:'Logistic regression creates what type of decision boundary?', opts:['Curved boundary','Linear boundary','Tree-based boundary','Circular boundary'], ans:1, exp:'Despite using the sigmoid, logistic regression\'s decision boundary is always linear — a straight line in 2D, a hyperplane in higher dimensions.'},
+
+  // L11
+  {t:'w11', q:'In a confusion matrix, what does a False Positive represent?', opts:['A correct positive prediction','Predicting negative when true label is positive','Predicting positive when the true label is negative','A correct negative prediction'], ans:2, exp:'False Positive (FP) = model predicted positive, true label was negative. Type I error. Example: flagging a legitimate email as spam.'},
+  {t:'w11', q:'What is precision?', opts:['TP / (TP + FN)','TP / (TP + FP)','(TP + TN) / total','TN / (TN + FP)'], ans:1, exp:'Precision = TP / (TP + FP). Of all examples predicted as positive, what fraction were actually positive? High precision = few false alarms.'},
+  {t:'w11', q:'What is recall?', opts:['TP / (TP + FP)','TP / (TP + FN)','(TP + TN) / total','FP / (FP + TN)'], ans:1, exp:'Recall = TP / (TP + FN). Of all actual positives in the dataset, what fraction did the model find? High recall = few missed positives.'},
+  {t:'w11', q:'When is recall more important than precision?', opts:['When false positives are very costly','When you want to minimise false alarms','When missing a positive is very costly, e.g. cancer screening','When the dataset is balanced'], ans:2, exp:'Recall matters when false negatives are costly — missing a cancer diagnosis is worse than running an extra test. Prioritise recall in medical screening, fraud, and safety-critical systems.'},
+  {t:'w11', q:'What does the F1 score represent?', opts:['Average of accuracy and recall','Harmonic mean of precision and recall','Geometric mean of precision and AUC','Total correct predictions divided by total predictions'], ans:1, exp:'F1 = 2·(P·R)/(P+R). The harmonic mean penalises extreme imbalances between precision and recall, giving a single balanced metric.'},
+  {t:'w11', q:'What does a ROC-AUC of 0.5 indicate?', opts:['A perfect classifier','A good classifier','No better than random guessing','A classifier that always predicts negative'], ans:2, exp:'AUC = 0.5 means the model ranks positives vs negatives no better than random. AUC = 1.0 is perfect. AUC < 0.5 is worse than random — just flip the predictions.'},
+
+  // L12
+  {t:'w12', q:'What does a decision tree use to decide how to split data at each node?', opts:['Random feature selection','A metric like Gini impurity or entropy measuring class mixing','The correlation between features','Gradient descent'], ans:1, exp:'At each node the tree tries all possible splits and picks the one that most reduces impurity (Gini or entropy), creating purer child nodes.'},
+  {t:'w12', q:'What is Gini impurity?', opts:['A measure of how deep the tree is','A measure of class mixing at a node — 0 means perfectly pure','A regularisation technique','The accuracy of the split'], ans:1, exp:'Gini = 1 − Σpᵢ². At 0, all samples belong to one class. At maximum, classes are equally mixed. The tree picks splits that minimise Gini.'},
+  {t:'w12', q:'A decision tree with unlimited max_depth will likely:', opts:['Underfit the training data','Perfectly generalise to new data','Overfit — memorise the training data including noise','Produce the optimal model'], ans:2, exp:'Without depth limits, a tree creates splits for every training point. This memorises noise and produces terrible test performance (high variance).'},
+  {t:'w12', q:'What is the purpose of max_depth in a decision tree?', opts:['To speed up training','To limit tree complexity and prevent overfitting','To increase feature importance scores','To set the number of output classes'], ans:1, exp:'max_depth caps how many split levels the tree can make. Shallower trees → simpler boundary → less overfitting, but risk underfitting if too shallow.'},
+  {t:'w12', q:'What does feature_importances_ measure in a decision tree?', opts:['How many times a feature appears','How much each feature reduces impurity across all splits','The correlation between features and target','The number of splits using each feature'], ans:1, exp:'Feature importance = total impurity reduction weighted by samples affected by each feature\'s splits. Higher = more important. Values sum to 1.'},
+
+  // L13
+  {t:'w13', q:'What is bagging?', opts:['Removing irrelevant features','Training multiple models on random bootstrap samples and combining predictions','Pruning a decision tree','A regularisation technique'], ans:1, exp:'Bagging (Bootstrap Aggregating) trains many models, each on a random sample with replacement. Combining them reduces variance compared to any single model.'},
+  {t:'w13', q:'How does a Random Forest make a final classification prediction?', opts:['It uses the deepest tree','Majority vote across all trees','Average of all tree probability outputs','The tree with highest training accuracy'], ans:1, exp:'Each tree votes for a class. The majority-voted class wins. For regression, predictions are averaged instead.'},
+  {t:'w13', q:'Why does a Random Forest use a random subset of features at each split?', opts:['To reduce training time','To decorrelate trees — all trees using the same features would make the same mistakes','To reduce memory usage','sklearn requires it'], ans:1, exp:'If all trees used all features they\'d all focus on the same strong features and be correlated. Random subsets ensure diversity, making the ensemble more robust.'},
+  {t:'w13', q:'Increasing n_estimators in a Random Forest will:', opts:['Always increase overfitting','Always increase underfitting','Improve performance up to a point then plateau with diminishing returns','Decrease training accuracy'], ans:2, exp:'More trees = more stable predictions with diminishing returns. Unlike depth, adding more trees does not cause overfitting — the cost is only training time.'},
+  {t:'w13', q:'Why is a Random Forest almost always better than a single decision tree?', opts:['It trains faster','It uses more data','Ensembling reduces variance — individual tree errors cancel out','It requires fewer hyperparameters'], ans:2, exp:'A single tree is high-variance — small changes in data cause large changes in the tree. Averaging many diverse trees smooths this out, giving a much more stable and accurate model.'},
+
+  // L14
+  {t:'w14', q:'How does KNN classify a new data point?', opts:['It fits a line to the data','It finds the K nearest training points and takes a majority vote','It uses gradient descent to minimise loss','It builds a tree structure from training data'], ans:1, exp:'KNN stores all training data. For a new point, it computes distances to all training points, selects the K closest, and predicts the majority class among them.'},
+  {t:'w14', q:'What is the effect of setting K=1 in KNN?', opts:['The model underfits','The model is maximally regularised','The model memorises training data — high variance, overfitting','The model always predicts the majority class'], ans:2, exp:'K=1 classifies each point by its single nearest neighbour, perfectly fitting training data but extremely sensitive to noise. Very jagged, high-variance decision boundary.'},
+  {t:'w14', q:'Why is KNN called a "lazy learner"?', opts:['It is slow at predictions','There is no training step — all computation happens at prediction time','It requires less data','It converges slowly'], ans:1, exp:'KNN does nothing during "training" — it just stores data. All the computation (finding neighbours, voting) happens when predict() is called.'},
+  {t:'w14', q:'What is the curse of dimensionality as it affects KNN?', opts:['KNN breaks above 10 features','In high dimensions all points become approximately equidistant, making distance meaningless','KNN requires exponentially more data','The algorithm becomes too complex to implement'], ans:1, exp:'As dimensions grow, Euclidean distance loses discriminative power — every point is roughly the same distance from every other. KNN degrades because "nearest" stops being informative.'},
+  {t:'w14', q:'Which statement about increasing K in KNN is true?', opts:['Larger K produces a more jagged boundary','Larger K produces a smoother, less complex boundary','K has no effect on the decision boundary','Larger K always improves accuracy'], ans:1, exp:'Larger K = more neighbours consulted = smoother, simpler decision boundary = less variance. Small K overfits, large K underfits. Tune K with cross-validation.'},
+
+  // L15
+  {t:'w15', q:'What does SVM try to maximise?', opts:['The number of training points correctly classified','The margin — the distance between the decision boundary and the nearest points of each class','Training accuracy','The depth of the feature space'], ans:1, exp:'SVM finds the hyperplane that maximises the margin — the gap between the boundary and the closest points of each class. Larger margin → better generalisation.'},
+  {t:'w15', q:'What are support vectors?', opts:['All training data points','The features selected by the model','The training points closest to the decision boundary that define the margin','The dimensions of the feature space'], ans:2, exp:'Support vectors are the critical training points on the margin boundary. The decision boundary is entirely defined by these — removing all other training data would not change the model.'},
+  {t:'w15', q:'What does the kernel trick allow SVM to do?', opts:['Train faster on large datasets','Implicitly map data to a higher-dimensional space where it becomes linearly separable without computing the transformation directly','Remove the need for hyperparameter tuning','Use gradient descent'], ans:1, exp:'The kernel trick computes dot products in a high-dimensional space without the explicit transformation. This lets SVM fit non-linear boundaries without the computational cost.'},
+  {t:'w15', q:'A high C value in SVM means:', opts:['Wide margin, more misclassifications allowed','Narrow margin, fewer misclassifications allowed, risk of overfitting','Stronger regularisation','The model ignores outliers'], ans:1, exp:'High C penalises misclassification heavily, forcing the boundary to correctly classify most training points even at the cost of a narrow margin. This can overfit. Low C allows some errors for a wider, more general margin.'},
+  {t:'w15', q:'Which SVM kernel is most commonly used for non-linearly separable data?', opts:['Linear kernel','Polynomial kernel','RBF (Radial Basis Function) kernel','Sigmoid kernel'], ans:2, exp:'The RBF (Gaussian) kernel measures similarity by distance between points and creates flexible curved boundaries. It is the default choice for non-linear SVM problems.'},
+
+  // L16
+  {t:'w16', q:'What is k-fold cross-validation?', opts:['Splitting data into k random subsets and training k separate models','Dividing data into k folds, training on k-1 and testing on the held-out fold, repeating k times','Training on k% of data','A technique for choosing the number of classes'], ans:1, exp:'K-fold CV rotates which fold is the test set — each of the k folds serves as the test set once. The k scores are averaged for a reliable performance estimate.'},
+  {t:'w16', q:'Why should preprocessing be inside the cross-validation loop?', opts:['For computational efficiency','To prevent data leakage — the scaler must not learn from test fold data','sklearn requires it','It reduces training time'], ans:1, exp:'Fitting a scaler on the full dataset before CV lets test-fold information leak into training (look-ahead bias). Use a Pipeline to ensure the scaler fits only on each training fold.'},
+  {t:'w16', q:'What does GridSearchCV do?', opts:['Trains a grid of neural networks','Exhaustively tries all combinations of hyperparameters using cross-validation to find the best','Visualises model performance','Randomly selects hyperparameters'], ans:1, exp:'GridSearchCV takes a parameter grid, trains the model for every combination using CV, and returns the best-performing configuration and its score.'},
+  {t:'w16', q:'What is stratified k-fold cross-validation?', opts:['K-fold applied only to stratified samples','K-fold where each fold maintains the same class proportion as the full dataset','K-fold with a fixed random seed','K-fold where K equals the number of classes'], ans:1, exp:'Stratified folds preserve the class ratio in every fold. This is crucial for imbalanced datasets — without it some folds might have no minority class examples at all.'},
+  {t:'w16', q:'What is the purpose of a sklearn Pipeline?', opts:['To visualise the model architecture','To chain preprocessing steps and a model so they are fitted and applied together, preventing leakage','To run multiple models in parallel','To cache training results'], ans:1, exp:'Pipeline([(\'scaler\', StandardScaler()), (\'model\', SVC())]) ensures the scaler is fitted on training data only inside CV. It makes the workflow clean and leak-free.'},
 ];
 
 const FLASHCARDS = [
@@ -1141,6 +1570,57 @@ const FLASHCARDS = [
   {t:'w8', front:'What is a latent factor?', back:'A hidden, unobserved variable that drives correlations between observed variables. E.g. language aptitude drives French and Spanish scores.'},
   {t:'w8', front:'Why standardise before PCA?', back:'Variance is scale-dependent. Features with larger scales dominate the principal directions purely due to scale, not information content.'},
   {t:'w8', front:'On which data do you fit PCA?', back:'Training data only. Fitting on the full dataset leaks test information (look-ahead bias). Transform both train and test with the same fitted PCA.'},
+  // L9
+  {t:'w9', front:'What is classification?', back:'A supervised learning task that predicts a discrete class label (e.g. Spam/Not Spam, 0–9) rather than a continuous number.'},
+  {t:'w9', front:'What is a decision boundary?', back:'A line, curve, or hyperplane separating classes in feature space. Points on each side are assigned to different classes.'},
+  {t:'w9', front:'Binary vs multiclass classification?', back:'Binary: exactly 2 classes (positive/negative).\nMulticlass: 3 or more classes. Needs special strategies — OvR or softmax.'},
+  {t:'w9', front:'What is class imbalance?', back:'When one class has far more examples than another (e.g. 99% legitimate, 1% fraud). Makes accuracy misleading — use precision, recall, F1.'},
+  {t:'w9', front:'Name 3 real-world classification tasks', back:'1. Spam detection\n2. Fraud detection\n3. Medical diagnosis (disease / healthy)'},
+  // L10
+  {t:'w10', front:'What is the sigmoid function?', back:'σ(z) = 1 / (1 + e^−z). Maps any real number to (0, 1). Used in logistic regression to output a probability.'},
+  {t:'w10', front:'Default decision threshold in logistic regression?', back:'0.5. If P(y=1) ≥ 0.5 → class 1. Lower it to catch more positives (recall). Raise it for fewer false alarms (precision).'},
+  {t:'w10', front:'What is log loss (binary cross-entropy)?', back:'Loss = −(1/N) Σ [y·log(ŷ) + (1−y)·log(1−ŷ)]. Heavily penalises confident wrong predictions.'},
+  {t:'w10', front:'What does C control in LogisticRegression?', back:'C = 1/λ (inverse regularisation). Small C = strong regularisation = simpler model. Large C = weak regularisation, risk of overfitting.'},
+  {t:'w10', front:'What type of boundary does logistic regression produce?', back:'Always linear — a straight line in 2D, a hyperplane in higher dimensions. The sigmoid shapes the output, not the boundary.'},
+  {t:'w10', front:'predict() vs predict_proba()', back:'predict() → hard class labels (0 or 1).\npredict_proba() → probability per class — needed for threshold tuning and ROC curves.'},
+  // L11
+  {t:'w11', front:'What are TP, FP, TN, FN?', back:'TP = correct positive\nFP = predicted positive, actually negative (false alarm)\nTN = correct negative\nFN = predicted negative, actually positive (missed)'},
+  {t:'w11', front:'Precision formula and meaning?', back:'Precision = TP / (TP + FP).\nOf all predicted positives, how many were actually positive? High precision = few false alarms.'},
+  {t:'w11', front:'Recall formula and meaning?', back:'Recall = TP / (TP + FN).\nOf all actual positives, how many did the model find? High recall = few missed cases.'},
+  {t:'w11', front:'What is F1 score?', back:'F1 = 2 × (Precision × Recall) / (Precision + Recall). Harmonic mean — balances both metrics into one number.'},
+  {t:'w11', front:'Precision vs recall tradeoff?', back:'Lower threshold → higher recall, lower precision (catch more, more false alarms).\nHigher threshold → higher precision, lower recall.'},
+  {t:'w11', front:'What does ROC-AUC measure?', back:'The model\'s ability to rank positives above negatives across all thresholds.\nAUC=1.0 perfect · AUC=0.5 random · AUC<0.5 worse than random.'},
+  // L12
+  {t:'w12', front:'What is Gini impurity?', back:'Gini = 1 − Σpᵢ². Measures class mixing at a node. 0 = perfectly pure (one class only). Decision trees pick splits that minimise Gini.'},
+  {t:'w12', front:'What is information gain?', back:'The reduction in entropy after a split. Used as an alternative to Gini. Higher information gain = better split.'},
+  {t:'w12', front:'What causes overfitting in decision trees?', back:'Growing too deep — the tree creates splits for individual training points and memorises noise. Fix: limit max_depth, min_samples_split.'},
+  {t:'w12', front:'What does max_depth control?', back:'The maximum number of split levels. Shallower = simpler = less overfitting. Too shallow = underfitting.'},
+  {t:'w12', front:'What does feature_importances_ tell you?', back:'Total impurity reduction each feature contributes across all splits, weighted by samples. Higher = more important. Values sum to 1.'},
+  // L13
+  {t:'w13', front:'What is bagging?', back:'Bootstrap Aggregating: train many models on random samples (with replacement) and combine their predictions. Reduces variance.'},
+  {t:'w13', front:'How does a Random Forest classify?', back:'Each tree votes for a class. Majority vote = final prediction. For regression: average of all tree outputs.'},
+  {t:'w13', front:'Why random feature subsets in Random Forests?', back:'To decorrelate trees. If all trees used all features they\'d make the same mistakes. Diverse trees = better ensemble.'},
+  {t:'w13', front:'What does n_estimators control?', back:'Number of trees. More = more stable predictions with diminishing returns. Unlike depth, more trees do NOT cause overfitting.'},
+  {t:'w13', front:'Random Forest vs single Decision Tree?', back:'Random Forest almost always wins — ensembling hundreds of trees reduces variance massively. Single trees are fast but unstable.'},
+  // L14
+  {t:'w14', front:'How does KNN classify a new point?', back:'Find K nearest training points by distance. Majority class among those K neighbours = prediction.'},
+  {t:'w14', front:'Effect of K=1 in KNN?', back:'Model memorises training data — predicts by its single nearest neighbour. Very sensitive to noise. High variance (overfitting).'},
+  {t:'w14', front:'Why is KNN a lazy learner?', back:'No training step. KNN stores all data and does all computation (distances, voting) at prediction time.'},
+  {t:'w14', front:'What is the curse of dimensionality?', back:'In high dimensions, all points become approximately equidistant. Distance loses meaning, making KNN\'s neighbour concept unreliable.'},
+  {t:'w14', front:'How does K affect the decision boundary?', back:'Small K = complex, jagged boundary (overfit).\nLarge K = smooth, simple boundary (underfit).\nTune K via cross-validation.'},
+  // L15
+  {t:'w15', front:'What does SVM maximise?', back:'The margin — the perpendicular distance between the decision boundary and the nearest training points (support vectors) of each class.'},
+  {t:'w15', front:'What are support vectors?', back:'The training points on the margin boundary that define the decision boundary. Removing all other training data would not change the model.'},
+  {t:'w15', front:'What is the kernel trick?', back:'Computing dot products in a high-dimensional space without explicitly transforming the data. Allows SVM to fit non-linear boundaries efficiently.'},
+  {t:'w15', front:'What does C control in SVM?', back:'Misclassification penalty. High C = narrow margin, few errors, risk of overfitting.\nLow C = wide margin, more errors allowed, simpler model.'},
+  {t:'w15', front:'What is the RBF kernel?', back:'Radial Basis Function — measures similarity by distance. Creates flexible curved boundaries. Default kernel for non-linear SVM.'},
+  // L16
+  {t:'w16', front:'What is k-fold cross-validation?', back:'Split data into k folds. Train on k-1, test on the remaining fold. Rotate k times. Average the k scores for a reliable estimate.'},
+  {t:'w16', front:'Why put preprocessing inside CV?', back:'To prevent data leakage. Fitting a scaler on the full dataset lets test-fold information leak into training (look-ahead bias). Use Pipeline.'},
+  {t:'w16', front:'What is GridSearchCV?', back:'Tries every combination of hyperparameters from a grid using CV. Returns the best-performing configuration.'},
+  {t:'w16', front:'What is stratified k-fold?', back:'K-fold that preserves the class ratio in every fold. Essential for imbalanced datasets — ensures each fold has representative class proportions.'},
+  {t:'w16', front:'What is a sklearn Pipeline?', back:'Pipeline([(\'scaler\', StandardScaler()), (\'model\', SVC())]). Chains preprocessing and model. Prevents leakage by fitting the scaler inside CV.'},
+  {t:'w16', front:'GridSearchCV vs RandomizedSearchCV?', back:'GridSearchCV: tries all combinations (exhaustive).\nRandomizedSearchCV: tries random combinations — faster, nearly as good for large grids.'},
 ];
 
 // ===================== STATE =====================
@@ -1165,11 +1645,10 @@ function nav(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
-  document.getElementById('main').scrollTo(0, 0);
-  closeSidebar();
+  document.getElementById('main').scrollTop = 0;
   const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
   if (navEl) navEl.classList.add('active');
-  if (['w1','w2','w3','w4','w5','w6','w7','w8'].includes(page)) {
+  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','w10','w11','w12','w13','w14','w15','w16'].includes(page)) {
     markVisited(page);
     renderInlineQuiz(page);
   }
@@ -1187,9 +1666,9 @@ function markVisited(w) {
 }
 
 function updateGlobalProgress() {
-  const pct = Math.round((visited.length / 8) * 100);
+  const pct = Math.round((visited.length / 16) * 100);
   document.getElementById('global-progress-bar').style.width = pct + '%';
-  document.getElementById('global-progress-label').textContent = `${visited.length} of 8 topics visited`;
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 16 lessons visited`;
 }
 
 // ===================== INLINE QUIZ =====================
