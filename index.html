@@ -28,6 +28,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   width: 260px; min-width: 260px; background: var(--sidebar-bg);
   display: flex; flex-direction: column;
   border-right: 1px solid var(--card-border); overflow-y: auto;
+  height: 100vh; min-height: 0;
 }
 .sidebar-header { padding: 20px 16px 12px; }
 .sidebar-header h1 { font-size: 1.1rem; color: var(--accent); font-weight: 700; }
@@ -970,39 +971,96 @@ X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
   <p class="subtitle">Predicting categories, not numbers — the other half of supervised learning.</p>
 
   <h3>Classification vs Regression</h3>
+  <p>Both are supervised learning — both use labeled training data. The difference is the output type.</p>
   <table>
-    <tr><th>Task</th><th>Output</th><th>Example</th></tr>
-    <tr><td><strong>Regression</strong></td><td>Continuous number</td><td>Predict house price: £342,000</td></tr>
-    <tr><td><strong>Classification</strong></td><td>Discrete class label</td><td>Predict email: Spam / Not Spam</td></tr>
+    <tr><th>Task</th><th>Output</th><th>Example</th><th>Test to tell apart</th></tr>
+    <tr><td><strong>Regression</strong></td><td>Continuous number</td><td>Predict house price: £342,000</td><td>Is one prediction "between" two others?</td></tr>
+    <tr><td><strong>Classification</strong></td><td>Discrete class label</td><td>Predict email: Spam / Not Spam</td><td>"Spam" is not between "Not Spam" and "Fraud"</td></tr>
   </table>
 
   <h3>Binary vs Multiclass</h3>
   <div class="card-grid">
-    <div class="card"><div class="key-concept"><div class="label">Binary</div><p>Exactly 2 classes — one positive, one negative. E.g. Fraud / Not Fraud.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Binary</div><p>Exactly 2 classes — one positive, one negative. E.g. Fraud / Not Fraud, Disease / Healthy.</p></div></div>
     <div class="card"><div class="key-concept"><div class="label">Multiclass</div><p>3 or more classes. E.g. Handwritten digit: 0–9. Needs special strategies (One-vs-Rest, Softmax).</p></div></div>
   </div>
 
   <h3>The Decision Boundary</h3>
-  <p>A classifier learns a boundary in feature space. Points on one side are predicted as class A, the other as class B. The shape depends on the algorithm.</p>
+  <p>Every classifier, no matter how complex, draws a <strong>decision boundary</strong> in feature space — a line or surface that separates classes. Points on one side are predicted as class A, the other as class B.</p>
   <div class="card">
     <ul>
       <li><strong>Linear boundary</strong> — Logistic Regression, linear SVM: a straight line or hyperplane</li>
-      <li><strong>Non-linear boundary</strong> — Decision Trees, Random Forests, SVM (RBF): curves and complex shapes</li>
+      <li><strong>Non-linear boundary</strong> — Decision Trees, KNN, SVM (RBF): curves and complex shapes</li>
     </ul>
+    <p style="margin:10px 0 0; font-size:0.82rem">Even the simplest classifier — "always predict Class A" — has a boundary. It's just infinitely far away.</p>
   </div>
+
+  <h3>Two Families of Classifiers</h3>
+  <p>The most important conceptual split in classification. Both families produce decision boundaries, but they get there differently.</p>
+  <div class="card-grid">
+    <div class="card">
+      <h4 style="margin-top:0">Discriminative Models</h4>
+      <p>Learn the boundary <strong>directly</strong>. Model P(y|x) — the probability of a class given the features.</p>
+      <p><em>"Where is the line between the classes?"</em></p>
+      <ul>
+        <li>Cannot generate new data</li>
+        <li>Makes fewer assumptions</li>
+        <li>Better with lots of data</li>
+        <li>More sensitive to outliers</li>
+      </ul>
+      <p style="margin-top:10px"><span class="badge badge-blue">KNN</span><span class="badge badge-blue">Logistic Regression</span><span class="badge badge-blue">Decision Trees</span></p>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">Generative Models</h4>
+      <p>Model what each class <strong>looks like</strong> first. Learn P(x|y), then derive P(y|x) via Bayes' Rule.</p>
+      <p><em>"Which class does this point most resemble?"</em></p>
+      <ul>
+        <li>Can generate new synthetic data</li>
+        <li>Makes more assumptions (e.g. independence)</li>
+        <li>Works better with less data</li>
+        <li>More robust to outliers</li>
+      </ul>
+      <p style="margin-top:10px"><span class="badge badge-purple">Naive Bayes</span><span class="badge badge-purple">Gaussian Discriminant Analysis</span></p>
+    </div>
+  </div>
+
+  <h3>Discriminative vs Generative — Key Comparisons</h3>
+  <table>
+    <tr><th>Question</th><th>Winner</th><th>Why</th></tr>
+    <tr><td>Which needs more data?</td><td><strong>Discriminative</strong></td><td>No built-in assumptions to fill the gaps — learns purely from data</td></tr>
+    <tr><td>Which is more affected by outliers?</td><td><strong>Discriminative</strong></td><td>Outliers directly shift the decision boundary</td></tr>
+    <tr><td>Which needs more maths upfront?</td><td><strong>Generative</strong></td><td>Requires Bayes' Rule, distribution fitting, normalisation</td></tr>
+    <tr><td>Which tends to overfit more?</td><td><strong>Discriminative</strong></td><td>More flexible boundary with fewer constraints</td></tr>
+  </table>
+
+  <h3>Bayes' Rule — The Heart of Generative Models</h3>
+  <div class="card" style="text-align:center; padding:20px">
+    <div style="font-size:1.1rem; color:var(--accent); font-family:monospace; margin-bottom:10px">P(y|x) = P(x|y) × P(y) / P(x)</div>
+    <p style="margin:0; font-size:0.82rem">Posterior ∝ Likelihood × Prior. Since P(x) is the same for all classes, we only need the numerator to find the most probable class.</p>
+  </div>
+  <table>
+    <tr><th>Term</th><th>Name</th><th>Meaning</th></tr>
+    <tr><td><code>P(y|x)</code></td><td>Posterior</td><td>Probability of class y given data x — what we want</td></tr>
+    <tr><td><code>P(x|y)</code></td><td>Likelihood</td><td>How probable is x if the true class is y? Learned from training data</td></tr>
+    <tr><td><code>P(y)</code></td><td>Prior</td><td>How common is class y overall? Estimated from class frequencies</td></tr>
+    <tr><td><code>P(x)</code></td><td>Normalisation</td><td>Makes probabilities sum to 1 — same for all classes, so often ignored</td></tr>
+  </table>
 
   <h3>Real-World Classification Tasks</h3>
   <table>
-    <tr><th>Problem</th><th>Classes</th><th>Key Features</th></tr>
-    <tr><td>Email spam detection</td><td>Spam / Not Spam</td><td>Word frequencies, sender</td></tr>
-    <tr><td>Fraud detection</td><td>Fraud / Legitimate</td><td>Amount, location, time</td></tr>
-    <tr><td>Medical diagnosis</td><td>Disease / Healthy</td><td>Test results, age, vitals</td></tr>
-    <tr><td>Digit recognition</td><td>0, 1, 2 … 9</td><td>Pixel intensities</td></tr>
-    <tr><td>Customer churn</td><td>Churns / Stays</td><td>Usage, tenure, complaints</td></tr>
+    <tr><th>Problem</th><th>Classes</th><th>Key Features</th><th>Type</th></tr>
+    <tr><td>Email spam detection</td><td>Spam / Not Spam</td><td>Word frequencies, sender</td><td>Binary</td></tr>
+    <tr><td>Fraud detection</td><td>Fraud / Legitimate</td><td>Amount, location, time</td><td>Binary</td></tr>
+    <tr><td>Medical diagnosis</td><td>Disease / Healthy</td><td>Test results, age, vitals</td><td>Binary</td></tr>
+    <tr><td>Digit recognition</td><td>0, 1, 2 … 9</td><td>Pixel intensities</td><td>Multiclass</td></tr>
+    <tr><td>Customer churn</td><td>Churns / Stays</td><td>Usage, tenure, complaints</td><td>Binary</td></tr>
   </table>
 
-  <h3>Class Imbalance</h3>
-  <p>Real classification problems are rarely balanced. Fraud is 0.1% of transactions. A model that always predicts "not fraud" gets 99.9% accuracy — and is completely useless.</p>
+  <h3>Class Imbalance — Why Enough Data Per Class Matters</h3>
+  <p>Real classification problems are rarely balanced. A class with very few examples means the model learns the quirks of those specific examples, not the general pattern.</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">The Problem</div><p>Fraud is 0.1% of transactions. A model that always predicts "not fraud" gets 99.9% accuracy — and is completely useless. It has learned nothing about fraud.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">The Fix</div><p>Use stratify=y when splitting, use precision/recall/F1 metrics, consider oversampling the minority class or lowering the decision threshold.</p></div></div>
+  </div>
   <div class="alert alert-warn">⚠️ Never rely on accuracy alone for imbalanced data. Use precision, recall, and F1 instead — covered in L11.</div>
 
   <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w9"></div></div>
@@ -1223,37 +1281,126 @@ rf.<span class="fn">score</span>(X_test, y_test)
   <h2>📍 K-Nearest Neighbours (KNN)</h2>
   <p class="subtitle">No training, no model — just memory and distance.</p>
 
+  <div class="alert alert-info">💡 KNN is a <strong>discriminative classifier</strong> — it directly models P(y|x) by looking at the class labels of nearby points.</div>
+
   <h3>How KNN Works</h3>
   <p>KNN is the simplest classifier conceptually: to classify a new point, <strong>find its K nearest training points and take a majority vote</strong>.</p>
   <div class="card">
     <div class="key-concept"><div class="label">Step by step</div>
-      <p>1. Compute the distance from the new point to all training points.<br>
-         2. Select the K closest neighbours.<br>
-         3. Predict the majority class among those K neighbours.</p>
+      <p>1. Compute the distance from the new point to <em>every</em> training point.<br>
+         2. Sort all training points by distance — closest first.<br>
+         3. Select the K closest neighbours.<br>
+         4. Predict the majority class among those K neighbours.</p>
+    </div>
+  </div>
+  <p>No model is built. No parameters are learned. The training data <strong>is</strong> the model — fit() just stores it.</p>
+
+  <h3>KNN Gives You Probabilities, Not Just a Label</h3>
+  <p>The vote counts translate directly into class probabilities. For k=5 and neighbours [A, A, C, B, C]:</p>
+  <table>
+    <tr><th>Class</th><th>Votes</th><th>Probability</th></tr>
+    <tr><td>A</td><td>2</td><td>2/5 = 0.40</td></tr>
+    <tr><td>B</td><td>1</td><td>1/5 = 0.20</td></tr>
+    <tr><td>C</td><td>2</td><td>2/5 = 0.40</td></tr>
+  </table>
+  <p>A 40/40/20 split tells you the model is uncertain between A and C. A 5/0/0 split tells you it is completely confident. Use <code>predict_proba()</code> to access these.</p>
+
+  <h3>Distance Metrics</h3>
+  <p>KNN needs a way to measure "closeness" between points. The three main options:</p>
+  <table>
+    <tr><th>Metric</th><th>Formula</th><th>Intuition</th></tr>
+    <tr><td><strong>Euclidean</strong></td><td>√Σ(xᵢ − yᵢ)²</td><td>Straight-line distance — most common, default</td></tr>
+    <tr><td><strong>Manhattan</strong></td><td>Σ|xᵢ − yᵢ|</td><td>Grid-travel distance, like city blocks — better when data has many dimensions or outliers</td></tr>
+    <tr><td><strong>Minkowski</strong></td><td>(Σ|xᵢ−yᵢ|ᵖ)^(1/p)</td><td>Generalisation — Euclidean when p=2, Manhattan when p=1</td></tr>
+  </table>
+
+  <h3>⚠️ Critical: Feature Scaling is Mandatory</h3>
+  <p>KNN decides "nearest" purely by distance. Without scaling, large-range features completely drown out small-range ones.</p>
+  <div class="card">
+    <h4 style="margin-top:0">Example: Age (0–80) vs Income (0–500,000)</h4>
+    <p>Distance from Person A (age=25, income=30,000) to Person B (age=26, income=80,000):</p>
+    <p style="font-family:monospace; color:var(--accent)">√((26−25)² + (80000−30000)²) = √(1 + 2,500,000,000) ≈ 50,000</p>
+    <p>The age difference of 1 year contributes almost <strong>nothing</strong>. Income dominates entirely. KNN behaves as if age doesn't exist.</p>
+    <p style="margin-bottom:0"><strong>After scaling to [0,1]:</strong> age=0.31 vs 0.33, income=0.06 vs 0.16 — both features contribute fairly.</p>
+  </div>
+  <div class="alert alert-warn">⚠️ Always normalise features to [0,1] with MinMaxScaler or standardise with StandardScaler before using KNN. No exceptions.</div>
+
+  <h3>Choosing K — The Bias-Variance Tradeoff</h3>
+  <p>K is a <strong>hyperparameter</strong> — you set it manually before training. It controls the fundamental character of the model.</p>
+  <table>
+    <tr><th>K value</th><th>Bias</th><th>Variance</th><th>Boundary</th><th>Risk</th></tr>
+    <tr><td>K = 1</td><td>Very low</td><td>Very high</td><td>Jagged, wraps every point</td><td>Overfitting</td></tr>
+    <tr><td>K = 5–20</td><td>Low–Moderate</td><td>Moderate</td><td>Smooth — usually best range</td><td>Sweet spot</td></tr>
+    <tr><td>K = N (all)</td><td>Very high</td><td>Very low</td><td>Always predicts majority class</td><td>Underfitting</td></tr>
+  </table>
+  <p>Tune K with cross-validation. Use odd K for binary problems to avoid ties.</p>
+
+  <h3>The K=1 Training Accuracy Trap</h3>
+  <div class="card">
+    <div class="key-concept"><div class="label">Warning: 100% training accuracy is meaningless with K=1</div>
+      <p>When K=1, every training point classifies itself — its nearest neighbour is itself (distance = 0). This guarantees 100% accuracy on training data regardless of how good or bad the model is.</p>
+      <p style="margin-bottom:0">This is the definition of overfitting. Always evaluate on a <strong>held-out test set</strong> the model has never seen.</p>
     </div>
   </div>
 
-  <h3>Choosing K</h3>
-  <table>
-    <tr><th>K value</th><th>Bias</th><th>Variance</th><th>Boundary</th></tr>
-    <tr><td>K = 1</td><td>Very low</td><td>Very high</td><td>Jagged — memorises training data</td></tr>
-    <tr><td>K = 5–20</td><td>Low</td><td>Moderate</td><td>Smooth — usually best range</td></tr>
-    <tr><td>K = N (all)</td><td>Very high</td><td>Very low</td><td>Always predicts majority class</td></tr>
-  </table>
-  <p>Tune K with cross-validation. Odd K avoids ties in binary classification.</p>
-
   <h3>Why KNN is a "Lazy Learner"</h3>
-  <p>There is <strong>no training step</strong>. KNN simply stores all training data. All computation — finding neighbours, voting — happens at prediction time. Training is instant; prediction is slow on large datasets.</p>
+  <p>There is <strong>no training step</strong>. KNN simply stores all training data. All computation — finding neighbours, voting — happens at prediction time. This means:</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Training</div><p>Instant — just store the data. fit() does nothing but memorise.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Prediction</div><p>Slow for large datasets — must compute distance to every training point for each new input.</p></div></div>
+  </div>
 
   <h3>The Curse of Dimensionality</h3>
-  <p>As dimensions increase, all points become roughly equidistant. The concept of "nearest neighbour" loses meaning — every point is equally far from every other. KNN degrades in high-dimensional spaces.</p>
-  <div class="alert alert-warn">⚠️ Always scale your features before KNN. Euclidean distance is sensitive to scale — a salary feature (thousands) will dominate a binary feature (0/1).</div>
+  <p>KNN degrades badly as the number of features grows. Here's why:</p>
+  <div class="card">
+    <p>In high-dimensional space, all points become approximately the same distance from each other. The maximum and minimum distances converge:</p>
+    <table style="margin:10px 0">
+      <tr><th>Dimensions</th><th>Nearest neighbour distance</th><th>Farthest neighbour distance</th><th>Result</th></tr>
+      <tr><td>2D</td><td>0.1</td><td>9.9</td><td>"Nearest" is meaningful</td></tr>
+      <tr><td>100D</td><td>9.8</td><td>10.0</td><td>"Nearest" is meaningless</td></tr>
+    </table>
+    <p style="margin-bottom:0">KNN's entire logic — nearby points share the same class — breaks down when "nearby" stops being informative.</p>
+  </div>
+  <p><strong>Fix:</strong> Use feature selection or PCA to reduce dimensions before applying KNN.</p>
 
+  <h3>KNN: Strengths and Limitations</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4 style="margin-top:0; color:var(--green)">Strengths</h4>
+      <ul>
+        <li>Simple and intuitive — no training needed</li>
+        <li>Produces probability estimates naturally</li>
+        <li>Works well when classes are well-separated</li>
+        <li>Non-linear decision boundary automatically</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0; color:var(--red)">Limitations</h4>
+      <ul>
+        <li>Slow at prediction time on large datasets</li>
+        <li>Fails in high dimensions (curse of dimensionality)</li>
+        <li>Sensitive to irrelevant/unscaled features</li>
+        <li>Poor with discrete/categorical features</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>KNN in sklearn</h3>
   <div class="code-block"><pre><span class="kw">from</span> sklearn.neighbors <span class="kw">import</span> KNeighborsClassifier
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> MinMaxScaler
 
-knn = <span class="fn">KNeighborsClassifier</span>(n_neighbors=<span class="nu">7</span>)
-knn.<span class="fn">fit</span>(X_train, y_train)
-knn.<span class="fn">score</span>(X_test, y_test)</pre></div>
+<span class="cm"># Step 1: Scale features (mandatory)</span>
+scaler = <span class="fn">MinMaxScaler</span>()
+X_train_scaled = scaler.<span class="fn">fit_transform</span>(X_train)
+X_test_scaled  = scaler.<span class="fn">transform</span>(X_test)
+
+<span class="cm"># Step 2: Fit and predict</span>
+knn = <span class="fn">KNeighborsClassifier</span>(n_neighbors=<span class="nu">7</span>, metric=<span class="st">'euclidean'</span>)
+knn.<span class="fn">fit</span>(X_train_scaled, y_train)
+
+predictions  = knn.<span class="fn">predict</span>(X_test_scaled)       <span class="cm"># hard labels</span>
+probabilities = knn.<span class="fn">predict_proba</span>(X_test_scaled)  <span class="cm"># probability per class</span>
+score = knn.<span class="fn">score</span>(X_test_scaled, y_test)         <span class="cm"># accuracy</span></pre></div>
 
   <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w14"></div></div>
   <div class="btn-row">
@@ -1465,6 +1612,11 @@ const ALL_QUESTIONS = [
 
   // L9
   {t:'w9', q:'What is the key difference between classification and regression?', opts:['Classification uses more data','Classification predicts a discrete class label; regression predicts a continuous number','Regression is more accurate','Classification cannot use sklearn'], ans:1, exp:'Both are supervised learning, but regression predicts numbers (e.g. house price) while classification predicts categories (e.g. spam/not spam).'},
+  {t:'w9', q:'What is the key strategic difference between discriminative and generative classifiers?', opts:['Discriminative models use more data','Discriminative models learn the boundary directly; generative models learn what each class looks like first','Generative models are always more accurate','Discriminative models use Bayes Rule'], ans:1, exp:'Discriminative models model P(y|x) directly — they focus on the boundary. Generative models model P(x,y) then derive P(y|x) via Bayes Rule — they model the full distribution of each class.'},
+  {t:'w9', q:'Which type of classifier can generate new synthetic data?', opts:['Discriminative only','Generative only','Both can generate data','Neither can generate data'], ans:1, exp:'Generative classifiers model P(x|y) — the distribution of features for each class. This lets them sample new data points. Discriminative classifiers only model the boundary and cannot generate data.'},
+  {t:'w9', q:'Which classifier family tends to need more training data?', opts:['Generative — more complex maths','Discriminative — fewer built-in assumptions','Both need the same amount','Neither needs training data'], ans:1, exp:'Discriminative models make fewer assumptions and learn purely from data. Generative models have built-in assumptions (e.g. Gaussian distributions) that act like extra knowledge, helping when data is scarce.'},
+  {t:'w9', q:'In Bayes Rule P(y|x) = P(x|y)P(y)/P(x), what is P(y) called?', opts:['Posterior','Likelihood','Prior','Normalisation'], ans:2, exp:'P(y) is the prior — the probability of class y before seeing any data. It is estimated from class frequencies in the training set.'},
+  {t:'w9', q:'What does "data follows a Gaussian" mean?', opts:['The data is always between 0 and 1','The data is distributed symmetrically around a mean with fewer points as you move further away','The data has no outliers','All features have the same scale'], ans:1, exp:'A Gaussian (normal/bell curve) distribution is tall in the middle and tapers symmetrically on both sides. Completely described by just two numbers: mean (μ) and standard deviation (σ).'},
   {t:'w9', q:'What is a decision boundary?', opts:['The edge of the training dataset','The line or surface that separates classes in feature space','The maximum depth of a decision tree','The threshold used to evaluate accuracy'], ans:1, exp:'A decision boundary divides feature space into regions — each region is assigned to one class. Its shape depends on the algorithm.'},
   {t:'w9', q:'A dataset where 98% of examples are class A and 2% are class B is called:', opts:['Overfitted','Class imbalanced','Underfitted','Multiclass'], ans:1, exp:'Class imbalance occurs when one class dominates the dataset. A model predicting all class A achieves 98% accuracy while completely missing class B.'},
   {t:'w9', q:'Which of the following is a classification task?', opts:['Predicting tomorrow\'s temperature','Predicting annual rainfall in mm','Predicting whether an email is spam','Predicting a house sale price'], ans:2, exp:'Spam detection predicts a category (Spam / Not Spam). The others predict continuous numbers — those are regression tasks.'},
@@ -1507,6 +1659,10 @@ const ALL_QUESTIONS = [
   {t:'w14', q:'Why is KNN called a "lazy learner"?', opts:['It is slow at predictions','There is no training step — all computation happens at prediction time','It requires less data','It converges slowly'], ans:1, exp:'KNN does nothing during "training" — it just stores data. All the computation (finding neighbours, voting) happens when predict() is called.'},
   {t:'w14', q:'What is the curse of dimensionality as it affects KNN?', opts:['KNN breaks above 10 features','In high dimensions all points become approximately equidistant, making distance meaningless','KNN requires exponentially more data','The algorithm becomes too complex to implement'], ans:1, exp:'As dimensions grow, Euclidean distance loses discriminative power — every point is roughly the same distance from every other. KNN degrades because "nearest" stops being informative.'},
   {t:'w14', q:'Which statement about increasing K in KNN is true?', opts:['Larger K produces a more jagged boundary','Larger K produces a smoother, less complex boundary','K has no effect on the decision boundary','Larger K always improves accuracy'], ans:1, exp:'Larger K = more neighbours consulted = smoother, simpler decision boundary = less variance. Small K overfits, large K underfits. Tune K with cross-validation.'},
+  {t:'w14', q:'You have features: age (0-80) and income (0-500,000). You run KNN without scaling. What goes wrong?', opts:['Age dominates all distance calculations','Income dominates all distance calculations — age becomes invisible','Both features contribute equally','The algorithm refuses to run'], ans:1, exp:'Without scaling, income differences (50,000) are 625x larger than age differences (80). Euclidean distance is dominated entirely by income. KNN effectively ignores age.'},
+  {t:'w14', q:'KNN with K=1 achieves 100% accuracy on training data. What does this tell you?', opts:['The model is perfect','This is meaningless — every point is its own nearest neighbour, so it always classifies itself correctly','The data is very easy to classify','K=1 is always the best choice'], ans:1, exp:'K=1 guarantees 100% training accuracy trivially — each point is its own nearest neighbour (distance=0). This is pure memorisation (overfitting). Always evaluate on a held-out test set.'},
+  {t:'w14', q:'Which distance metric is equivalent to travelling along a grid (like city blocks)?', opts:['Euclidean distance','Manhattan distance','Minkowski distance with p=2','Cosine distance'], ans:1, exp:'Manhattan distance = Σ|xᵢ−yᵢ|. Like navigating a grid — you can only move along axes, not diagonally. Euclidean is the straight-line (diagonal) distance.'},
+  {t:'w14', q:'How does KNN produce probability outputs rather than just hard class labels?', opts:['It uses a sigmoid function','The vote counts among K neighbours directly give class proportions','It runs logistic regression on the neighbours','It uses Bayes Rule'], ans:1, exp:'If 3 of K=5 neighbours are class A and 2 are class B, P(A)=0.6 and P(B)=0.4. The vote proportions are direct probability estimates. Use predict_proba() in sklearn.'},
 
   // L15
   {t:'w15', q:'What does SVM try to maximise?', opts:['The number of training points correctly classified','The margin — the distance between the decision boundary and the nearest points of each class','Training accuracy','The depth of the feature space'], ans:1, exp:'SVM finds the hyperplane that maximises the margin — the gap between the boundary and the closest points of each class. Larger margin → better generalisation.'},
@@ -1576,6 +1732,11 @@ const FLASHCARDS = [
   {t:'w9', front:'Binary vs multiclass classification?', back:'Binary: exactly 2 classes (positive/negative).\nMulticlass: 3 or more classes. Needs special strategies — OvR or softmax.'},
   {t:'w9', front:'What is class imbalance?', back:'When one class has far more examples than another (e.g. 99% legitimate, 1% fraud). Makes accuracy misleading — use precision, recall, F1.'},
   {t:'w9', front:'Name 3 real-world classification tasks', back:'1. Spam detection\n2. Fraud detection\n3. Medical diagnosis (disease / healthy)'},
+  {t:'w9', front:'Discriminative vs Generative — core difference?', back:'Discriminative: learns boundary directly. Models P(y|x).\nGenerative: models what each class looks like. Learns P(x|y), then derives P(y|x) via Bayes Rule.'},
+  {t:'w9', front:'Which needs more data — discriminative or generative?', back:'Discriminative. It makes fewer assumptions and learns purely from data. Generative models have built-in assumptions that fill gaps when data is scarce.'},
+  {t:'w9', front:'Which overfits more — discriminative or generative?', back:'Discriminative. More flexible boundary with fewer constraints. Generative models are naturally regularised by their assumptions (e.g. Gaussian shape).'},
+  {t:'w9', front:'What are the 3 terms of Bayes Rule?', back:'P(y|x) = P(x|y) × P(y) / P(x)\nPosterior = Likelihood × Prior / Normalisation\nWe only need the numerator to find the most probable class.'},
+  {t:'w9', front:'What does "data follows a Gaussian" mean?', back:'The data is distributed as a bell curve — symmetric around a mean, with fewer points further away. Completely described by mean (μ) and standard deviation (σ).'},
   // L10
   {t:'w10', front:'What is the sigmoid function?', back:'σ(z) = 1 / (1 + e^−z). Maps any real number to (0, 1). Used in logistic regression to output a probability.'},
   {t:'w10', front:'Default decision threshold in logistic regression?', back:'0.5. If P(y=1) ≥ 0.5 → class 1. Lower it to catch more positives (recall). Raise it for fewer false alarms (precision).'},
@@ -1608,6 +1769,11 @@ const FLASHCARDS = [
   {t:'w14', front:'Why is KNN a lazy learner?', back:'No training step. KNN stores all data and does all computation (distances, voting) at prediction time.'},
   {t:'w14', front:'What is the curse of dimensionality?', back:'In high dimensions, all points become approximately equidistant. Distance loses meaning, making KNN\'s neighbour concept unreliable.'},
   {t:'w14', front:'How does K affect the decision boundary?', back:'Small K = complex, jagged boundary (overfit).\nLarge K = smooth, simple boundary (underfit).\nTune K via cross-validation.'},
+  {t:'w14', front:'Why must you scale features before KNN?', back:'KNN is distance-based. Without scaling, large-range features dominate distance calculations entirely. A salary feature (0–500k) drowns out an age feature (0–80).'},
+  {t:'w14', front:'Why is 100% training accuracy with K=1 meaningless?', back:'K=1 classifies each training point by itself (distance=0). It always gets 100% — trivially. This is overfitting. Test accuracy on held-out data is what matters.'},
+  {t:'w14', front:'Euclidean vs Manhattan distance?', back:'Euclidean: straight-line distance √Σ(xᵢ−yᵢ)².\nManhattan: grid-travel distance Σ|xᵢ−yᵢ|.\nManhattan more robust to outliers in high dimensions.'},
+  {t:'w14', front:'How does KNN produce probabilities?', back:'Vote counts among K neighbours give class proportions directly. 3 of 5 neighbours are class A → P(A)=0.6. Use predict_proba() in sklearn.'},
+  {t:'w14', front:'Bias and variance in KNN?', back:'Small K → low bias, high variance (overfit). Large K → high bias, low variance (underfit). Bias = systematic error. Variance = sensitivity to training data.'},
   // L15
   {t:'w15', front:'What does SVM maximise?', back:'The margin — the perpendicular distance between the decision boundary and the nearest training points (support vectors) of each class.'},
   {t:'w15', front:'What are support vectors?', back:'The training points on the margin boundary that define the decision boundary. Removing all other training data would not change the model.'},
