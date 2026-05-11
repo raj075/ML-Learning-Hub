@@ -225,6 +225,7 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
   <div class="nav-item nav-item-chapter" onclick="toggleChapter('classification')"><span class="icon">📚</span> Supervised Classification<span class="chapter-arrow" id="arrow-classification">▾</span></div>
   <div class="nav-chapter-items" id="chapter-classification">
     <div class="nav-item nav-item-sub" onclick="nav('w9')"  id="nav-w9" ><span class="icon">🎯</span> L9: Intro to Classification<span class="check" id="check-w9"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('nb')"  id="nav-nb" ><span class="icon">🎲</span> L9b: Naive Bayes<span class="check" id="check-nb"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('w10')" id="nav-w10"><span class="icon">📈</span> L10: Logistic Regression<span class="check" id="check-w10"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('w11')" id="nav-w11"><span class="icon">📊</span> L11: Evaluation Metrics<span class="check" id="check-w11"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('w12')" id="nav-w12"><span class="icon">🌳</span> L12: Decision Trees<span class="check" id="check-w12"></span></div>
@@ -842,6 +843,7 @@ X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
         <div class="chip-chapter-label">📚 Supervised Classification</div>
         <div class="topic-chips">
           <div class="topic-chip" id="chip-w9"  onclick="toggleChip('w9')">L9: Intro</div>
+          <div class="topic-chip" id="chip-nb"  onclick="toggleChip('nb')">L9b: Naive Bayes</div>
           <div class="topic-chip" id="chip-w10" onclick="toggleChip('w10')">L10: Logistic Reg.</div>
           <div class="topic-chip" id="chip-w11" onclick="toggleChip('w11')">L11: Metrics</div>
           <div class="topic-chip" id="chip-w12" onclick="toggleChip('w12')">L12: Decision Trees</div>
@@ -922,6 +924,7 @@ X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
       <div class="chip-chapter-label">📚 Supervised Classification</div>
       <div class="topic-chips">
         <div class="topic-chip" id="fc-chip-w9"  onclick="fcFilter('w9')">L9: Intro</div>
+        <div class="topic-chip" id="fc-chip-nb"  onclick="fcFilter('nb')">L9b: Naive Bayes</div>
         <div class="topic-chip" id="fc-chip-w10" onclick="fcFilter('w10')">L10: Logistic Reg.</div>
         <div class="topic-chip" id="fc-chip-w11" onclick="fcFilter('w11')">L11: Metrics</div>
         <div class="topic-chip" id="fc-chip-w12" onclick="fcFilter('w12')">L12: Decision Trees</div>
@@ -1068,6 +1071,203 @@ X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
   <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w9"></div></div>
   <div class="btn-row">
     <button class="btn btn-primary" onclick="startTopicQuiz('w9')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('w10')">Next: Logistic Regression →</button>
+  </div>
+</div>
+
+<!-- LESSON 9b -->
+<div class="page" id="page-nb">
+  <h2>🎲 Naive Bayes</h2>
+  <p class="subtitle">A generative classifier — it models what each class looks like, then uses Bayes' Rule to decide.</p>
+
+  <h3>Bayes' Rule — The Foundation</h3>
+  <p>Every generative classifier is built on Bayes' Rule. It says: to find the probability of a class given your data, combine what the data looks like for that class (likelihood) with how common that class is (prior).</p>
+  <div class="card" style="text-align:center; padding:20px">
+    <div style="font-size:1.15rem; color:var(--accent); font-family:monospace; margin-bottom:10px">P(y | x) = P(x | y) × P(y) / P(x)</div>
+    <p style="margin:0; font-size:0.82rem">Posterior = Likelihood × Prior / Normalisation</p>
+  </div>
+  <table>
+    <tr><th>Term</th><th>What it means</th><th>Example (spam)</th></tr>
+    <tr><td><strong>P(y | x)</strong> — Posterior</td><td>Probability of class y given the features x. This is what we want.</td><td>P(spam | "free money now")</td></tr>
+    <tr><td><strong>P(x | y)</strong> — Likelihood</td><td>How probable is it to see this data if we're in class y?</td><td>How often does "free money" appear in spam?</td></tr>
+    <tr><td><strong>P(y)</strong> — Prior</td><td>How common is class y before seeing any data?</td><td>30% of all emails are spam</td></tr>
+    <tr><td><strong>P(x)</strong> — Normalisation</td><td>Same for all classes — we ignore it when comparing.</td><td>How common is "free money" overall?</td></tr>
+  </table>
+  <div class="key-concept">
+    <div class="label">Why we ignore P(x)</div>
+    <p>When choosing the most probable class, we compare P(spam | x) vs P(not spam | x). Both have the same P(x) denominator, so dividing by it doesn't change which one is bigger. We only need to compare the numerators.</p>
+  </div>
+
+  <h3>The Naive Assumption — Conditional Independence</h3>
+  <p>With multiple features, computing P(x | y) gets complex — you'd need the joint probability of every possible feature combination. Naive Bayes makes a simplifying assumption to make this tractable.</p>
+  <div class="card">
+    <div class="key-concept">
+      <div class="label">The Assumption</div>
+      <p>Given the class, each feature is independent of every other feature. So the joint likelihood becomes a simple product of individual likelihoods:</p>
+    </div>
+    <div style="text-align:center; padding:14px 0 6px; font-family:monospace; font-size:1rem; color:var(--accent2)">
+      P(x₁, x₂, ..., xₙ | y) = P(x₁|y) × P(x₂|y) × ... × P(xₙ|y)
+    </div>
+  </div>
+  <p>This is "naive" because it's almost never true in reality — word frequencies in emails are correlated, flight delay types are correlated. But it works surprisingly well anyway, because even imperfect probability estimates tend to rank the right class highest.</p>
+
+  <h3>Gaussian Naive Bayes — For Continuous Features</h3>
+  <p>When features are continuous numbers (like distance, delay minutes, salary), Naive Bayes models each feature per class as a Gaussian (bell curve). During training it simply calculates the mean and standard deviation of each feature separately for each class.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="key-concept">
+        <div class="label">Training (Fitting)</div>
+        <p>For each class y and each feature xᵢ, compute:<br><br>
+        μᵢʸ = mean of xᵢ for all examples in class y<br>
+        σᵢʸ = std dev of xᵢ for all examples in class y</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="key-concept">
+        <div class="label">Prediction</div>
+        <p>For a new point, plug each feature value into the Gaussian PDF to get P(xᵢ | y). Multiply across all features × prior. Pick the class with the highest score.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>Log Probabilities — Avoiding Numerical Underflow</h3>
+  <p>Multiplying many small probabilities together creates numbers so tiny that a computer rounds them to zero. The fix: use logarithms.</p>
+  <div class="card">
+    <div class="key-concept">
+      <div class="label">Why logs work</div>
+      <p>Instead of multiplying: 0.001 × 0.002 × 0.003 × ... → rounds to 0.0<br>
+      Take log: log(0.001) + log(0.002) + log(0.003) + ... → stays as large negative numbers, safe to compare.</p>
+    </div>
+    <p style="margin:0; font-size:0.85rem">Since log is monotonically increasing, log(A) &gt; log(B) iff A &gt; B — the <em>ranking</em> of classes is preserved. The class with the highest log-probability is the same class with the highest raw probability.</p>
+  </div>
+
+  <h3>Laplace Smoothing — The Zero Probability Problem</h3>
+  <p>If a word never appeared in training spam emails, P("word" | spam) = 0. That single zero multiplied into the product makes the entire class probability zero — even if all other features strongly point to spam.</p>
+  <div class="card">
+    <div class="key-concept">
+      <div class="label">The Fix — Add a small count (α) to everything</div>
+      <p>P(word | class) = (count(word, class) + α) / (total words in class + α × vocabulary size)<br><br>
+      Typically α = 1 ("add-one smoothing"). This ensures no probability is ever exactly zero.</p>
+    </div>
+  </div>
+  <div class="alert alert-warn">⚠️ Laplace smoothing applies mainly to categorical Naive Bayes (discrete word counts). GaussianNB uses continuous distributions which are never exactly zero.</div>
+
+  <h3>Code Walkthrough — Flight Delay Prediction</h3>
+  <p>The practical predicts whether a flight will have a <em>major</em> delay using Gaussian Naive Bayes. Here's every step explained.</p>
+
+  <h4>Step 1 — Load and clean the data</h4>
+  <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.naive_bayes <span class="kw">import</span> GaussianNB
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report
+
+data = pd.<span class="fn">read_csv</span>(<span class="st">"data/flights08.csv"</span>)
+
+<span class="cm"># Drop Month — only 1 unique value, no predictive power</span>
+data.<span class="fn">drop</span>(columns=[<span class="st">"Month"</span>], inplace=<span class="kw">True</span>)
+
+<span class="cm"># NaN in delay columns means no delay occurred — fill with 0</span>
+data.<span class="fn">fillna</span>({
+    <span class="st">'CarrierDelay'</span>: <span class="nu">0</span>, <span class="st">'WeatherDelay'</span>: <span class="nu">0</span>,
+    <span class="st">'NASDelay'</span>: <span class="nu">0</span>, <span class="st">'SecurityDelay'</span>: <span class="nu">0</span>,
+    <span class="st">'LateAircraftDelay'</span>: <span class="nu">0</span>
+}, inplace=<span class="kw">True</span>)
+
+<span class="cm"># Drop remaining rows with any NaN (DepTime etc.)</span>
+data.<span class="fn">dropna</span>(axis=<span class="nu">0</span>, inplace=<span class="kw">True</span>)</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What's happening:</strong> The delay sub-columns (CarrierDelay, WeatherDelay, etc.) are only recorded when a delay actually occurred. An NaN means no delay for that reason — so 0 is the correct replacement, not "unknown". <code>drop(columns=["Month"])</code> removes a feature with only 1 unique value — it carries zero information.</p>
+  </div>
+
+  <h4>Step 2 — Create the binary target variable</h4>
+  <div class="code-block"><pre><span class="cm"># Extract delay column before dropping it from features</span>
+all_delays = data[<span class="st">'ArrDelay'</span>]
+positive_delays = all_delays[all_delays > <span class="nu">0</span>]
+
+<span class="cm"># Threshold = 70th percentile of positive delays only</span>
+delay_threshold = np.<span class="fn">percentile</span>(positive_delays, <span class="nu">70</span>)
+
+<span class="cm"># 1 if delay >= threshold (major), 0 if not</span>
+major_delay = (all_delays >= delay_threshold).<span class="fn">astype</span>(<span class="fn">int</span>)
+
+<span class="cm"># Remove ArrDelay from features (it IS the answer — can't use it as input)</span>
+data.<span class="fn">drop</span>(columns=[<span class="st">'ArrDelay'</span>], inplace=<span class="kw">True</span>)</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What's happening:</strong> We define "major delay" relative to the data itself — flights in the top 30% of <em>positive</em> delays. <code>np.percentile(positive_delays, 70)</code> finds the value below which 70% of actual delays fall. We only use positive delays (not negative — early arrivals) so the threshold is meaningful. <code>astype(int)</code> converts True/False booleans to 1/0. Then we remove ArrDelay from the feature matrix — leaving it in would be data leakage, since it directly defines the label.</p>
+  </div>
+
+  <h4>Step 3 — Train/test split with stratification</h4>
+  <div class="code-block"><pre>X_train, X_test, y_train, y_test = train_test_split(
+    data,          <span class="cm"># features — everything except ArrDelay</span>
+    major_delay,   <span class="cm"># target — 1 = major delay, 0 = not</span>
+    test_size=<span class="nu">0.3</span>,        <span class="cm"># 30% held out for testing</span>
+    random_state=<span class="nu">5175</span>,    <span class="cm"># reproducibility</span>
+    stratify=major_delay  <span class="cm"># keep class ratio the same in both splits</span>
+)</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What's happening:</strong> <code>stratify=major_delay</code> ensures both the training set and test set contain the same proportion of major vs non-major delays. Without it, a random split might put most of the rare "major delay" examples into training, leaving the test set unrepresentative. This is especially important when one class is less frequent.</p>
+  </div>
+
+  <h4>Step 4 — Fit Gaussian Naive Bayes</h4>
+  <div class="code-block"><pre>gnb = <span class="fn">GaussianNB</span>()
+gnb.<span class="fn">fit</span>(X_train, y_train)</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What's happening:</strong> <code>fit()</code> computes the mean (μ) and standard deviation (σ) of each feature separately for class 0 and class 1. That's it — no iterative optimisation. For 15 features and 2 classes, it calculates and stores 2 × 15 = 30 (μ, σ) pairs. This is why Naive Bayes trains almost instantly.</p>
+  </div>
+
+  <h4>Step 5 — Predict and evaluate</h4>
+  <div class="code-block"><pre>y_pred = gnb.<span class="fn">predict</span>(X_test)
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_pred))</pre></div>
+  <div class="code-block"><pre><span class="cm">              precision    recall  f1-score   support
+
+           0       1.00      0.95      0.98     25814
+           1       0.76      1.00      0.87      3796
+
+    accuracy                           0.96     29610</span></pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>Reading the results:</strong> Class 1 (major delay) has recall = 1.00 — the model catches every single major delay. Precision = 0.76 — 24% of its "major delay" predictions are false alarms. For a travel app this is a good tradeoff: missing a real delay (false negative) is worse than an unnecessary warning (false positive). Class 0 is nearly perfect because it's the dominant class with 86% of examples.</p>
+  </div>
+
+  <h4>Step 6 — Inspect probabilities</h4>
+  <div class="code-block"><pre><span class="cm"># predict_proba → probability per class for each test example</span>
+proba = gnb.<span class="fn">predict_proba</span>(X_test)
+<span class="cm"># proba shape: (n_test, 2) — column 0 = P(not delay), column 1 = P(major delay)</span>
+
+<span class="cm"># Use log probabilities to avoid underflow with many features</span>
+log_proba = gnb.<span class="fn">predict_log_proba</span>(X_test)
+sns.<span class="fn">displot</span>(log_proba[:, <span class="nu">1</span>])</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What's happening:</strong> <code>predict_proba()</code> returns the probability for each class. <code>proba[:, 1]</code> extracts column 1 — the probability of a major delay — for every test flight. The distribution plot shows a bimodal shape: most flights cluster near log P ≈ 0 (certain no delay) or near log P ≈ −1 (certain major delay), with few in between. Gaussian NB tends to produce very confident (near 0 or 1) probability outputs.</p>
+  </div>
+
+  <h3>Strengths and Limitations</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4 style="color:var(--green); margin-top:0">Strengths</h4>
+      <ul>
+        <li>Extremely fast to train — just compute means and variances</li>
+        <li>Works well with small datasets (Gaussian assumptions fill gaps)</li>
+        <li>Handles many features without overfitting</li>
+        <li>Naturally produces calibrated probabilities</li>
+        <li>No hyperparameters to tune</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--red); margin-top:0">Limitations</h4>
+      <ul>
+        <li>Independence assumption is almost always violated</li>
+        <li>If features are strongly correlated, predictions become overconfident</li>
+        <li>Gaussian assumption wrong for highly skewed or multimodal features</li>
+        <li>Cannot capture interactions between features</li>
+        <li>Decision boundary is always linear (with Gaussian NB)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-nb"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('nb')">📝 Full Topic Quiz</button>
     <button class="btn btn-outline" onclick="nav('w10')">Next: Logistic Regression →</button>
   </div>
 </div>
@@ -1537,6 +1737,7 @@ const TOPICS = {
   w7:  'L7: Scikit-Learn',
   w8:  'L8: PCA',
   w9:  'L9: Intro to Classification',
+  nb:  'L9b: Naive Bayes',
   w10: 'L10: Logistic Regression',
   w11: 'L11: Evaluation Metrics',
   w12: 'L12: Decision Trees',
@@ -1674,6 +1875,16 @@ const ALL_QUESTIONS = [
   {t:'w15', q:'Which SVM kernel is most commonly used for non-linearly separable data?', opts:['Linear kernel','Polynomial kernel','RBF (Radial Basis Function) kernel','Sigmoid kernel'], ans:2, exp:'The RBF (Gaussian) kernel measures similarity by distance between points and creates flexible curved boundaries. It is the default choice for non-linear SVM problems.'},
 
   // L16
+  // L9b Naive Bayes
+  {t:'nb', q:'In Bayes\' Rule P(y|x) = P(x|y) × P(y) / P(x), what is P(x|y) called?', opts:['Prior','Posterior','Likelihood','Normalisation'], ans:2, exp:'P(x|y) is the likelihood — how probable it is to observe the data x if we are in class y. P(y) is the prior. P(y|x) is the posterior (what we want). P(x) is the normalisation term.'},
+  {t:'nb', q:'Why do we ignore P(x) when classifying with Bayes\' Rule?', opts:['It is always equal to 1','It is the same value for all classes so it doesn\'t affect which class wins','It is too expensive to compute','sklearn computes it automatically'], ans:1, exp:'When comparing classes, P(x) is a shared denominator — dividing by the same number doesn\'t change which class has the highest probability. We only need to compare P(x|y) × P(y) across classes.'},
+  {t:'nb', q:'What is the "naive" assumption in Naive Bayes?', opts:['That all classes are equally likely','That features are independent of each other given the class','That data follows a uniform distribution','That the decision boundary is linear'], ans:1, exp:'Given the class label, Naive Bayes assumes each feature is independent of every other. This makes the joint likelihood a simple product of individual likelihoods. It\'s naive because this is almost never true in practice.'},
+  {t:'nb', q:'What does GaussianNB store during training (fit)?', opts:['The full training dataset','A lookup table of class counts','The mean and standard deviation of each feature per class','The distances between all training points'], ans:2, exp:'GaussianNB computes μ (mean) and σ (std) for each feature separately for each class. At prediction time it uses the Gaussian PDF formula to compute P(xᵢ|y) for each feature.'},
+  {t:'nb', q:'Why use log probabilities in Naive Bayes?', opts:['To make the model faster','To prevent very small probabilities (products of many fractions) from rounding to zero','To normalise predictions to a 0–1 range','To handle missing values'], ans:1, exp:'Multiplying many small probabilities produces numbers so tiny that a computer rounds them to 0 (numerical underflow). Taking the log converts multiplication into addition, keeping numbers in a safe range while preserving the ranking of classes.'},
+  {t:'nb', q:'In the flight delay practical, why was ArrDelay removed from the feature matrix before training?', opts:['It had too many missing values','Using it as a feature would be data leakage — it directly defines the target label','It is a categorical variable','GaussianNB cannot handle it'], ans:1, exp:'ArrDelay is what we used to create major_delay (the target). Including it as a feature would give the model the answer during training — trivially perfect but useless on real data where the future delay is unknown.'},
+  {t:'nb', q:'What does stratify=major_delay do in train_test_split?', opts:['Sorts the data by delay before splitting','Ensures both train and test sets contain the same proportion of major vs non-major delays','Balances the dataset by removing excess examples','Makes the split deterministic'], ans:1, exp:'Without stratify, a random split might cluster rare "major delay" examples in one set. stratify=y ensures each split reflects the same class ratio as the full dataset — important when one class is less frequent.'},
+  {t:'nb', q:'Laplace smoothing is primarily used to address which problem in Naive Bayes?', opts:['Overfitting on large datasets','Zero probability — a class feature count of 0 makes the entire product zero','Correlated features causing biased predictions','Continuous features requiring discretisation'], ans:1, exp:'If a category never appears with a given class in training, P(category|class) = 0. One zero anywhere in the product makes the whole class probability zero, regardless of all other evidence. Laplace smoothing adds a small count α to prevent this.'},
+
   {t:'w16', q:'What is k-fold cross-validation?', opts:['Splitting data into k random subsets and training k separate models','Dividing data into k folds, training on k-1 and testing on the held-out fold, repeating k times','Training on k% of data','A technique for choosing the number of classes'], ans:1, exp:'K-fold CV rotates which fold is the test set — each of the k folds serves as the test set once. The k scores are averaged for a reliable performance estimate.'},
   {t:'w16', q:'Why should preprocessing be inside the cross-validation loop?', opts:['For computational efficiency','To prevent data leakage — the scaler must not learn from test fold data','sklearn requires it','It reduces training time'], ans:1, exp:'Fitting a scaler on the full dataset before CV lets test-fold information leak into training (look-ahead bias). Use a Pipeline to ensure the scaler fits only on each training fold.'},
   {t:'w16', q:'What does GridSearchCV do?', opts:['Trains a grid of neural networks','Exhaustively tries all combinations of hyperparameters using cross-validation to find the best','Visualises model performance','Randomly selects hyperparameters'], ans:1, exp:'GridSearchCV takes a parameter grid, trains the model for every combination using CV, and returns the best-performing configuration and its score.'},
@@ -1782,6 +1993,17 @@ const FLASHCARDS = [
   {t:'w15', front:'What is the kernel trick?', back:'Computing dot products in a high-dimensional space without explicitly transforming the data. Allows SVM to fit non-linear boundaries efficiently.'},
   {t:'w15', front:'What does C control in SVM?', back:'Misclassification penalty. High C = narrow margin, few errors, risk of overfitting.\nLow C = wide margin, more errors allowed, simpler model.'},
   {t:'w15', front:'What is the RBF kernel?', back:'Radial Basis Function — measures similarity by distance. Creates flexible curved boundaries. Default kernel for non-linear SVM.'},
+  // L9b Naive Bayes
+  {t:'nb', front:'What are the 3 terms of Bayes\' Rule?', back:'P(y|x) = P(x|y) × P(y) / P(x)\nPosterior = Likelihood × Prior / Normalisation\nIgnore P(x) — same for all classes, doesn\'t affect which wins.'},
+  {t:'nb', front:'What is the "naive" assumption?', back:'Given the class, all features are independent of each other. So P(x₁, x₂, ...|y) = P(x₁|y) × P(x₂|y) × ... — a product of simple per-feature probabilities.'},
+  {t:'nb', front:'Why is the naive assumption useful even though it\'s wrong?', back:'It makes computation tractable — no need to estimate joint probabilities for every feature combination. In practice, even imperfect probability estimates rank the correct class highest.'},
+  {t:'nb', front:'What does GaussianNB learn during training?', back:'The mean (μ) and standard deviation (σ) of each feature separately for each class. For each new point it uses the Gaussian PDF to compute P(feature value | class).'},
+  {t:'nb', front:'Why use log probabilities?', back:'Multiplying many small probabilities causes numerical underflow (rounds to 0). Log converts multiplication into addition, keeping values safe. log(A) > log(B) iff A > B, so ranking is preserved.'},
+  {t:'nb', front:'What is Laplace smoothing?', back:'Adding α (usually 1) to all counts to prevent zero probabilities. P(word|class) = (count + α) / (total + α × vocab_size). Ensures one unseen word doesn\'t zero out the whole prediction.'},
+  {t:'nb', front:'Why remove ArrDelay from features before training?', back:'Data leakage — ArrDelay is used to define the target (major_delay). Including it gives the model the answer. On real data you won\'t have the future delay, so the model would be useless.'},
+  {t:'nb', front:'What does predict_proba() return in GaussianNB?', back:'A 2D array (n_samples, n_classes). Each row is one test example. Column 0 = P(class 0), Column 1 = P(class 1). Values in each row sum to 1.'},
+  {t:'nb', front:'Naive Bayes vs KNN — key differences?', back:'Naive Bayes: generative, assumes Gaussian per feature, very fast, works well with small data.\nKNN: lazy learner, no assumptions, slow at prediction, sensitive to scale and irrelevant features.'},
+
   // L16
   {t:'w16', front:'What is k-fold cross-validation?', back:'Split data into k folds. Train on k-1, test on the remaining fold. Rotate k times. Average the k scores for a reliable estimate.'},
   {t:'w16', front:'Why put preprocessing inside CV?', back:'To prevent data leakage. Fitting a scaler on the full dataset lets test-fold information leak into training (look-ahead bias). Use Pipeline.'},
@@ -1816,7 +2038,7 @@ function nav(page) {
   document.getElementById('main').scrollTop = 0;
   const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
   if (navEl) navEl.classList.add('active');
-  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','w10','w11','w12','w13','w14','w15','w16'].includes(page)) {
+  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16'].includes(page)) {
     markVisited(page);
     renderInlineQuiz(page);
   }
@@ -1834,9 +2056,9 @@ function markVisited(w) {
 }
 
 function updateGlobalProgress() {
-  const pct = Math.round((visited.length / 16) * 100);
+  const pct = Math.round((visited.length / 17) * 100);
   document.getElementById('global-progress-bar').style.width = pct + '%';
-  document.getElementById('global-progress-label').textContent = `${visited.length} of 16 lessons visited`;
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 17 lessons visited`;
 }
 
 // ===================== INLINE QUIZ =====================
