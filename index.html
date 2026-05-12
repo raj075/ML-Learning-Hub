@@ -1277,44 +1277,96 @@ sns.<span class="fn">displot</span>(log_proba[:, <span class="nu">1</span>])</pr
   <h2>📈 Logistic Regression</h2>
   <p class="subtitle">The simplest classifier — linear boundary, probability output.</p>
 
+  <h3>Why Not Linear Regression?</h3>
+  <p>You already know classification outputs a class label, not a continuous number. If you fit a straight line to binary labels (0 or 1) you get predictions like 1.7 or −0.3 — meaningless as probabilities. What you actually want is: "given this input, what's the probability it belongs to class 1?" That probability must live in [0, 1]. Linear regression can't guarantee that. Logistic regression can.</p>
+
   <h3>The Sigmoid Function</h3>
-  <p>Linear regression output is unbounded. To get a probability (0–1), pass the linear output through the sigmoid:</p>
+  <p>Logistic regression squashes any real number into (0, 1) using the sigmoid. The input z is the same linear combination from linear regression:</p>
   <div class="card" style="text-align:center; padding:20px">
-    <div style="font-size:1.2rem; color:var(--accent); font-family:monospace; margin-bottom:8px">σ(z) = 1 / (1 + e<sup>−z</sup>)&nbsp;&nbsp; where z = wx + b</div>
+    <div style="font-size:1.2rem; color:var(--accent); font-family:monospace; margin-bottom:8px">σ(z) = 1 / (1 + e<sup>−z</sup>)&nbsp;&nbsp; where z = wᵀx + b</div>
     <p style="margin:0; font-size:0.82rem">Always outputs between 0 and 1. Interpreted as P(y = 1 | x).</p>
   </div>
+  <table>
+    <tr><th>z value</th><th>σ(z) output</th><th>What it means</th></tr>
+    <tr><td>z = 0</td><td>0.5</td><td>Exactly on the decision boundary — maximum uncertainty</td></tr>
+    <tr><td>z → +∞</td><td>→ 1</td><td>Very strong signal for class 1</td></tr>
+    <tr><td>z → −∞</td><td>→ 0</td><td>Very strong signal for class 0</td></tr>
+  </table>
 
   <h3>Thresholding — Probability → Class</h3>
   <div class="card-grid">
-    <div class="card"><div class="key-concept"><div class="label">P(y=1) ≥ 0.5</div><p>Predict class 1 (positive). Default threshold.</p></div></div>
-    <div class="card"><div class="key-concept"><div class="label">P(y=1) &lt; 0.5</div><p>Predict class 0 (negative).</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">P(y=1) ≥ 0.5 → class 1</div><p>Default threshold. Since σ(z) ≥ 0.5 iff z ≥ 0, the decision boundary is simply wᵀx + b = 0.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Tuning the threshold</div><p>Lower it → catch more positives (higher recall, more false alarms). Raise it → be more certain before predicting positive (higher precision). Covered in L11.</p></div></div>
   </div>
-  <p>You can tune the threshold. <strong>Lower it</strong> → catch more positives (higher recall, more false alarms). <strong>Raise it</strong> → be more certain before predicting positive (higher precision, fewer alarms).</p>
 
-  <h3>Loss Function — Log Loss</h3>
-  <p>MSE doesn't work for classification. Instead: <strong>binary cross-entropy</strong>.</p>
+  <h3>Loss Function — Log Loss (Binary Cross-Entropy)</h3>
+  <p>You can't use MSE here — the loss surface becomes non-convex and gradient descent gets stuck in local minima. Instead logistic regression uses <strong>binary cross-entropy</strong>:</p>
   <div class="card" style="text-align:center; padding:16px">
-    <div style="font-size:0.95rem; color:var(--accent); font-family:monospace">Loss = −(1/N) Σ [yᵢ log(ŷᵢ) + (1−yᵢ) log(1−ŷᵢ)]</div>
-    <p style="margin:8px 0 0; font-size:0.8rem">Heavily penalises confident wrong predictions. Predicting P=0.99 when truth is 0 = huge loss.</p>
+    <div style="font-size:0.95rem; color:var(--accent); font-family:monospace">L = −[y·log(ŷ) + (1−y)·log(1−ŷ)]</div>
+    <p style="margin:8px 0 0; font-size:0.8rem">Heavily penalises confident wrong predictions. Predicting P=0.99 when truth is 0 → loss → ∞.</p>
+  </div>
+  <div class="card-grid" style="margin-top:10px">
+    <div class="card"><div class="key-concept"><div class="label">y=1 and ŷ≈1</div><p>Loss ≈ 0 — correct and confident. Good.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">y=1 and ŷ≈0</div><p>Loss → ∞ — confident and completely wrong. Heavily penalised.</p></div></div>
   </div>
 
-  <h3>The C Parameter (Regularisation)</h3>
-  <p>sklearn uses <strong>C = 1/λ</strong> — the inverse of regularisation strength.</p>
+  <h3>Training — Gradient Descent</h3>
+  <p>The update rule looks identical to linear regression (L3) — the difference is hidden inside how ŷ is computed (sigmoid vs raw dot product):</p>
+  <div class="code-block"><pre><span class="cm"># Gradient of log-loss with respect to weights:</span>
+<span class="cm"># ∂L/∂w = (1/m) · Xᵀ(ŷ − y)</span>
+<span class="cm">#</span>
+<span class="cm"># Update rule:</span>
+<span class="cm"># w = w − α · ∂L/∂w</span></pre></div>
+
+  <h3>Regularization — Preventing Overfitting</h3>
+  <p>Without regularization, weights can grow to ±∞ — the sigmoid becomes a step function, perfectly confident on training data but terrible on unseen data. Regularization adds a penalty for large weights.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="key-concept">
+        <div class="label">L2 — Ridge</div>
+        <p><strong>Loss + λ·Σwᵢ²</strong><br>Squaring large weights penalises them hard. All weights shrink toward zero, none reach exactly zero. Model still uses all features, just modestly.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="key-concept">
+        <div class="label">L1 — Lasso</div>
+        <p><strong>Loss + λ·Σ|wᵢ|</strong><br>Linear penalty has a geometric property that drives some weights to exactly zero — automatic feature selection. Use when many features are likely irrelevant.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>The Three sklearn Parameters</h3>
   <table>
-    <tr><th>C value</th><th>Regularisation</th><th>Effect</th></tr>
-    <tr><td>Small (e.g. 0.01)</td><td>Strong</td><td>Simple boundary — risk of underfitting</td></tr>
-    <tr><td>1.0 (default)</td><td>Moderate</td><td>Good starting point</td></tr>
-    <tr><td>Large (e.g. 100)</td><td>Weak</td><td>Complex boundary — risk of overfitting</td></tr>
+    <tr><th>Parameter</th><th>What it controls</th><th>Practical notes</th></tr>
+    <tr><td><code>C=1.0</code></td><td>Regularization strength: C = 1/λ. <strong>Lower C = stronger regularization.</strong></td><td>C=0.01 → simple model. C=100 → complex, risk of overfit. Default 1.0 is a good start.</td></tr>
+    <tr><td><code>penalty='l2'</code></td><td>Which regularization type to apply.</td><td>l2 (default) shrinks all weights. l1 zeros out irrelevant ones. None = no regularization.</td></tr>
+    <tr><td><code>max_iter=1000</code></td><td>Max gradient descent steps before stopping.</td><td>If sklearn warns <em>ConvergenceWarning</em>, increase max_iter or scale your features.</td></tr>
   </table>
 
-  <h3>Logistic Regression in Code</h3>
-  <div class="code-block"><pre><span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
+  <h3>The Decision Boundary</h3>
+  <p>The prediction flips at σ(z) = 0.5, which means z = 0. So the decision boundary is <strong>wᵀx + b = 0</strong> — always linear. Logistic regression cannot learn curved boundaries natively. For that you need polynomial features (L3) or a different model (L12+).</p>
 
-model = <span class="fn">LogisticRegression</span>(C=<span class="nu">1.0</span>)
+  <h3>Full sklearn Example</h3>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="nu">0.2</span>)
+
+<span class="cm"># Always scale — gradient descent converges much faster</span>
+scaler = <span class="fn">StandardScaler</span>()
+X_train = scaler.<span class="fn">fit_transform</span>(X_train)
+X_test  = scaler.<span class="fn">transform</span>(X_test)
+
+model = <span class="fn">LogisticRegression</span>(
+    C=<span class="nu">1.0</span>,          <span class="cm"># regularization strength (lower = more regularized)</span>
+    penalty=<span class="st">'l2'</span>,   <span class="cm"># l2 = Ridge shrinkage, l1 = Lasso + feature selection</span>
+    max_iter=<span class="nu">1000</span>   <span class="cm"># give solver enough steps to converge</span>
+)
 model.<span class="fn">fit</span>(X_train, y_train)
 
-proba = model.<span class="fn">predict_proba</span>(X_test)  <span class="cm"># [[0.82, 0.18], ...]  shape: (n, 2)</span>
-pred  = model.<span class="fn">predict</span>(X_test)          <span class="cm"># [1, 0, 1, ...]</span></pre></div>
+<span class="fn">print</span>(model.<span class="fn">predict</span>(X_test))          <span class="cm"># hard class labels: [1, 0, 1, ...]</span>
+<span class="fn">print</span>(model.<span class="fn">predict_proba</span>(X_test))    <span class="cm"># probabilities: [[0.18, 0.82], ...]</span></pre></div>
 
   <div class="alert alert-info">💡 Despite the name, logistic regression is a classifier. Its decision boundary is always linear — a straight line in 2D, a hyperplane in higher dimensions.</div>
 
@@ -1330,50 +1382,113 @@ pred  = model.<span class="fn">predict</span>(X_test)          <span class="cm">
   <h2>📊 Evaluation Metrics for Classification</h2>
   <p class="subtitle">Accuracy is a trap. Learn how to actually measure classifier performance.</p>
 
+  <h3>Why Accuracy Alone Fails</h3>
+  <p>Imagine a cancer detection model. Dataset: 950 healthy, 50 sick. A model that predicts "healthy" for everyone scores 95% accuracy — but it never catches a single sick patient. Accuracy hides what matters when classes are imbalanced. You need metrics that break down what <em>kind</em> of errors the model is making.</p>
+
   <h3>The Confusion Matrix</h3>
   <div class="card" style="text-align:center; padding:20px">
-    <table style="max-width:400px; margin:0 auto">
-      <tr><th></th><th>Predicted Positive</th><th>Predicted Negative</th></tr>
-      <tr><td><strong>Actual Positive</strong></td><td style="color:var(--green)">TP — True Positive</td><td style="color:var(--red)">FN — False Negative</td></tr>
-      <tr><td><strong>Actual Negative</strong></td><td style="color:var(--red)">FP — False Positive</td><td style="color:var(--green)">TN — True Negative</td></tr>
+    <table style="max-width:420px; margin:0 auto">
+      <tr><th></th><th>Predicted: Positive</th><th>Predicted: Negative</th></tr>
+      <tr><td><strong>Actual: Positive</strong></td><td style="color:var(--green)">TP — True Positive ✓</td><td style="color:var(--red)">FN — Missed it ✗</td></tr>
+      <tr><td><strong>Actual: Negative</strong></td><td style="color:var(--red)">FP — False alarm ✗</td><td style="color:var(--green)">TN — True Negative ✓</td></tr>
     </table>
   </div>
   <div class="card-grid" style="margin-top:12px">
-    <div class="card"><div class="key-concept"><div class="label">False Positive (Type I)</div><p>Predicted positive, actually negative. E.g. flagging a legitimate email as spam.</p></div></div>
-    <div class="card"><div class="key-concept"><div class="label">False Negative (Type II)</div><p>Predicted negative, actually positive. E.g. missing a cancer diagnosis.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">False Positive (Type I) — False alarm</div><p>Predicted positive, actually negative. E.g. flagging a legitimate email as spam. Costly when action is expensive or annoying.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">False Negative (Type II) — Missed case</div><p>Predicted negative, actually positive. E.g. missing a cancer diagnosis. Costly when missing the case has severe consequences.</p></div></div>
   </div>
+  <p style="font-size:0.85rem">For the "predict everyone healthy" model: TN=950, FP=0, FN=50, TP=0 — it never catches a single sick person despite 95% accuracy.</p>
 
   <h3>The Four Metrics</h3>
   <table>
-    <tr><th>Metric</th><th>Formula</th><th>Meaning</th></tr>
+    <tr><th>Metric</th><th>Formula</th><th>The question it answers</th></tr>
     <tr><td><strong>Accuracy</strong></td><td>(TP+TN) / total</td><td>Overall correctness — misleading when imbalanced</td></tr>
-    <tr><td><strong>Precision</strong></td><td>TP / (TP+FP)</td><td>Of predicted positives, how many were right? Minimise false alarms.</td></tr>
-    <tr><td><strong>Recall</strong></td><td>TP / (TP+FN)</td><td>Of actual positives, how many did we catch? Minimise missed cases.</td></tr>
-    <tr><td><strong>F1 Score</strong></td><td>2·(P·R)/(P+R)</td><td>Harmonic mean of precision and recall. Use when both matter.</td></tr>
+    <tr><td><strong>Precision</strong></td><td>TP / (TP+FP)</td><td>Of everything I predicted positive, how many actually were? (trust my positives)</td></tr>
+    <tr><td><strong>Recall</strong></td><td>TP / (TP+FN)</td><td>Of all actual positives, how many did I catch? (miss rate)</td></tr>
+    <tr><td><strong>F1 Score</strong></td><td>2·(P·R)/(P+R)</td><td>Harmonic mean of both — penalises imbalance between them</td></tr>
   </table>
 
-  <h3>Precision–Recall Tradeoff</h3>
-  <p>Lowering the decision threshold → more positives predicted → <strong>higher recall, lower precision</strong>. Raising it → the reverse. Choose based on the cost of each error type.</p>
-  <div class="card-grid">
-    <div class="card"><div class="key-concept"><div class="label">Prioritise Recall when…</div><p>Missing a positive is costly. Cancer screening, fraud, fault detection.</p></div></div>
-    <div class="card"><div class="key-concept"><div class="label">Prioritise Precision when…</div><p>False alarms are costly. Spam filters, content moderation.</p></div></div>
+  <h3>How to Read F1 Score</h3>
+  <p>F1 ranges from 0 to 1. But context matters more than the number — always compare against a sensible baseline.</p>
+  <table>
+    <tr><th>F1</th><th>Interpretation</th></tr>
+    <tr><td>≥ 0.90</td><td>Excellent — production-ready for most tasks</td></tr>
+    <tr><td>≥ 0.80</td><td>Good — acceptable for most use cases</td></tr>
+    <tr><td>≥ 0.70</td><td>Mediocre — room for improvement</td></tr>
+    <tr><td>≥ 0.50</td><td>Poor — barely better than naive guessing</td></tr>
+    <tr><td>&lt; 0.50</td><td>Bad — something is wrong</td></tr>
+  </table>
+  <div class="key-concept">
+    <div class="label">F1 punishes imbalance</div>
+    <p>Precision=0.99, Recall=0.10 → F1 ≈ 0.18 (heavily penalised). Precision=0.90, Recall=0.90 → F1 = 0.90. A high F1 means the model is neither spamming false alarms nor missing too many positives — it's doing both jobs simultaneously.</p>
   </div>
 
-  <h3>ROC-AUC</h3>
-  <p>The <strong>ROC curve</strong> plots True Positive Rate vs False Positive Rate at every threshold. <strong>AUC</strong> (Area Under the Curve) summarises the whole curve in one number.</p>
+  <h3>Precision–Recall Tradeoff</h3>
+  <p>They pull in opposite directions as you move the threshold. There's no free lunch — choose based on the cost of each error type in your problem.</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Lower threshold → higher Recall</div><p>Predict positive more often. Catch more true positives, but also more false alarms. Use when missing a positive is costly (cancer, fraud).</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Higher threshold → higher Precision</div><p>Only predict positive when very confident. Fewer false alarms, but miss more real positives. Use when false alarms are costly (spam filters).</p></div></div>
+  </div>
+
+  <h3>ROC Curve and AUC</h3>
+  <p>The ROC curve sweeps the threshold from 0 → 1 and at each point plots False Positive Rate (x) vs True Positive Rate/Recall (y). AUC summarises the whole curve in one number.</p>
   <table>
     <tr><th>AUC</th><th>Meaning</th></tr>
-    <tr><td>1.0</td><td>Perfect — ranks all positives above all negatives</td></tr>
+    <tr><td>1.0</td><td>Perfect — ranks every positive above every negative</td></tr>
     <tr><td>0.9+</td><td>Excellent</td></tr>
+    <tr><td>0.8</td><td>Good — ranks positives above negatives 80% of the time</td></tr>
     <tr><td>0.5</td><td>No better than random guessing</td></tr>
-    <tr><td>&lt; 0.5</td><td>Worse than random — flip predictions</td></tr>
+    <tr><td>&lt; 0.5</td><td>Worse than random — flip your predictions</td></tr>
   </table>
 
-  <div class="code-block"><pre><span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report, confusion_matrix, roc_auc_score
+  <h3>Confusion Matrix vs ROC — When to Use Each</h3>
+  <table>
+    <tr><th>Tool</th><th>When to use</th><th>What it needs</th></tr>
+    <tr><td><strong>Confusion Matrix</strong></td><td>After you've fixed a threshold — check a specific operating point</td><td>Hard predictions (0 or 1)</td></tr>
+    <tr><td><strong>ROC / AUC</strong></td><td>Before picking a threshold — compare models, threshold-independent</td><td>Raw probabilities from predict_proba()</td></tr>
+  </table>
+  <p>In practice: use AUC to compare models, then use the confusion matrix to tune the threshold for your specific use case.</p>
 
-<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_pred))     <span class="cm"># precision, recall, F1 per class</span>
+  <h3>Which Metric to Use When</h3>
+  <table>
+    <tr><th>Situation</th><th>Use</th></tr>
+    <tr><td>Balanced classes, general purpose</td><td>Accuracy</td></tr>
+    <tr><td>Imbalanced classes</td><td>F1, Precision, Recall</td></tr>
+    <tr><td>False positives are costly (spam)</td><td>Precision</td></tr>
+    <tr><td>False negatives are costly (cancer)</td><td>Recall</td></tr>
+    <tr><td>Comparing two models</td><td>AUC-ROC</td></tr>
+    <tr><td>Imbalanced + comparing models</td><td>AUC-PR (precision-recall curve)</td></tr>
+  </table>
+
+  <h3>Reading the Classification Report</h3>
+  <div class="code-block"><pre><span class="cm">              precision    recall  f1-score   support
+
+           0       0.96      0.98      0.97       950   ← healthy (majority)
+           1       0.61      0.42      0.50        50   ← sick (minority class)</span>
+
+<span class="cm">    accuracy                           0.94      1000
+   macro avg       0.79      0.70      0.73      1000   ← simple average, treats classes equally
+weighted avg       0.93      0.94      0.93      1000   ← pulled toward majority class</span></pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>support</strong> — how many actual samples of that class exist in your test set.<br>
+    <strong>Per-class F1</strong> — read this, not overall accuracy. Here class 1 (sick) has F1=0.50, which is poor despite 94% accuracy.<br>
+    <strong>macro avg</strong> — simple average across classes, treats minority class equally.<br>
+    <strong>weighted avg</strong> — weighted by support, gets pulled toward the majority class — can be misleading with imbalanced data.<br><br>
+    Rule: look at the per-class F1 for your minority/important class. That's the number that tells you if the model actually works.</p>
+  </div>
+
+  <h3>Full sklearn Example</h3>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.metrics <span class="kw">import</span> (confusion_matrix, precision_score,
+                             recall_score, f1_score, roc_auc_score,
+                             classification_report)
+
+y_pred = model.<span class="fn">predict</span>(X_test)
+y_prob = model.<span class="fn">predict_proba</span>(X_test)[:, <span class="nu">1</span>]  <span class="cm"># probability of class 1</span>
+
 <span class="fn">print</span>(<span class="fn">confusion_matrix</span>(y_test, y_pred))
-<span class="fn">print</span>(<span class="fn">roc_auc_score</span>(y_test, model.<span class="fn">predict_proba</span>(X_test)[:, <span class="nu">1</span>]))</pre></div>
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_pred))   <span class="cm"># precision, recall, F1 all at once</span>
+<span class="fn">print</span>(<span class="st">"AUC:"</span>, <span class="fn">roc_auc_score</span>(y_test, y_prob))   <span class="cm"># needs probabilities, not labels</span></pre></div>
+  <div class="alert alert-info">💡 <code>classification_report</code> is the most useful single call — it gives you precision, recall, and F1 per class plus weighted and macro averages.</div>
 
   <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w11"></div></div>
   <div class="btn-row">
