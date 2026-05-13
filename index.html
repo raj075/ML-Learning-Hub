@@ -1500,45 +1500,239 @@ y_prob = model.<span class="fn">predict_proba</span>(X_test)[:, <span class="nu"
 <!-- LESSON 12 -->
 <div class="page" id="page-w12">
   <h2>🌳 Decision Trees</h2>
-  <p class="subtitle">Learning a flowchart from data — highly interpretable, prone to overfitting.</p>
+  <p class="subtitle">Learning a flowchart from data — highly interpretable, but overfitting is the core enemy.</p>
 
-  <h3>How a Decision Tree Works</h3>
-  <p>A tree repeatedly splits the data on one feature at a time, choosing the split that best separates the classes. Each leaf node holds a class prediction.</p>
+  <h3>What is a Decision Tree?</h3>
+  <p>A decision tree learns a series of if/else rules directly from data, forming a flowchart. Each internal node asks one question about one feature, each branch is the yes/no answer, and each leaf holds a class prediction.</p>
+  <div class="code-block"><pre><span class="cm">Is duration &lt; 180 seconds?</span>
+<span class="cm">├── Yes → Is pdays = 999?</span>
+<span class="cm">│         ├── Yes → Predict: No subscription (class 0)</span>
+<span class="cm">│         └── No  → Predict: Subscription (class 1)</span>
+<span class="cm">└── No  → Predict: Subscription (class 1)</span></pre></div>
+  <div class="key-concept">
+    <div class="label">No feature scaling needed</div>
+    <p>Decision trees never compare features against each other. Each split asks "is feature X above threshold T?" — one feature at a time, in its own units. Unlike KNN or logistic regression, scale differences between features are completely irrelevant.</p>
+  </div>
+
+  <h3>Growing the Tree — Recursive Binary Splitting</h3>
   <div class="card">
-    <div class="key-concept"><div class="label">Algorithm (simplified)</div>
+    <div class="key-concept"><div class="label">The Algorithm</div>
       <p>1. At the current node, try every possible split on every feature.<br>
-         2. Choose the split that minimises impurity (Gini or Entropy).<br>
-         3. Recurse on each child node until a stopping criterion is met.</p>
+         2. Choose the split with the <strong>lowest Gini impurity</strong> (or highest information gain).<br>
+         3. Recurse on each child node.<br>
+         4. Stop when a pruning criterion is hit (max depth, too few samples, etc.).</p>
     </div>
   </div>
 
-  <h3>Splitting Criteria</h3>
+  <h3>Gini Impurity — The Splitting Criterion</h3>
+  <p>At every node the tree asks: how mixed are the classes here? Gini impurity measures that mixture. The tree always picks the split that <strong>minimises Gini</strong>.</p>
+  <div class="card" style="text-align:center; padding:18px">
+    <div style="font-size:1.1rem; color:var(--accent); font-family:monospace; margin-bottom:8px">G(S) = 1 − Σ pᵢ²</div>
+    <p style="margin:0; font-size:0.82rem">pᵢ = proportion of class i in the set S</p>
+  </div>
+  <table>
+    <tr><th>Situation</th><th>Gini</th><th>Meaning</th></tr>
+    <tr><td>Pure node — all one class (p₁=1, p₂=0)</td><td style="color:var(--green)"><strong>0</strong></td><td>Perfect — no mixing</td></tr>
+    <tr><td>50/50 split (p₁=0.5, p₂=0.5)</td><td style="color:var(--red)"><strong>0.5</strong></td><td>Worst possible — maximum uncertainty</td></tr>
+    <tr><td>70/30 split</td><td><strong>0.42</strong></td><td>Partially separated</td></tr>
+  </table>
+  <p>Lower Gini = purer node = better split. The tree picks whichever feature+threshold combination produces the lowest weighted Gini in the children.</p>
+
+  <h3>Gini Gain — How the Split is Chosen</h3>
+  <p>After splitting set S into children S₁ and S₂, the Gini gain is:</p>
+  <div class="card" style="text-align:center; padding:16px">
+    <div style="font-size:0.95rem; color:var(--accent); font-family:monospace">Gini Gain = G(S) − [ (|S₁|/|S|)·G(S₁) + (|S₂|/|S|)·G(S₂) ]</div>
+    <p style="margin:8px 0 0; font-size:0.82rem">Weighted average impurity of children subtracted from parent impurity. <strong>Maximise this.</strong></p>
+  </div>
+  <p>The tree tries every feature and every threshold, picks the combination with the highest Gini gain — meaning the children are as pure as possible.</p>
+
+  <h3>Information Gain — The Alternative</h3>
+  <p>Instead of Gini, you can measure node impurity using <strong>Entropy</strong>. The goal flips: <strong>maximise information gain</strong> (reduction in entropy).</p>
   <div class="card-grid">
-    <div class="card"><div class="key-concept"><div class="label">Gini Impurity</div><p>Gini = 1 − Σpᵢ². Equal to 0 when all samples belong to one class (pure node). Default in sklearn.</p></div></div>
-    <div class="card"><div class="key-concept"><div class="label">Entropy (Information Gain)</div><p>H = −Σ pᵢ log₂(pᵢ). Measures disorder. The split with the most information gain is chosen.</p></div></div>
+    <div class="card">
+      <div class="key-concept"><div class="label">Entropy formula</div><p>H(S) = −Σ pᵢ log₂(pᵢ). Zero for a pure node, 1.0 for a 50/50 split. Use criterion='entropy' in sklearn.</p></div>
+    </div>
+    <div class="card">
+      <div class="key-concept"><div class="label">Gini vs Entropy in practice</div><p>Both produce very similar trees. Gini is cheaper (no log). Entropy gives slightly better probability calibration. Gini is the sklearn default and the standard choice.</p></div>
+    </div>
+  </div>
+  <div class="card" style="background: rgba(91,138,245,0.06); border-color: var(--accent)">
+    <p style="margin:0; font-size:0.87rem"><strong>Summary rule:</strong> Gini → <strong>minimise</strong> (lower = purer). Information Gain → <strong>maximise</strong> (higher = better split). Both find the same splits — they are just two ways to measure the same thing.</p>
   </div>
 
-  <h3>Overfitting and Depth</h3>
-  <p>A fully grown tree creates a split for every training point — it memorises the data perfectly but generalises terribly. Depth is the key lever.</p>
+  <h3>Overfitting — The Core Problem</h3>
+  <p>A fully grown tree (no constraints) creates a near-unique path for every training point. It memorises the data — including noise and outliers — rather than learning general patterns.</p>
+  <h4>Symptoms of Overfitting</h4>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Training accuracy ≈ 100%</div><p>The tree has a leaf for every training point (or near it). Getting 100% on training data is trivially easy — it tells you nothing about generalisation.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Large train/test gap</div><p>Test accuracy is significantly lower than training accuracy (e.g. 99% train vs 71% test). The model learned the quirks of the training set, not the real pattern.</p></div></div>
+  </div>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Poor minority class recall</div><p>On imbalanced data, the tree learns to predict the majority class almost always. High accuracy, but terrible recall on the class that matters.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Extremely deep tree</div><p>Visualising the tree shows hundreds of levels. A well-generalising tree is usually readable — not a wall of branches.</p></div></div>
+  </div>
+
+  <h4>How to Fix Overfitting</h4>
   <table>
-    <tr><th>max_depth</th><th>Bias</th><th>Variance</th><th>Effect</th></tr>
-    <tr><td>None (unlimited)</td><td>Low</td><td>Very high</td><td>Memorises training data — overfits</td></tr>
-    <tr><td>3–10</td><td>Moderate</td><td>Moderate</td><td>Usually best range — tune with CV</td></tr>
-    <tr><td>1 (stump)</td><td>Very high</td><td>Low</td><td>Underfits — only one split</td></tr>
+    <tr><th>Parameter</th><th>What it controls</th><th>Effect</th></tr>
+    <tr><td><code>max_depth</code></td><td>Maximum levels from root to leaf</td><td>Most important lever. Start with 3–6, tune with CV.</td></tr>
+    <tr><td><code>min_samples_split</code></td><td>Min samples needed to split a node</td><td>Higher value → fewer splits → simpler tree</td></tr>
+    <tr><td><code>min_samples_leaf</code></td><td>Min samples required at each leaf</td><td>Prevents tiny leaves that memorise one or two points</td></tr>
+    <tr><td><code>class_weight='balanced'</code></td><td>Penalises errors on minority class more</td><td>Fixes bias toward majority class on imbalanced data</td></tr>
   </table>
 
-  <h3>Feature Importance</h3>
-  <p>Measures how much each feature reduced impurity across all splits, weighted by samples affected. Values sum to 1.</p>
+  <h3>Finding the Best Depth — Train vs Validation Plot</h3>
+  <p>Sweep max_depth from 1 to 20. Train accuracy climbs monotonically toward 100%. Validation accuracy climbs, peaks, then falls — the peak is your optimal depth.</p>
+  <div class="code-block"><pre>depths = np.<span class="fn">arange</span>(<span class="nu">1</span>, <span class="nu">21</span>)
+train_accs, val_accs = [], []
 
-  <div class="code-block"><pre><span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier
+<span class="kw">for</span> d <span class="kw">in</span> depths:
+    t = <span class="fn">DecisionTreeClassifier</span>(max_depth=d, random_state=<span class="nu">42</span>)
+    t.<span class="fn">fit</span>(X_train, y_train)
+    train_accs.<span class="fn">append</span>(t.<span class="fn">score</span>(X_train, y_train))
+    val_accs.<span class="fn">append</span>(t.<span class="fn">score</span>(X_test, y_test))
 
-tree = <span class="fn">DecisionTreeClassifier</span>(max_depth=<span class="nu">5</span>, random_state=<span class="nu">42</span>)
-tree.<span class="fn">fit</span>(X_train, y_train)
+plt.<span class="fn">plot</span>(depths, train_accs, label=<span class="st">'Train'</span>)
+plt.<span class="fn">plot</span>(depths, val_accs,   label=<span class="st">'Validation'</span>)
+plt.<span class="fn">xlabel</span>(<span class="st">'max_depth'</span>); plt.<span class="fn">legend</span>(); plt.<span class="fn">show</span>()
 
-<span class="fn">print</span>(tree.feature_importances_)    <span class="cm"># importance per feature, sums to 1</span>
-tree.<span class="fn">score</span>(X_test, y_test)           <span class="cm"># accuracy on test set</span></pre></div>
+best_depth = depths[np.<span class="fn">argmax</span>(val_accs)]
+<span class="fn">print</span>(<span class="st">f"Best depth: {best_depth}"</span>)</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>Reading the plot:</strong> Both lines low → underfitting (increase depth). Big gap between train and validation → overfitting (decrease depth). Lines close together and decent → good generalisation.</p>
+  </div>
 
-  <div class="alert alert-warn">⚠️ A single decision tree is high-variance — small changes to training data can produce a completely different tree. Use Random Forests (L13) for stability.</div>
+  <h3>Code Walkthrough — Bank Marketing Practical</h3>
+  <p>Predicting whether a bank customer will subscribe to a term deposit. The dataset is imbalanced — only ~11% subscribe.</p>
+
+  <h4>Step 1 — Load and prepare data</h4>
+  <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split, GridSearchCV
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report, accuracy_score
+
+<span class="cm"># Separator is ';' not ',' — always check before loading</span>
+data = pd.<span class="fn">read_csv</span>(<span class="st">"data/bank-marketing.csv"</span>, sep=<span class="st">";"</span>)
+
+<span class="cm"># Convert target: 'yes'→1, 'no'→0</span>
+y = (data[<span class="st">'y'</span>] == <span class="st">'yes'</span>).<span class="fn">astype</span>(<span class="fn">int</span>)
+
+<span class="cm"># Drop target and 'duration' (it leaks — you only know it after the call)</span>
+X = data.<span class="fn">drop</span>(columns=[<span class="st">'y'</span>, <span class="st">'duration'</span>])</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>Why drop duration?</strong> Duration is the length of the call — but you only know it after the call ends, which means after the outcome is already determined. Using it would be data leakage.</p>
+  </div>
+
+  <h4>Step 2 — One-hot encode categorical features</h4>
+  <div class="code-block"><pre>num_features = [<span class="st">"age"</span>, <span class="st">"campaign"</span>, <span class="st">"pdays"</span>, <span class="st">"previous"</span>,
+                <span class="st">"emp.var.rate"</span>, <span class="st">"cons.price.idx"</span>, <span class="st">"cons.conf.idx"</span>,
+                <span class="st">"euribor3m"</span>, <span class="st">"nr.employed"</span>]
+
+cat_features  = [<span class="st">"job"</span>, <span class="st">"marital"</span>, <span class="st">"education"</span>, <span class="st">"default"</span>,
+                 <span class="st">"housing"</span>, <span class="st">"loan"</span>, <span class="st">"contact"</span>, <span class="st">"month"</span>,
+                 <span class="st">"day_of_week"</span>, <span class="st">"poutcome"</span>]
+
+<span class="cm"># sklearn trees can't use strings — convert categories to 0/1 columns</span>
+X_categorical = pd.<span class="fn">get_dummies</span>(X[cat_features])
+X_processed   = pd.<span class="fn">concat</span>([X[num_features], X_categorical], axis=<span class="nu">1</span>)</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What's happening:</strong> sklearn's DecisionTreeClassifier requires numeric input. <code>pd.get_dummies()</code> converts each categorical column into multiple binary (0/1) columns — one per unique category. <code>pd.concat(..., axis=1)</code> joins the numeric and encoded columns side-by-side into one feature matrix.</p>
+  </div>
+
+  <h4>Step 3 — Train/test split with stratification</h4>
+  <div class="code-block"><pre>X_train, X_test, y_train, y_test = train_test_split(
+    X_processed, y,
+    test_size=<span class="nu">0.2</span>, random_state=<span class="nu">42</span>,
+    stratify=y  <span class="cm"># preserve the ~11% minority class ratio in both splits</span>
+)</pre></div>
+
+  <h4>Step 4 — Unconstrained tree (demonstrates overfitting)</h4>
+  <div class="code-block"><pre>dtc = <span class="fn">DecisionTreeClassifier</span>(max_depth=<span class="kw">None</span>, min_samples_split=<span class="nu">2</span>, random_state=<span class="nu">42</span>)
+dtc.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="fn">print</span>(<span class="fn">accuracy_score</span>(y_train, dtc.<span class="fn">predict</span>(X_train)))  <span class="cm"># ≈ 1.00 — memorised everything</span>
+<span class="fn">print</span>(<span class="fn">accuracy_score</span>(y_test,  dtc.<span class="fn">predict</span>(X_test)))   <span class="cm"># ≈ 0.84 — generalises poorly</span>
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, dtc.<span class="fn">predict</span>(X_test)))</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What you'll see:</strong> Training accuracy ≈ 100%, test accuracy much lower. The classification report shows class 1 (subscription) has poor recall — the tree learned to predict "no" almost always, since 89% of the training data is "no". Both overfitting AND class imbalance bias are visible here.</p>
+  </div>
+
+  <h4>Step 5 — Constrain the tree and fix class imbalance</h4>
+  <div class="code-block"><pre><span class="cm"># Set sensible constraints — prevents memorisation</span>
+dtc.<span class="fn">set_params</span>(max_depth=<span class="nu">6</span>, min_samples_split=<span class="nu">20</span>, class_weight=<span class="st">"balanced"</span>)
+dtc.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, dtc.<span class="fn">predict</span>(X_test)))</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What changes:</strong> <code>max_depth=6</code> stops the tree from memorising noise. <code>min_samples_split=20</code> prevents splits on tiny groups. <code>class_weight='balanced'</code> automatically increases the penalty for misclassifying the minority class — the tree can no longer ignore class 1 and get away with it. Class 1 recall improves significantly.</p>
+  </div>
+
+  <h4>Step 6 — GridSearchCV to find the best parameters</h4>
+  <div class="code-block"><pre>parameters = [{
+    <span class="st">'max_depth'</span>:        [<span class="nu">3</span>, <span class="nu">4</span>, <span class="nu">7</span>],
+    <span class="st">'min_samples_split'</span>: [<span class="nu">5</span>, <span class="nu">10</span>, <span class="nu">20</span>]
+}]
+
+gridCV = <span class="fn">GridSearchCV</span>(dtc, parameters, cv=<span class="nu">10</span>)
+gridCV.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="fn">print</span>(gridCV.best_params_)   <span class="cm"># best combination found by cross-validation</span>
+
+<span class="cm"># Re-train with the best parameters</span>
+dtc.<span class="fn">set_params</span>(**gridCV.best_params_)
+dtc.<span class="fn">fit</span>(X_train, y_train)
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, dtc.<span class="fn">predict</span>(X_test)))</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What's happening:</strong> GridSearchCV tries all 3×3 = 9 combinations of max_depth and min_samples_split. For each combination it runs 10-fold CV on the training data — fitting and evaluating 90 trees in total. It returns the combination with the best average validation score. <code>**gridCV.best_params_</code> unpacks the dictionary directly into set_params().</p>
+  </div>
+
+  <h4>Step 7 — Feature importance</h4>
+  <div class="code-block"><pre><span class="cm"># Raw array — hard to read</span>
+dtc.feature_importances_
+
+<span class="cm"># Put in a DataFrame for readability</span>
+importances_df = pd.<span class="fn">DataFrame</span>(
+    dtc.feature_importances_,
+    columns=[<span class="st">"importance"</span>],
+    index=X_train.columns
+)
+
+<span class="cm"># Show top features</span>
+importances_df.<span class="fn">sort_values</span>(<span class="st">"importance"</span>, ascending=<span class="kw">False</span>).<span class="fn">head</span>(<span class="nu">10</span>)
+
+<span class="cm"># Bar plot</span>
+importances_df.<span class="fn">sort_values</span>(<span class="st">"importance"</span>, ascending=<span class="kw">False</span>).<span class="fn">plot</span>(kind=<span class="st">"bar"</span>, figsize=(<span class="nu">14</span>, <span class="nu">5</span>))
+plt.<span class="fn">tight_layout</span>(); plt.<span class="fn">show</span>()</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What you're reading:</strong> Each value is the proportion of total Gini impurity reduction contributed by that feature across all splits in the tree. Values sum to 1. A feature with importance 0.72 did 72% of the work. Features near 0.00 contributed almost nothing and could potentially be dropped.</p>
+  </div>
+
+  <h3>Strengths and Limitations</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4 style="color:var(--green); margin-top:0">Strengths</h4>
+      <ul>
+        <li>Highly interpretable — you can read the tree</li>
+        <li>No feature scaling needed</li>
+        <li>Handles numeric AND categorical features</li>
+        <li>Built-in feature importance</li>
+        <li>Fast prediction — scales with depth, not data size</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="color:var(--red); margin-top:0">Limitations</h4>
+      <ul>
+        <li>Overfits easily without pruning</li>
+        <li>High variance — small data changes → different tree</li>
+        <li>Biased on imbalanced data (use class_weight)</li>
+        <li>Linear axis-aligned boundaries only</li>
+        <li>Single trees rarely the best performer — use Random Forests (L13)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="alert alert-warn">⚠️ A single decision tree is high-variance — small changes to training data can produce a completely different tree. Random Forests (L13) solve this by averaging hundreds of trees.</div>
 
   <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w12"></div></div>
   <div class="btn-row">
@@ -1958,11 +2152,13 @@ const ALL_QUESTIONS = [
   {t:'w11', q:'What does a ROC-AUC of 0.5 indicate?', opts:['A perfect classifier','A good classifier','No better than random guessing','A classifier that always predicts negative'], ans:2, exp:'AUC = 0.5 means the model ranks positives vs negatives no better than random. AUC = 1.0 is perfect. AUC < 0.5 is worse than random — just flip the predictions.'},
 
   // L12
-  {t:'w12', q:'What does a decision tree use to decide how to split data at each node?', opts:['Random feature selection','A metric like Gini impurity or entropy measuring class mixing','The correlation between features','Gradient descent'], ans:1, exp:'At each node the tree tries all possible splits and picks the one that most reduces impurity (Gini or entropy), creating purer child nodes.'},
-  {t:'w12', q:'What is Gini impurity?', opts:['A measure of how deep the tree is','A measure of class mixing at a node — 0 means perfectly pure','A regularisation technique','The accuracy of the split'], ans:1, exp:'Gini = 1 − Σpᵢ². At 0, all samples belong to one class. At maximum, classes are equally mixed. The tree picks splits that minimise Gini.'},
-  {t:'w12', q:'A decision tree with unlimited max_depth will likely:', opts:['Underfit the training data','Perfectly generalise to new data','Overfit — memorise the training data including noise','Produce the optimal model'], ans:2, exp:'Without depth limits, a tree creates splits for every training point. This memorises noise and produces terrible test performance (high variance).'},
-  {t:'w12', q:'What is the purpose of max_depth in a decision tree?', opts:['To speed up training','To limit tree complexity and prevent overfitting','To increase feature importance scores','To set the number of output classes'], ans:1, exp:'max_depth caps how many split levels the tree can make. Shallower trees → simpler boundary → less overfitting, but risk underfitting if too shallow.'},
-  {t:'w12', q:'What does feature_importances_ measure in a decision tree?', opts:['How many times a feature appears','How much each feature reduces impurity across all splits','The correlation between features and target','The number of splits using each feature'], ans:1, exp:'Feature importance = total impurity reduction weighted by samples affected by each feature\'s splits. Higher = more important. Values sum to 1.'},
+  {t:'w12', q:'When fitting a decision tree, Gini impurity should be:', opts:['Maximised at each split','Minimised at each split — lower means purer child nodes','Kept at exactly 0.5 for balance','Ignored — only entropy matters'], ans:1, exp:'Gini = 1 − Σpᵢ². A pure node (all one class) has Gini=0. The tree tries every feature and threshold, picks the split that minimises the weighted Gini of the children.'},
+  {t:'w12', q:'When using entropy as the splitting criterion, information gain should be:', opts:['Minimised','Kept at 0','Maximised — the split that reduces entropy the most is chosen','Ignored — Gini is always better'], ans:2, exp:'Information gain = reduction in entropy after a split. Higher = better. The tree picks the split with the highest information gain. Both Gini and entropy lead to very similar trees in practice.'},
+  {t:'w12', q:'A tree trained with max_depth=None shows 100% training accuracy and 72% test accuracy. What is happening?', opts:['The model is underfitting','The model has perfectly learned the data','Overfitting — the tree memorised noise in the training data','The dataset is too small to evaluate'], ans:2, exp:'A large train/test gap with near-100% training accuracy is the classic overfitting symptom. The tree created splits for individual training points. Fix: constrain max_depth and min_samples_split.'},
+  {t:'w12', q:'Why does a decision tree not need feature scaling?', opts:['It uses regularisation instead','It only compares a single feature against a threshold at each node — scale differences between features are irrelevant','It normalises features internally','sklearn applies scaling automatically for trees'], ans:1, exp:'Each tree split asks "is feature X above threshold T?" — one feature at a time, in its own units. Unlike KNN (distances) or logistic regression (dot products), no cross-feature comparison is made, so scale doesn\'t matter.'},
+  {t:'w12', q:'What does class_weight="balanced" do in DecisionTreeClassifier?', opts:['Balances the number of features','Automatically increases the penalty for misclassifying the minority class','Ensures equal max_depth across branches','Balances Gini and entropy criteria'], ans:1, exp:'On imbalanced data, a tree can achieve high accuracy by predicting the majority class almost always. class_weight="balanced" weights errors on minority class examples proportionally higher, forcing the tree to learn the minority class.'},
+  {t:'w12', q:'What does feature_importances_ tell you?', opts:['How many times a feature was split on','The proportion of total Gini impurity reduction each feature contributed across all splits','The correlation between each feature and the target','The number of leaves containing each feature'], ans:1, exp:'Feature importance = weighted Gini impurity reduction per feature across the whole tree. Values sum to 1. High importance = that feature did most of the work separating classes.'},
+  {t:'w12', q:'Why is duration dropped from the bank marketing dataset before training?', opts:['It has too many missing values','It is a categorical feature','It causes data leakage — duration is only known after the call ends, which is after the outcome is determined','It has zero feature importance'], ans:2, exp:'Data leakage: duration (length of the call) is only known after the phone call ends, meaning after the customer has already given their answer. Using it would give the model information it could never have in a real prediction scenario.'},
 
   // L13
   {t:'w13', q:'What is bagging?', opts:['Removing irrelevant features','Training multiple models on random bootstrap samples and combining predictions','Pruning a decision tree','A regularisation technique'], ans:1, exp:'Bagging (Bootstrap Aggregating) trains many models, each on a random sample with replacement. Combining them reduces variance compared to any single model.'},
@@ -2080,11 +2276,13 @@ const FLASHCARDS = [
   {t:'w11', front:'Precision vs recall tradeoff?', back:'Lower threshold → higher recall, lower precision (catch more, more false alarms).\nHigher threshold → higher precision, lower recall.'},
   {t:'w11', front:'What does ROC-AUC measure?', back:'The model\'s ability to rank positives above negatives across all thresholds.\nAUC=1.0 perfect · AUC=0.5 random · AUC<0.5 worse than random.'},
   // L12
-  {t:'w12', front:'What is Gini impurity?', back:'Gini = 1 − Σpᵢ². Measures class mixing at a node. 0 = perfectly pure (one class only). Decision trees pick splits that minimise Gini.'},
-  {t:'w12', front:'What is information gain?', back:'The reduction in entropy after a split. Used as an alternative to Gini. Higher information gain = better split.'},
-  {t:'w12', front:'What causes overfitting in decision trees?', back:'Growing too deep — the tree creates splits for individual training points and memorises noise. Fix: limit max_depth, min_samples_split.'},
-  {t:'w12', front:'What does max_depth control?', back:'The maximum number of split levels. Shallower = simpler = less overfitting. Too shallow = underfitting.'},
-  {t:'w12', front:'What does feature_importances_ tell you?', back:'Total impurity reduction each feature contributes across all splits, weighted by samples. Higher = more important. Values sum to 1.'},
+  {t:'w12', front:'Gini impurity — formula and goal?', back:'G(S) = 1 − Σpᵢ². Measures class mixing. 0 = pure (one class). 0.5 = 50/50 mix (worst).\nGoal: MINIMISE Gini — lower = purer children = better split.'},
+  {t:'w12', front:'Information gain — formula and goal?', back:'Gain = Entropy(parent) − weighted Entropy(children).\nEntropy: H = −Σ pᵢ log₂(pᵢ).\nGoal: MAXIMISE information gain. Both Gini and entropy find the same splits in practice.'},
+  {t:'w12', front:'Two symptoms of a decision tree overfitting?', back:'1. Training accuracy ≈ 100%, test accuracy much lower (large gap).\n2. Extremely deep tree — nearly unique path per training point.\nFix: constrain max_depth, min_samples_split, min_samples_leaf.'},
+  {t:'w12', front:'Why no feature scaling for decision trees?', back:'Each split asks "is feature X > threshold T?" — one feature at a time in its own units. No cross-feature comparison is made, so scale differences are irrelevant. Unlike KNN or logistic regression.'},
+  {t:'w12', front:'What does class_weight="balanced" do?', back:'Increases the penalty for misclassifying minority class examples. The tree can no longer ignore rare classes and get high accuracy by predicting the majority class every time.'},
+  {t:'w12', front:'What does feature_importances_ measure?', back:'Proportion of total Gini impurity reduction contributed by each feature across all splits, weighted by samples. Values sum to 1. High value = that feature did most of the separating work.'},
+  {t:'w12', front:'What is GridSearchCV doing?', back:'Trying every combination of hyperparameters from a grid, evaluating each with k-fold cross-validation. Returns best_params_ — the combination with the highest average validation score.'},
   // L13
   {t:'w13', front:'What is bagging?', back:'Bootstrap Aggregating: train many models on random samples (with replacement) and combine their predictions. Reduces variance.'},
   {t:'w13', front:'How does a Random Forest classify?', back:'Each tree votes for a class. Majority vote = final prediction. For regression: average of all tree outputs.'},
