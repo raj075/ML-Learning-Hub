@@ -219,7 +219,8 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
     <div class="nav-item nav-item-sub" onclick="nav('w5')" id="nav-w5"><span class="icon">🎓</span> L5: Supervised Learning<span class="check" id="check-w5"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('w6')" id="nav-w6"><span class="icon">📋</span> L6: Assumptions<span class="check" id="check-w6"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('w7')" id="nav-w7"><span class="icon">🔧</span> L7: Scikit-Learn<span class="check" id="check-w7"></span></div>
-    <div class="nav-item nav-item-sub" onclick="nav('w8')" id="nav-w8"><span class="icon">🔭</span> L8: PCA<span class="check" id="check-w8"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('w8')"     id="nav-w8"    ><span class="icon">🔭</span> L8: PCA<span class="check" id="check-w8"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('fsheet')" id="nav-fsheet"><span class="icon">📋</span> Foundation Cheat Sheet</div>
   </div>
 
   <div class="nav-item nav-item-chapter" onclick="toggleChapter('classification')"><span class="icon">📚</span> Supervised Classification<span class="chapter-arrow" id="arrow-classification">▾</span></div>
@@ -814,7 +815,238 @@ X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
   </div>
   <div class="btn-row">
     <button class="btn btn-primary" onclick="startTopicQuiz('w8')">📝 Full Topic Quiz</button>
-    <button class="btn btn-outline" onclick="nav('quiz')">📝 Take Mixed Quiz</button>
+    <button class="btn btn-outline" onclick="nav('fsheet')">Next: Foundation Cheat Sheet →</button>
+  </div>
+</div>
+
+<!-- FOUNDATION CHEAT SHEET -->
+<div class="page" id="page-fsheet">
+  <h2>📋 Foundation Chapter — Cheat Sheet</h2>
+  <p class="subtitle">Everything from L1–L8 in one place. Concepts, formulas, rules, and when to use what.</p>
+
+  <!-- ── LESSON OVERVIEW ── -->
+  <h3>What Each Lesson Covers</h3>
+  <table>
+    <tr><th>Lesson</th><th>Core topic</th><th>Key takeaway</th></tr>
+    <tr><td><strong>L1: Preprocessing</strong></td><td>Cleaning raw data for ML</td><td>Models can't handle NaNs, text, or huge scale differences — fix them first</td></tr>
+    <tr><td><strong>L2: Feature Engineering</strong></td><td>Creating better inputs</td><td>Linear models are linear in weights, not features — hand-craft curves via x², log(x), etc.</td></tr>
+    <tr><td><strong>L3: Linear Regression (GD)</strong></td><td>Iterative fitting via gradient descent</td><td>MSE is the loss; gradient tells direction; learning rate controls step size</td></tr>
+    <tr><td><strong>L4: OLS Method</strong></td><td>Closed-form exact solution</td><td>β* = (XᵀX)⁻¹Xᵀy — one formula gives the exact optimal weights</td></tr>
+    <tr><td><strong>L5: Supervised Learning</strong></td><td>Full ML pipeline + regularisation</td><td>Split before fitting; Ridge/Lasso prevent overfitting by penalising large weights</td></tr>
+    <tr><td><strong>L6: Assumptions</strong></td><td>When linear regression is valid</td><td>5 assumptions about the error term — check with residual plots</td></tr>
+    <tr><td><strong>L7: Scikit-Learn</strong></td><td>The sklearn API</td><td>One universal pattern: import → create → fit → predict → score</td></tr>
+    <tr><td><strong>L8: PCA</strong></td><td>Dimensionality reduction</td><td>Find the directions of maximum variance; compress features without losing information</td></tr>
+  </table>
+
+  <!-- ── L1 ── -->
+  <h3>L1: Data Preprocessing</h3>
+
+  <h4>Encoding Categorical Features</h4>
+  <table>
+    <tr><th>Method</th><th>What it does</th><th>Use when</th></tr>
+    <tr><td><strong>One-Hot Encoding</strong></td><td>Creates K binary columns (one per category). Only one is 1 at a time.</td><td>Nominal categories with no order (colour, city)</td></tr>
+    <tr><td><strong>Label Encoding</strong></td><td>Maps categories to integers (0, 1, 2 …)</td><td>Ordinal categories with a natural order (low/med/high)</td></tr>
+  </table>
+
+  <h4>Scaling Continuous Features</h4>
+  <table>
+    <tr><th>Scaler</th><th>Formula</th><th>Output</th><th>Use when</th></tr>
+    <tr><td><strong>StandardScaler</strong></td><td>(x − μ) / σ</td><td>Mean=0, Std=1</td><td>Data roughly normal, default choice</td></tr>
+    <tr><td><strong>MinMaxScaler</strong></td><td>(x − min) / (max − min)</td><td>[0, 1]</td><td>No outliers, neural networks</td></tr>
+    <tr><td><strong>RobustScaler</strong></td><td>(x − median) / IQR</td><td>Outlier-resistant</td><td>Data has significant outliers</td></tr>
+  </table>
+
+  <h4>Missing Values</h4>
+  <table>
+    <tr><th>Strategy</th><th>When to use</th></tr>
+    <tr><td>Drop row</td><td>Missing is random, you have enough data, and the column is important</td></tr>
+    <tr><td>Fill with mean</td><td>Symmetric distribution, no outliers</td></tr>
+    <tr><td>Fill with median</td><td>Skewed distribution or outliers present</td></tr>
+    <tr><td>Fill with 0</td><td>Missing genuinely means "none" (e.g. delay columns)</td></tr>
+    <tr><td>Interpolate</td><td>Time series — use neighbouring values</td></tr>
+  </table>
+
+  <h4>Outlier Detection — Z-Score</h4>
+  <p>Z-score = (x − μ) / σ. Values with |z| &gt; 3 are flagged as outliers. Not appropriate when data is not normally distributed — use IQR method instead.</p>
+
+  <div class="alert alert-warn">⚠️ <strong>Look-ahead bias (data leakage):</strong> Always fit your scaler on training data only — never on the full dataset before splitting. Fitting on test data contaminates results.</div>
+
+  <!-- ── L2 ── -->
+  <h3>L2: Feature Engineering</h3>
+  <table>
+    <tr><th>Transformation</th><th>Example</th><th>Captures</th></tr>
+    <tr><td><strong>Polynomial</strong></td><td>x, x², x³</td><td>Smooth curves and acceleration effects</td></tr>
+    <tr><td><strong>Log / Sqrt</strong></td><td>log(price), √distance</td><td>Rapidly growing relationships — compresses large values</td></tr>
+    <tr><td><strong>Threshold / Step</strong></td><td>temperature &gt; 22 → 1 else 0</td><td>Sudden switch in behaviour at a value</td></tr>
+    <tr><td><strong>Sinusoidal</strong></td><td>sin(month × 2π/12)</td><td>Periodic / seasonal patterns</td></tr>
+    <tr><td><strong>Binning</strong></td><td>age → young/middle/senior</td><td>Step changes across a range</td></tr>
+  </table>
+  <div class="card"><div class="key-concept"><div class="label">Key insight</div><p>A linear model is linear in its <em>weights</em>, not its features. You can feed it x² or log(x) — it still combines them linearly — but the resulting prediction is a curve. Feature engineering gives linear models the power to fit non-linear patterns.</p></div></div>
+
+  <!-- ── L3 ── -->
+  <h3>L3: Linear Regression — Gradient Descent</h3>
+  <div class="card" style="text-align:center; padding:16px; margin-bottom:12px">
+    <div style="font-size:1rem; color:var(--accent); font-family:monospace">Model: ŷ = w·x + b &nbsp;&nbsp;|&nbsp;&nbsp; Loss: MSE = (1/N) × Σ(yᵢ − ŷᵢ)²</div>
+  </div>
+  <table>
+    <tr><th>Concept</th><th>Role</th><th>What goes wrong when it's off</th></tr>
+    <tr><td><strong>Learning rate (η)</strong></td><td>Step size per iteration</td><td>Too large → overshoots minimum (diverges). Too small → extremely slow convergence.</td></tr>
+    <tr><td><strong>Gradient</strong></td><td>Direction of steepest increase in MSE</td><td>We subtract it to move downhill toward minimum</td></tr>
+    <tr><td><strong>Iterations</strong></td><td>How many update steps</td><td>Too few → not converged. Too many → wasted time (no benefit)</td></tr>
+  </table>
+  <h4>R² — Coefficient of Determination</h4>
+  <table>
+    <tr><th>R² value</th><th>Meaning</th></tr>
+    <tr><td>1.0</td><td>Perfect fit — model explains all variance</td></tr>
+    <tr><td>0.9</td><td>Explains 90% of variation — excellent</td></tr>
+    <tr><td>0.0</td><td>No better than predicting the mean every time</td></tr>
+    <tr><td>&lt; 0</td><td>Worse than the mean — something is wrong</td></tr>
+  </table>
+
+  <!-- ── L4 ── -->
+  <h3>L4: OLS — Closed-Form Solution</h3>
+  <div class="card" style="text-align:center; padding:20px; margin-bottom:12px">
+    <div style="font-size:1.2rem; color:var(--accent); font-family:monospace">β* = (XᵀX)⁻¹ Xᵀy</div>
+    <p style="margin:8px 0 0; font-size:0.82rem">One matrix equation gives the exact optimal weights — no iterations, no learning rate.</p>
+  </div>
+  <table>
+    <tr><th></th><th>Gradient Descent</th><th>OLS</th></tr>
+    <tr><td>Approach</td><td>Iterative — thousands of steps</td><td>Direct — one formula</td></tr>
+    <tr><td>Result</td><td>Approximate (converges)</td><td>Exact optimal</td></tr>
+    <tr><td>Needs learning rate?</td><td>Yes</td><td>No</td></tr>
+    <tr><td>Fails when</td><td>Learning rate wrong, not converged</td><td>XᵀX is not invertible (multicollinearity)</td></tr>
+    <tr><td>Use when</td><td>Large datasets, complex models</td><td>Moderate-sized tabular data</td></tr>
+  </table>
+  <h4>Reading the Statsmodels Summary</h4>
+  <table>
+    <tr><th>Output</th><th>What it means</th></tr>
+    <tr><td><strong>coef</strong></td><td>The β weight for each feature — effect size per unit increase</td></tr>
+    <tr><td><strong>P&gt;|t| (p-value)</strong></td><td>&lt; 0.05 → feature is statistically significant (reject H₀ that coef = 0)</td></tr>
+    <tr><td><strong>R-squared</strong></td><td>Proportion of variance in y explained by the model</td></tr>
+    <tr><td><strong>F-statistic</strong></td><td>Is the overall model better than just predicting the mean? (p &lt; 0.05 = yes)</td></tr>
+  </table>
+
+  <!-- ── L5 ── -->
+  <h3>L5: Supervised Learning — The Full ML Pipeline</h3>
+  <div class="card"><div class="key-concept"><div class="label">The golden rule</div><p>Never evaluate your model on the data it trained on. Always split into train and test <em>first</em>, then fit only on training data.</p></div></div>
+
+  <h4>Bias-Variance Tradeoff</h4>
+  <table>
+    <tr><th>Pattern</th><th>Train score</th><th>Test score</th><th>Problem</th><th>Fix</th></tr>
+    <tr><td>Underfitting</td><td>Low</td><td>Low</td><td>High bias — model too simple</td><td>More features, higher degree polynomial, less regularisation</td></tr>
+    <tr><td>Good fit</td><td>High</td><td>High</td><td>None ✓</td><td>—</td></tr>
+    <tr><td>Overfitting</td><td>Very high</td><td>Low</td><td>High variance — memorised noise</td><td>Regularisation, less features, more data</td></tr>
+  </table>
+
+  <h4>Regularisation</h4>
+  <table>
+    <tr><th>Type</th><th>Penalty term added to MSE</th><th>Effect</th><th>Use when</th></tr>
+    <tr><td><strong>Ridge (L2)</strong></td><td>λ × Σβⱼ²</td><td>Shrinks all weights toward zero, none become exactly zero</td><td>All features likely relevant — default choice</td></tr>
+    <tr><td><strong>Lasso (L1)</strong></td><td>λ × Σ|βⱼ|</td><td>Can push weights to exactly zero — automatic feature selection</td><td>Many irrelevant features — want a sparse model</td></tr>
+  </table>
+  <p><strong>λ (alpha in sklearn):</strong> Higher λ = stronger regularisation = simpler model = risk of underfitting. Lower λ = weaker regularisation = risk of overfitting.</p>
+
+  <!-- ── L6 ── -->
+  <h3>L6: Assumptions of Linear Regression</h3>
+  <p>Every linear model assumes: <strong>y = wx + b + ε</strong>. The 5 assumptions describe what ε (the error term) should look like. Violated assumptions mean your coefficients and p-values can't be trusted.</p>
+  <table>
+    <tr><th>#</th><th>Assumption</th><th>What it means</th><th>How to check</th><th>Fix if violated</th></tr>
+    <tr><td>1</td><td><strong>Linearity</strong></td><td>Features have a constant linear effect on output</td><td>Scatter plot each feature vs target</td><td>Feature engineering (x², log)</td></tr>
+    <tr><td>2</td><td><strong>Homoscedasticity</strong></td><td>Error spread is constant — not wider for larger predictions</td><td>Residual vs predicted plot — should be a flat band</td><td>Log-transform the target</td></tr>
+    <tr><td>3</td><td><strong>Independence</strong></td><td>Each row's error is independent of every other row's</td><td>Time series or spatial patterns in residuals</td><td>Time-series models (ARIMA)</td></tr>
+    <tr><td>4</td><td><strong>Normality</strong></td><td>Errors follow a normal distribution</td><td>Q-Q plot, Shapiro-Wilk test (p &lt; 0.05 = non-normal)</td><td>Less critical for prediction tasks</td></tr>
+    <tr><td>5</td><td><strong>No Multicollinearity</strong></td><td>Input features are not highly correlated with each other</td><td>Correlation heatmap — |r| &gt; 0.7 is a red flag</td><td>Drop one feature, use PCA, or Lasso</td></tr>
+  </table>
+  <h4>Residual Plot Diagnosis</h4>
+  <table>
+    <tr><th>What you see</th><th>Assumption violated</th></tr>
+    <tr><td>Random horizontal band</td><td>All good ✓</td></tr>
+    <tr><td>Clear curve or wave</td><td>Linearity</td></tr>
+    <tr><td>Fan / funnel shape (spread grows)</td><td>Homoscedasticity</td></tr>
+    <tr><td>Repeating wave pattern</td><td>Independence</td></tr>
+    <tr><td>Heavy tails in histogram of residuals</td><td>Normality</td></tr>
+  </table>
+
+  <!-- ── L7 ── -->
+  <h3>L7: Scikit-Learn</h3>
+  <h4>The Universal sklearn Pattern</h4>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LinearRegression  <span class="cm"># 1. Import</span>
+
+model = <span class="fn">LinearRegression</span>()                        <span class="cm"># 2. Create (set hyperparams here)</span>
+model.<span class="fn">fit</span>(X_train, y_train)                        <span class="cm"># 3. Fit on training data ONLY</span>
+y_pred = model.<span class="fn">predict</span>(X_test)                    <span class="cm"># 4. Predict on new data</span>
+score = model.<span class="fn">score</span>(X_test, y_test)               <span class="cm"># 5. Evaluate on test data</span></pre></div>
+  <table>
+    <tr><th>Concept</th><th>Rule</th></tr>
+    <tr><td><strong>Hyperparameters</strong></td><td>Set by you before training: Ridge(alpha=0.5). Access with model.get_params()</td></tr>
+    <tr><td><strong>Learned parameters</strong></td><td>Found by model during fit(). Access with model.coef_ and model.intercept_ (trailing underscore)</td></tr>
+    <tr><td><strong>Transformers</strong></td><td>Use fit_transform() on training data, transform() only on test data</td></tr>
+    <tr><td><strong>PascalCase names</strong></td><td>Classes with state: LinearRegression, StandardScaler, Ridge</td></tr>
+    <tr><td><strong>snake_case names</strong></td><td>Stateless functions: train_test_split, mean_squared_error</td></tr>
+  </table>
+
+  <!-- ── L8 ── -->
+  <h3>L8: PCA — Dimensionality Reduction</h3>
+  <div class="card"><div class="key-concept"><div class="label">Core idea</div><p>Find the directions through the data that capture the most variance (information). Project all data onto K of these directions, reducing from d features to K features without losing much information.</p></div></div>
+  <table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td><strong>Principal component</strong></td><td>A direction ordered by how much variance it captures (PC1 = most, PC2 = second most, …)</td></tr>
+    <tr><td><strong>Component scores</strong></td><td>Where each data point lands when projected onto a principal direction</td></tr>
+    <tr><td><strong>Explained variance ratio</strong></td><td>Fraction of total variance captured by each component — check cumulative sum to decide how many to keep</td></tr>
+    <tr><td><strong>Scree plot</strong></td><td>Plot of explained variance per component — look for the elbow (point of diminishing returns)</td></tr>
+  </table>
+  <h4>When to use PCA</h4>
+  <table>
+    <tr><th>Reason</th><th>Why PCA helps</th></tr>
+    <tr><td>Multicollinearity</td><td>PCA components are always orthogonal (uncorrelated) by design</td></tr>
+    <tr><td>Too many features</td><td>Compress d features to k &lt;&lt; d with minimal information loss</td></tr>
+    <tr><td>Visualisation</td><td>Reduce to 2–3 components to plot high-dimensional data</td></tr>
+    <tr><td>Speed</td><td>Fewer features = faster model training</td></tr>
+  </table>
+  <div class="alert alert-warn">⚠️ Always StandardScale before PCA. Features with larger scales will dominate the variance calculation — the first component will just track the biggest-scale feature.</div>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+
+scaler = <span class="fn">StandardScaler</span>()
+X_scaled = scaler.<span class="fn">fit_transform</span>(X_train)     <span class="cm"># scale first, always</span>
+
+pca = <span class="fn">PCA</span>(n_components=<span class="nu">2</span>)
+pca.<span class="fn">fit</span>(X_scaled)
+<span class="fn">print</span>(pca.explained_variance_ratio_)          <span class="cm"># e.g. [0.72, 0.15]</span>
+<span class="fn">print</span>(pca.explained_variance_ratio_.<span class="fn">cumsum</span>()) <span class="cm"># cumulative: [0.72, 0.87]</span>
+
+X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class="cm"># now only 2 features</span></pre></div>
+
+  <!-- ── GOLDEN RULES ── -->
+  <h3>Foundation Golden Rules</h3>
+  <div class="card">
+    <div class="key-concept"><div class="label">Rules that apply across the whole Foundation chapter</div>
+      <ol>
+        <li><strong>Split before you do anything</strong> — preprocessing, scaling, PCA all go inside the CV loop or Pipeline</li>
+        <li><strong>Fit transformers on training data only</strong> — StandardScaler, PCA, OneHotEncoder: fit on train, transform on both</li>
+        <li><strong>Check class/target distribution before modelling</strong> — skewed targets often need log-transform</li>
+        <li><strong>Check residual plots after fitting</strong> — they reveal which of the 5 assumptions are violated</li>
+        <li><strong>R² alone is not enough</strong> — always also look at residual plots; a bad fit can still show a reasonable R²</li>
+        <li><strong>High training score ≠ good model</strong> — always compare train vs test; a large gap means overfitting</li>
+        <li><strong>Correlation heatmap before OLS</strong> — multicollinearity (|r| &gt; 0.7 between features) makes coefficients unreliable</li>
+        <li><strong>Use sklearn Pipelines</strong> — prevents accidental data leakage when combining preprocessing and modelling</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ── REGRESSION METRICS ── -->
+  <h3>Regression Metrics Reference</h3>
+  <table>
+    <tr><th>Metric</th><th>Formula</th><th>Interpretation</th><th>Sensitive to outliers?</th></tr>
+    <tr><td><strong>MSE</strong></td><td>(1/N) × Σ(y − ŷ)²</td><td>Average squared error — penalises large errors heavily</td><td>Yes — squared</td></tr>
+    <tr><td><strong>RMSE</strong></td><td>√MSE</td><td>Same units as target — easier to interpret than MSE</td><td>Yes</td></tr>
+    <tr><td><strong>MAE</strong></td><td>(1/N) × Σ|y − ŷ|</td><td>Average absolute error — more robust to outliers</td><td>Less so</td></tr>
+    <tr><td><strong>R²</strong></td><td>1 − SSE/SST</td><td>Proportion of variance explained. 1 = perfect, 0 = no better than mean</td><td>No</td></tr>
+  </table>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="nav('quiz')">📝 Take Full Quiz</button>
+    <button class="btn btn-outline" onclick="nav('flashcards')">🃏 Review Flashcards</button>
   </div>
 </div>
 
