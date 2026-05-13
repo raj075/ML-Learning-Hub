@@ -1925,6 +1925,30 @@ score = knn.<span class="fn">score</span>(X_test_scaled, y_test)         <span c
   <h2>↔️ Support Vector Machines (SVM)</h2>
   <p class="subtitle">Find the boundary that keeps classes as far apart as possible — and prove it's the best possible one.</p>
 
+  <h3>Why SVM Instead of Logistic Regression?</h3>
+  <p>Logistic regression also draws a decision boundary — so why use SVM at all? The key difference: logistic regression finds <em>a</em> boundary, SVM finds the <em>best</em> boundary.</p>
+  <div class="code-block"><pre><span class="cm">●  ●              ○  ○</span>
+<span class="cm">  ●      ???      ○       ← many valid lines exist in this gap</span>
+<span class="cm">●  ●              ○  ○</span>
+<span class="cm">
+Logistic Regression → wherever gradient descent stops (somewhat arbitrary)
+SVM               → the unique line sitting in the exact middle of the widest gap</span></pre></div>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Better generalisation on small datasets</div><p>Logistic regression's boundary could sit close to one class. SVM's boundary is provably as far as possible from both — a test point near the boundary is more likely to be classified correctly.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Handles non-linear patterns</div><p>Logistic regression is stuck in the original feature space unless you manually engineer features. SVM uses the kernel trick to implicitly work in a higher-dimensional space where non-linear data becomes linearly separable.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Works in high-dimensional spaces</div><p>In text classification (10,000+ features, maybe 1,000 documents), logistic regression tends to overfit. SVM's sparse solution — only support vectors matter — naturally resists this.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Globally optimal solution</div><p>Margin maximisation is a convex problem — one unique answer, always. Logistic regression can get stuck or vary based on initialisation and learning rate.</p></div></div>
+  </div>
+  <table>
+    <tr><th>Situation</th><th>SVM advantage over Logistic Regression</th></tr>
+    <tr><td>Small dataset</td><td>Max-margin boundary generalises better</td></tr>
+    <tr><td>High-dimensional features (text, genomics)</td><td>Sparse solution, less overfitting</td></tr>
+    <tr><td>Non-linear patterns in data</td><td>Kernel trick — no manual feature engineering needed</td></tr>
+    <tr><td>Noisy overlapping classes</td><td>Soft margin is more principled than log-loss</td></tr>
+    <tr><td>Large, clean, linearly separable data</td><td>Both give similar results — logistic regression is faster</td></tr>
+  </table>
+  <div class="alert alert-info">On large clean datasets with linear separability, logistic regression and linear SVM perform almost identically. The SVM advantage shows most clearly when data is limited, high-dimensional, or non-linearly separable.</div>
+
   <h3>The Problem With Other Boundaries</h3>
   <p>For a linearly separable dataset, there are <strong>infinitely many valid hyperplanes</strong> that correctly separate two classes. Logistic Regression picks one via gradient descent — it works, but the choice is somewhat arbitrary. SVM asks a sharper question:</p>
   <div class="card">
