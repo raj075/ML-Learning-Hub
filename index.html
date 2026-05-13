@@ -234,6 +234,7 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
     <div class="nav-item nav-item-sub" onclick="nav('w15')" id="nav-w15"><span class="icon">↔️</span> L15: SVM<span class="check" id="check-w15"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('w16')" id="nav-w16"><span class="icon">🔄</span> L16: Full Pipeline<span class="check" id="check-w16"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('mc')"  id="nav-mc" ><span class="icon">🎯</span> L17: Multiclass<span class="check" id="check-mc"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('csheet')" id="nav-csheet"><span class="icon">📋</span> Classification Cheat Sheet</div>
   </div>
 
   <div class="sidebar-section" style="margin-top:10px">Practice</div>
@@ -2529,7 +2530,218 @@ ovo.<span class="fn">fit</span>(X_train, y_train)
   <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-mc"></div></div>
   <div class="btn-row">
     <button class="btn btn-primary" onclick="startTopicQuiz('mc')">📝 Full Topic Quiz</button>
-    <button class="btn btn-outline" onclick="nav('quiz')">📝 Take Mixed Quiz</button>
+    <button class="btn btn-outline" onclick="nav('csheet')">Next: Cheat Sheet →</button>
+  </div>
+</div>
+
+<!-- CLASSIFICATION CHEAT SHEET -->
+<div class="page" id="page-csheet">
+  <h2>📋 Supervised Classification — Cheat Sheet</h2>
+  <p class="subtitle">Everything from L9–L17 in one place. Models, metrics, rules, and when to use what.</p>
+
+  <!-- ── MODEL COMPARISON ── -->
+  <h3>Model Comparison at a Glance</h3>
+  <table>
+    <tr>
+      <th>Model</th>
+      <th>Needs scaling?</th>
+      <th>Multiclass native?</th>
+      <th>Key strength</th>
+      <th>Key weakness</th>
+      <th>Key params</th>
+    </tr>
+    <tr><td><strong>Naive Bayes</strong></td><td>No</td><td>Yes</td><td>Fast, works well on small data and text</td><td>Naive independence assumption often violated</td><td>var_smoothing (Gaussian)</td></tr>
+    <tr><td><strong>Logistic Regression</strong></td><td>Yes</td><td>OvR / softmax</td><td>Probabilistic output, interpretable coefficients</td><td>Linear boundary only</td><td>C, penalty (L1/L2), max_iter</td></tr>
+    <tr><td><strong>Decision Tree</strong></td><td>No</td><td>Yes</td><td>Interpretable, handles mixed feature types</td><td>High variance — overfits easily</td><td>max_depth, min_samples_split, class_weight</td></tr>
+    <tr><td><strong>Random Forest</strong></td><td>No</td><td>Yes</td><td>Robust, low variance, feature importance</td><td>Slow to predict, less interpretable</td><td>n_estimators, max_depth, max_features</td></tr>
+    <tr><td><strong>KNN</strong></td><td>Yes</td><td>Yes</td><td>No training step, simple intuition</td><td>Slow at prediction, fails in high dimensions</td><td>n_neighbors, metric</td></tr>
+    <tr><td><strong>SVM (RBF)</strong></td><td>Yes</td><td>OvR / OvO</td><td>Max-margin, powerful for small/high-dim data</td><td>Slow on large datasets, needs tuning</td><td>C, gamma, kernel</td></tr>
+    <tr><td><strong>SVM (Linear)</strong></td><td>Yes</td><td>OvR</td><td>Fast, scales to large data (LinearSVC)</td><td>Linear boundary only</td><td>C, max_iter</td></tr>
+  </table>
+
+  <!-- ── WHEN TO USE WHAT ── -->
+  <h3>When to Use Which Model</h3>
+  <table>
+    <tr><th>Situation</th><th>Recommended model</th><th>Why</th></tr>
+    <tr><td>Very small dataset (&lt;500 rows)</td><td>Naive Bayes or SVM (RBF)</td><td>Both generalise well with limited data</td></tr>
+    <tr><td>Text / high-dimensional features</td><td>Naive Bayes or LinearSVC</td><td>Both handle sparse, high-dim data natively</td></tr>
+    <tr><td>Need an interpretable model</td><td>Logistic Regression or Decision Tree</td><td>Coefficients / tree structure are human-readable</td></tr>
+    <tr><td>Non-linear patterns, moderate data</td><td>Random Forest or SVM (RBF)</td><td>Both capture non-linearity without deep models</td></tr>
+    <tr><td>Large dataset (&gt;100k rows)</td><td>Logistic Regression or LinearSVC</td><td>Both scale linearly; SVC (kernel) is O(n²–n³)</td></tr>
+    <tr><td>Imbalanced classes</td><td>Any + class_weight='balanced'</td><td>Adjusts loss to stop model ignoring minority class</td></tr>
+    <tr><td>Quick baseline</td><td>Logistic Regression</td><td>Fast, reliable, gives probability outputs</td></tr>
+    <tr><td>Best possible accuracy (not interpretability)</td><td>Random Forest or tuned SVM</td><td>Ensemble / kernel methods beat linear models on complex data</td></tr>
+  </table>
+
+  <!-- ── SCALING CHECKLIST ── -->
+  <h3>Scaling — Must vs Not Needed</h3>
+  <table>
+    <tr><th>Always scale</th><th>Never need scaling</th></tr>
+    <tr><td>Logistic Regression</td><td>Decision Tree</td></tr>
+    <tr><td>SVM (all kernels)</td><td>Random Forest</td></tr>
+    <tr><td>KNN</td><td>Naive Bayes</td></tr>
+  </table>
+  <div class="alert alert-warn">⚠️ Always wrap scaler in a Pipeline when using cross-validation or GridSearchCV. Fitting the scaler outside the CV loop leaks test data statistics into training.</div>
+
+  <!-- ── EVALUATION METRICS ── -->
+  <h3>Evaluation Metrics Reference</h3>
+
+  <h4>The Confusion Matrix</h4>
+  <table>
+    <tr><th></th><th>Predicted Positive</th><th>Predicted Negative</th></tr>
+    <tr><td><strong>Actually Positive</strong></td><td>TP — True Positive ✓</td><td>FN — False Negative ✗ (missed it)</td></tr>
+    <tr><td><strong>Actually Negative</strong></td><td>FP — False Positive ✗ (false alarm)</td><td>TN — True Negative ✓</td></tr>
+  </table>
+
+  <h4>The Four Key Metrics</h4>
+  <table>
+    <tr><th>Metric</th><th>Formula</th><th>Answers</th><th>Use when</th></tr>
+    <tr><td><strong>Accuracy</strong></td><td>(TP+TN) / total</td><td>How often is the model right overall?</td><td>Balanced classes only</td></tr>
+    <tr><td><strong>Precision</strong></td><td>TP / (TP+FP)</td><td>When it predicts positive, how often is it right?</td><td>FP is costly (spam filter, fraud alert)</td></tr>
+    <tr><td><strong>Recall</strong></td><td>TP / (TP+FN)</td><td>Of all actual positives, how many did it catch?</td><td>FN is costly (cancer screening, fraud detection)</td></tr>
+    <tr><td><strong>F1 Score</strong></td><td>2×(P×R)/(P+R)</td><td>Balanced trade-off between precision and recall</td><td>Imbalanced classes, when both matter</td></tr>
+  </table>
+
+  <h4>ROC-AUC</h4>
+  <p>Plots True Positive Rate vs False Positive Rate across all thresholds. AUC = area under this curve. AUC = 1.0 is perfect, AUC = 0.5 is no better than random. Use when you need to evaluate the model's ranking ability independent of a fixed threshold.</p>
+
+  <h4>Multiclass Averaging</h4>
+  <table>
+    <tr><th>Average type</th><th>What it means</th><th>Use when</th></tr>
+    <tr><td><strong>Macro avg</strong></td><td>Equal weight per class — rare classes matter as much as common ones</td><td>All classes are equally important regardless of size</td></tr>
+    <tr><td><strong>Weighted avg</strong></td><td>Weighted by class size — large classes dominate</td><td>Reflects real-world distribution of predictions</td></tr>
+    <tr><td><strong>Per-class</strong></td><td>Individual precision/recall/F1 per class</td><td>Diagnosing which specific classes the model fails on</td></tr>
+  </table>
+
+  <!-- ── MODEL CARDS ── -->
+  <h3>Model Deep Dives</h3>
+
+  <h4>Naive Bayes (L9b)</h4>
+  <div class="card"><div class="key-concept">
+    <p><strong>What it does:</strong> Uses Bayes' Rule to compute P(class|features) ∝ P(features|class) × P(class). Assumes all features are conditionally independent given the class (the "naive" assumption).</p>
+    <p><strong>Gaussian NB:</strong> assumes each feature follows a normal distribution within each class. Estimates mean and variance per feature per class from training data.</p>
+    <p><strong>Key params:</strong> var_smoothing — adds a small value to variances to avoid zero-probability issues (like Laplace smoothing for continuous features).</p>
+    <p><strong>Pros:</strong> Fast to train and predict · Works well on small datasets · Handles high-dimensional text features · Native multiclass</p>
+    <p><strong>Cons:</strong> Naive independence assumption is rarely true in practice · Can be overconfident · Poor probability calibration</p>
+  </div></div>
+
+  <h4>Logistic Regression (L10)</h4>
+  <div class="card"><div class="key-concept">
+    <p><strong>What it does:</strong> Passes a linear combination of features through the sigmoid function σ(z) = 1/(1+e⁻ᶻ) to output a probability between 0 and 1. Optimises cross-entropy loss via gradient descent.</p>
+    <p><strong>Key params:</strong> C (inverse regularisation — higher C = less regularisation = risk of overfitting) · penalty ('l2' shrinks all weights, 'l1' sets small weights to zero — feature selection) · max_iter (increase if convergence warning)</p>
+    <p><strong>Pros:</strong> Fast · Probabilistic output · Interpretable coefficients · Good baseline · Works well on linearly separable data</p>
+    <p><strong>Cons:</strong> Can only learn linear decision boundaries · Needs scaling · Struggles with highly non-linear patterns</p>
+  </div></div>
+
+  <h4>Decision Trees (L12)</h4>
+  <div class="card"><div class="key-concept">
+    <p><strong>What it does:</strong> Recursively splits data using the feature+threshold that best reduces impurity. Each internal node is a question, each leaf is a prediction.</p>
+    <p><strong>Splitting criteria:</strong> Gini impurity (minimise) — default in sklearn. Information gain/entropy (maximise) — alternative. Both give similar results.</p>
+    <p><strong>Gini impurity:</strong> 1 − Σpᵢ² — 0 means a pure node (all one class), 0.5 is maximally impure (50/50 split for binary).</p>
+    <p><strong>Key params:</strong> max_depth · min_samples_split · min_samples_leaf · class_weight='balanced'</p>
+    <p><strong>Overfitting symptoms:</strong> 100% training accuracy + low test accuracy · Very deep tree · Poor recall on minority class</p>
+    <p><strong>Pros:</strong> No scaling needed · Interpretable · Handles mixed types · Native multiclass</p>
+    <p><strong>Cons:</strong> High variance — small data changes cause very different trees · Overfits without constraints</p>
+  </div></div>
+
+  <h4>Random Forest (L13)</h4>
+  <div class="card"><div class="key-concept">
+    <p><strong>What it does:</strong> Trains many decision trees, each on a random bootstrap sample of data and a random subset of features at each split. Prediction = majority vote across all trees.</p>
+    <p><strong>Why it works:</strong> Each tree is high-variance but low-bias. Averaging many uncorrelated trees cancels out individual errors — the ensemble is stable.</p>
+    <p><strong>Key params:</strong> n_estimators (more trees = better, up to diminishing returns, never overfits) · max_depth · max_features (feature randomness) · class_weight</p>
+    <p><strong>Pros:</strong> Low variance · Robust to overfitting · feature_importances_ built-in · No scaling needed · Native multiclass</p>
+    <p><strong>Cons:</strong> Slow to predict · Less interpretable than a single tree · Large memory footprint</p>
+  </div></div>
+
+  <h4>KNN (L14)</h4>
+  <div class="card"><div class="key-concept">
+    <p><strong>What it does:</strong> Stores all training data. For a new point, finds the K nearest training examples (by Euclidean distance) and takes a majority vote. No explicit training step — "lazy learner".</p>
+    <p><strong>Key params:</strong> n_neighbors K (small K = overfit / jagged boundary, large K = underfit / smooth boundary) · metric (euclidean, manhattan)</p>
+    <p><strong>Curse of dimensionality:</strong> In high dimensions, all points become approximately equidistant — "nearest" stops being meaningful. KNN degrades above ~20 features.</p>
+    <p><strong>K=1 training accuracy:</strong> Always 100% (each point is its own nearest neighbour) — meaningless, never use training accuracy with KNN.</p>
+    <p><strong>Pros:</strong> No training · Simple · Non-linear boundary · Native multiclass · Probability output via vote proportions</p>
+    <p><strong>Cons:</strong> Slow prediction O(n) · Needs scaling · Fails in high dimensions · Large memory (stores all training data)</p>
+  </div></div>
+
+  <h4>SVM (L15)</h4>
+  <div class="card"><div class="key-concept">
+    <p><strong>What it does:</strong> Finds the hyperplane that maximises the margin — the perpendicular gap between the boundary and the nearest training points (support vectors). Only support vectors define the model.</p>
+    <p><strong>C parameter:</strong> Inverse of regularisation. High C = narrow margin, few violations, risk of overfitting. Low C = wide margin, more violations, simpler model.</p>
+    <p><strong>Kernel trick:</strong> Maps data to a higher-dimensional space where it's linearly separable — without computing the transformation directly. RBF kernel: K(x,x') = exp(−γ‖x−x'‖²).</p>
+    <p><strong>Gamma (RBF only):</strong> High γ = narrow influence per point → wiggly boundary → overfit. Low γ = wide influence → smooth boundary → underfit. Always tune C and γ together.</p>
+    <p><strong>Pros:</strong> Globally optimal solution · Works in high dimensions · Memory efficient (only support vectors) · Kernel trick handles non-linearity</p>
+    <p><strong>Cons:</strong> O(n²–n³) — very slow on large data · Needs scaling · No probability output without probability=True (slower) · Hard to interpret</p>
+  </div></div>
+
+  <h4>Model Validation (L16)</h4>
+  <div class="card"><div class="key-concept">
+    <p><strong>Bias–Variance tradeoff:</strong> Total Error = Bias² + Variance + Irreducible Noise. High bias = underfitting (model too simple). High variance = overfitting (model memorises training data).</p>
+    <p><strong>K-fold cross-validation:</strong> Split data into K folds. Train on K−1, validate on 1. Rotate K times. Report mean ± std of the metric. Use StratifiedKFold for classification (preserves class balance in each fold).</p>
+    <p><strong>GridSearchCV:</strong> Exhaustively tries all hyperparameter combinations × K folds. n_jobs=-1 runs in parallel. Use refit=False when scoring with multiple metrics.</p>
+    <p><strong>Pipeline rule:</strong> Always wrap scaler + model in a Pipeline before GridSearchCV. Prevents data leakage — scaler is refit on each training fold only.</p>
+    <p><strong>Data leakage:</strong> Using information from the test set during training (e.g., fitting a scaler on all data before splitting). Produces optimistic metrics that don't hold on new data.</p>
+  </div></div>
+
+  <h4>Multiclass Classification (L17)</h4>
+  <div class="card"><div class="key-concept">
+    <p><strong>Native multiclass:</strong> Decision Tree, KNN, Random Forest, Naive Bayes — no strategy needed.</p>
+    <p><strong>One-vs-Rest (OvR):</strong> K binary classifiers, one per class. At prediction, highest confidence score wins. Default in sklearn for LR and SVM.</p>
+    <p><strong>One-vs-One (OvO):</strong> K(K−1)/2 classifiers, one per pair. Each is a head-to-head duel — class with most wins is predicted. Cleaner learning per classifier (balanced 2-class problem).</p>
+    <p><strong>Confusion matrix:</strong> K×K grid. Rows = true class, columns = predicted. Diagonal = correct. Off-diagonal reveals which classes are confused with each other.</p>
+    <p><strong>Macro avg:</strong> equal weight per class. <strong>Weighted avg:</strong> weighted by class size. Big gap between them → rare classes are being missed.</p>
+  </div></div>
+
+  <!-- ── REGULARISATION ── -->
+  <h3>Regularisation Reference</h3>
+  <table>
+    <tr><th>Type</th><th>Penalty</th><th>Effect</th><th>Use when</th></tr>
+    <tr><td><strong>L2 (Ridge)</strong></td><td>β²</td><td>Shrinks all weights toward zero — none become exactly zero</td><td>Default choice, most situations</td></tr>
+    <tr><td><strong>L1 (Lasso)</strong></td><td>|β|</td><td>Sets small weights to exactly zero — automatic feature selection</td><td>You have many irrelevant features</td></tr>
+    <tr><td><strong>C in LR/SVM</strong></td><td>inverse of λ</td><td>High C = less regularisation. Low C = more regularisation</td><td>Tune via GridSearchCV</td></tr>
+  </table>
+
+  <!-- ── CLASS IMBALANCE ── -->
+  <h3>Class Imbalance — What to Do</h3>
+  <table>
+    <tr><th>Problem</th><th>Fix</th></tr>
+    <tr><td>Model predicts majority class only</td><td>class_weight='balanced' in any sklearn classifier</td></tr>
+    <tr><td>Accuracy looks high but minority class has 0 recall</td><td>Switch metric to F1, precision, recall or ROC-AUC</td></tr>
+    <tr><td>Very rare positive class</td><td>Lower the decision threshold (e.g. 0.3 instead of 0.5) to increase recall</td></tr>
+    <tr><td>Evaluating on imbalanced data</td><td>Always use StratifiedKFold so each fold preserves the class ratio</td></tr>
+  </table>
+
+  <!-- ── OVERFITTING QUICK REF ── -->
+  <h3>Overfitting vs Underfitting — Quick Reference</h3>
+  <table>
+    <tr><th></th><th>Overfitting (high variance)</th><th>Underfitting (high bias)</th></tr>
+    <tr><td>Symptom</td><td>High train score, low test score</td><td>Low train score, low test score</td></tr>
+    <tr><td>Decision Tree fix</td><td>Reduce max_depth, increase min_samples_split</td><td>Increase max_depth</td></tr>
+    <tr><td>SVM fix</td><td>Reduce C, reduce gamma</td><td>Increase C, increase gamma</td></tr>
+    <tr><td>KNN fix</td><td>Increase K</td><td>Decrease K</td></tr>
+    <tr><td>LR fix</td><td>Reduce C (more regularisation)</td><td>Increase C (less regularisation)</td></tr>
+    <tr><td>Random Forest fix</td><td>Reduce max_depth, increase min_samples_leaf</td><td>Increase n_estimators or depth</td></tr>
+  </table>
+
+  <!-- ── GOLDEN RULES ── -->
+  <h3>The Golden Rules</h3>
+  <div class="card">
+    <div class="key-concept"><div class="label">Rules that apply to every classification problem</div>
+      <ol>
+        <li><strong>Scale before KNN, SVM, and Logistic Regression</strong> — all three are distance- or gradient-based</li>
+        <li><strong>Always use a Pipeline</strong> when combining preprocessing with CV or GridSearchCV — prevents data leakage</li>
+        <li><strong>Never evaluate on training data</strong> — use a held-out test set or cross-validation</li>
+        <li><strong>Check class balance first</strong> — if imbalanced, use class_weight='balanced' and report F1/recall, not just accuracy</li>
+        <li><strong>Look at per-class metrics</strong> — a high overall accuracy can hide a model that completely misses a rare class</li>
+        <li><strong>Tune C and gamma together for SVM</strong> — they interact; tuning one without the other is unreliable</li>
+        <li><strong>Decision Trees overfit by default</strong> — always constrain with max_depth or min_samples_split</li>
+        <li><strong>Use StratifiedKFold for classification</strong> — standard KFold can produce folds with missing classes</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="nav('quiz')">📝 Take Full Quiz</button>
+    <button class="btn btn-outline" onclick="nav('flashcards')">🃏 Review Flashcards</button>
   </div>
 </div>
 
