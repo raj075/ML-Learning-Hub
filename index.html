@@ -756,58 +756,200 @@ model.<span class="fn">score</span>(X_test, y_test)</pre></div>
 <!-- WEEK 8 -->
 <div class="page" id="page-w8">
   <h2>🔭 Dimensionality Reduction — PCA</h2>
-  <p class="subtitle">Finding hidden structure in unlabelled data.</p>
+  <p class="subtitle">Compress many features into a few — without losing what matters.</p>
 
-  <h3>Unsupervised Learning</h3>
-  <p>No target variable. No predictions. Instead, the question is: <em>"What is the underlying structure of my data?"</em></p>
-
+  <h3>The Problem PCA Solves</h3>
+  <p>Real datasets often have dozens or hundreds of features. Many of these features are correlated — they're measuring similar things from slightly different angles. This causes two problems:</p>
   <div class="card-grid">
-    <div class="card"><div class="key-concept"><div class="label">Supervised (Lessons 5-8)</div><p>Inputs → predict Target. Labelled data required.</p></div></div>
-    <div class="card"><div class="key-concept"><div class="label">Unsupervised (PCA)</div><p>Find structure in all variables together. No labels needed.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Multicollinearity</div><p>Highly correlated features make model coefficients unstable and hard to interpret. Small changes in data cause large swings in weights.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Curse of Dimensionality</div><p>In high dimensions, all data points become approximately equidistant — patterns disappear. Distance-based models (KNN, SVM) degrade badly.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Slow training</div><p>More features = more computation. Reducing to k &lt;&lt; d features speeds up every model downstream.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Can't visualise</div><p>Humans can only see 2–3 dimensions. PCA lets you plot 30-feature data in 2D and visually spot clusters or separations.</p></div></div>
   </div>
 
-  <h3>The Core Intuition</h3>
-  <p>If French and Spanish scores are correlated, there's likely a hidden <strong>latent factor</strong> — language aptitude — driving both. PCA finds these hidden directions automatically.</p>
-  <p>The key rule: <strong>the best direction to summarise data is the one that maximises the variance of the projections.</strong> High variance = more information kept.</p>
+  <h3>The Core Idea</h3>
+  <p>PCA finds new axes through your data — called <strong>principal components</strong> — ordered by how much variance they capture. The first component points in the direction of maximum spread. The second points in the direction of maximum remaining spread, at right angles to the first. And so on.</p>
+  <div class="card"><div class="key-concept"><div class="label">The key rule</div><p>The best direction to summarise data is the one that <strong>maximises the variance of the projections</strong>. High variance = more information kept. You keep the top k components and discard the rest — losing only the least informative directions.</p></div></div>
 
-  <h3>Principal Components</h3>
-  <table>
-    <tr><th>Term</th><th>Meaning</th></tr>
-    <tr><td><strong>Principal direction</strong></td><td>A direction through the data ordered by variance explained (most first)</td></tr>
-    <tr><td><strong>Component scores</strong></td><td>Where each data point lands when projected onto a principal direction</td></tr>
-    <tr><td><strong>Explained variance ratio</strong></td><td>% of total variance captured by k components</td></tr>
-  </table>
+  <p>Think of it like finding the best angle to photograph a 3D object in 2D: most of the structure is preserved, only the depth is lost.</p>
 
-  <h3>PCA in Sklearn</h3>
+  <h3>The Breast Cancer Example — Why PCA Helps</h3>
+  <p>The sklearn breast cancer dataset has <strong>569 patients</strong> and <strong>30 features</strong> measuring tumour cell characteristics (radius, texture, perimeter, area, smoothness … measured as mean, standard error, and worst value). Many of these 30 features are highly correlated — mean radius, mean perimeter, and mean area all increase together. PCA can compress all 30 into just 2 components that still capture most of the structure.</p>
+
+  <h3>Step 1 — Load and Inspect the Data</h3>
+  <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+<span class="kw">from</span> sklearn.datasets <span class="kw">import</span> load_breast_cancer
+
+cancer = <span class="fn">load_breast_cancer</span>()
+
+<span class="cm"># cancer.keys() → ['data', 'target', 'target_names', 'DESCR', 'feature_names']</span>
+<span class="cm"># cancer['data'].shape → (569, 30)  — 569 patients, 30 features</span>
+
+df = pd.<span class="fn">DataFrame</span>(cancer[<span class="st">'data'</span>], columns=cancer[<span class="st">'feature_names'</span>])
+df.<span class="fn">head</span>()</pre></div>
+
+  <p>The 30 features span wildly different scales — area ranges from 143 to 2501, while smoothness ranges from 0.05 to 0.16. This makes scaling mandatory before PCA.</p>
+
+  <h3>Step 2 — Scale the Data (Always Required)</h3>
+  <p>PCA finds the directions of maximum <em>variance</em>. Without scaling, a feature measured in large units (e.g. area ~ 1000) will dominate purely because its numbers are bigger — not because it's more informative. StandardScaler brings every feature to mean=0, std=1 so they all contribute fairly.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+
+scaler = <span class="fn">StandardScaler</span>()
+scaler.<span class="fn">fit</span>(df)                        <span class="cm"># learn mean and std from data</span>
+scaled_data = scaler.<span class="fn">transform</span>(df)   <span class="cm"># apply: each feature now mean=0, std=1</span>
+
+<span class="cm"># scaled_data.shape → (569, 30)  — same shape, different values</span>
+<span class="cm"># Values like: [[ 1.097, -2.073,  1.270, ..., 2.296,  2.751,  1.937],</span>
+<span class="cm">#               [ 1.830, -0.354,  1.686, ..., 1.087, -0.244,  0.281], ...]</span></pre></div>
+
+  <h3>Step 3 — Apply PCA</h3>
   <div class="code-block"><pre><span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA
 
-pca = <span class="fn">PCA</span>(n_components=<span class="nu">2</span>)
-pca.<span class="fn">fit</span>(X_train)                     <span class="cm"># fit on training data only!</span>
+pca = <span class="fn">PCA</span>(n_components=<span class="nu">2</span>)   <span class="cm"># keep only the 2 most informative directions</span>
+pca.<span class="fn">fit</span>(scaled_data)
 
-X_train_reduced = pca.<span class="fn">transform</span>(X_train)
-X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
+x_pca = pca.<span class="fn">transform</span>(scaled_data)
 
-<span class="fn">print</span>(pca.explained_variance_ratio_)  <span class="cm"># e.g. [0.72, 0.15]</span>
-<span class="fn">print</span>(pca.components_)               <span class="cm"># the principal directions</span></pre></div>
+<span class="fn">print</span>(scaled_data.shape)  <span class="cm"># (569, 30) — original: 30 features</span>
+<span class="fn">print</span>(x_pca.shape)        <span class="cm"># (569,  2) — compressed: 2 components</span>
 
-  <h3>How Much to Reduce?</h3>
-  <div class="card">
-    <p>Plot explained variance per component (scree plot) and look for the "elbow" — the point where adding more components gives diminishing returns.</p>
-    <ul>
-      <li>Explained variance ≈ 0.5 → little to gain, data nearly uncorrelated</li>
-      <li>Explained variance ≈ 0.9+ → you've kept most information in far fewer dimensions</li>
-    </ul>
-  </div>
+<span class="cm"># x_pca looks like:  [[ 9.19,  1.95],</span>
+<span class="cm">#                     [ 2.39, -3.77],</span>
+<span class="cm">#                     [ 5.73, -1.08], ...]</span>
+<span class="cm"># Each row is one patient, now described by just 2 numbers instead of 30</span></pre></div>
 
-  <h3>When to Use PCA</h3>
+  <p>We went from 30 features to 2 — a 93% reduction in dimensionality. But how much information did we keep?</p>
+
+  <h3>Step 4 — Check Explained Variance</h3>
+  <div class="code-block"><pre><span class="fn">print</span>(pca.explained_variance_ratio_)
+<span class="cm"># → [0.4427, 0.1897]</span>
+<span class="cm"># PC1 captures 44% of variance, PC2 captures 19%</span>
+<span class="cm"># Together: 44 + 19 = 63% of all information in just 2 components</span>
+
+<span class="fn">print</span>(pca.explained_variance_ratio_.<span class="fn">cumsum</span>())
+<span class="cm"># → [0.4427, 0.6324]</span></pre></div>
+
+  <div class="card"><div class="key-concept"><div class="label">What 63% means</div><p>With just 2 numbers per patient (instead of 30), we keep 63% of all the variation in the original data. That's enough to visually separate malignant from benign tumours in a scatter plot — something impossible with raw 30-feature data.</p></div></div>
+
+  <h3>Step 5 — Visualise the Result</h3>
+  <div class="code-block"><pre>plt.<span class="fn">figure</span>(figsize=(<span class="nu">8</span>, <span class="nu">6</span>))
+plt.<span class="fn">scatter</span>(x_pca[:, <span class="nu">0</span>], x_pca[:, <span class="nu">1</span>],
+            c=cancer[<span class="st">'target'</span>],       <span class="cm"># colour by class: 0=malignant, 1=benign</span>
+            cmap=<span class="st">'plasma'</span>)
+plt.<span class="fn">xlabel</span>(<span class="st">'First Principal Component'</span>)
+plt.<span class="fn">ylabel</span>(<span class="st">'Second Principal Component'</span>)
+plt.<span class="fn">colorbar</span>()
+plt.<span class="fn">show</span>()
+
+<span class="cm"># Result: two visible clusters — malignant (left) and benign (right)</span>
+<span class="cm"># This separation was hiding in 30 dimensions; PCA reveals it in 2</span></pre></div>
+
+  <h3>Understanding What the Components Mean</h3>
+  <p>Each principal component is a weighted combination of the original 30 features. You can inspect <code>pca.components_</code> to see which original features drive each component most strongly. In this dataset, PC1 is dominated by size-related features (radius, area, perimeter) — larger tumours score high on PC1, which correlates with malignancy.</p>
+
+  <div class="code-block"><pre><span class="cm"># pca.components_ shape: (n_components, n_features) → (2, 30)</span>
+<span class="cm"># Each row is one principal component</span>
+<span class="cm"># Each value is the weight of one original feature in that component</span>
+
+component_df = pd.<span class="fn">DataFrame</span>(pca.components_,
+                              columns=cancer[<span class="st">'feature_names'</span>],
+                              index=[<span class="st">'PC1'</span>, <span class="st">'PC2'</span>])
+<span class="fn">print</span>(component_df.<span class="fn">T</span>.<span class="fn">sort_values</span>(<span class="st">'PC1'</span>, ascending=<span class="kw">False</span>).head(<span class="nu">5</span>))
+<span class="cm"># Shows which features contribute most to PC1</span></pre></div>
+
+  <h3>How Much to Reduce? — The Scree Plot</h3>
+  <p>Run PCA with all components first, then plot the explained variance per component. Look for the "elbow" — the point where adding more components gives diminishing returns.</p>
+  <div class="code-block"><pre>pca_full = <span class="fn">PCA</span>()             <span class="cm"># no n_components = keep all 30</span>
+pca_full.<span class="fn">fit</span>(scaled_data)
+
+plt.<span class="fn">plot</span>(pca_full.explained_variance_ratio_.<span class="fn">cumsum</span>())
+plt.<span class="fn">axhline</span>(y=<span class="nu">0.95</span>, color=<span class="st">'r'</span>, linestyle=<span class="st">'--'</span>, label=<span class="st">'95% threshold'</span>)
+plt.<span class="fn">xlabel</span>(<span class="st">'Number of Components'</span>)
+plt.<span class="fn">ylabel</span>(<span class="st">'Cumulative Explained Variance'</span>)
+plt.<span class="fn">legend</span>()
+plt.<span class="fn">show</span>()
+
+<span class="cm"># For breast cancer: ~7 components reach 95% of variance</span>
+<span class="cm"># That's a reduction from 30 → 7 while keeping 95% of information</span></pre></div>
+
   <table>
-    <tr><th>Reason</th><th>Explanation</th></tr>
-    <tr><td>Multicollinearity</td><td>PCA components are always uncorrelated by design</td></tr>
-    <tr><td>Too many features</td><td>Compress d features to k &lt;&lt; d without losing much information</td></tr>
-    <tr><td>Visualisation</td><td>Reduce to 2-3 components to plot and spot clusters</td></tr>
+    <tr><th>Cumulative variance</th><th>Interpretation</th></tr>
+    <tr><td>≈ 0.50</td><td>Features are weakly correlated — little to compress</td></tr>
+    <tr><td>≈ 0.90–0.95</td><td>Good sweet spot — most information kept, big dimension reduction</td></tr>
+    <tr><td>≈ 1.00</td><td>Keeping everything — no reduction happened</td></tr>
   </table>
 
-  <div class="alert alert-warn">⚠️ Always standardise your data before PCA. Features with larger scales will dominate the variance calculation purely because their numbers are bigger.</div>
+  <h3>PCA vs No PCA — When to Use It</h3>
+  <table>
+    <tr><th>Situation</th><th>Use PCA?</th><th>Why</th></tr>
+    <tr><td>Features are highly correlated</td><td>Yes</td><td>PCA removes redundancy — components are always orthogonal (uncorrelated)</td></tr>
+    <tr><td>KNN or SVM on high-dim data</td><td>Yes</td><td>Distance-based models degrade in high dimensions — PCA fixes this</td></tr>
+    <tr><td>Want to visualise clusters</td><td>Yes</td><td>Reduce to 2–3 components and plot</td></tr>
+    <tr><td>Need to explain which features matter</td><td>No</td><td>PCA components are abstract combinations — you lose interpretability</td></tr>
+    <tr><td>Decision Trees or Random Forests</td><td>Rarely</td><td>Tree models handle high dimensions and correlated features natively</td></tr>
+    <tr><td>Data has few, independent features</td><td>No</td><td>Nothing to compress — PCA adds complexity with no benefit</td></tr>
+  </table>
+
+  <div class="alert alert-warn">⚠️ <strong>Always scale before PCA.</strong> Fit the scaler on training data only, then transform both train and test. Never fit on the full dataset before splitting — that leaks test data statistics.</div>
+
+  <h3>How Does the Model Predict on New Data?</h3>
+  <p>This is one of the most important things to understand. When you call <code>pca.fit(scaled_data)</code>, PCA doesn't just produce compressed data — it learns the <strong>transformation rules</strong> (the component directions). Those rules are stored permanently in the fitted PCA object.</p>
+  <p>When new data arrives, you don't re-fit PCA. You apply the <strong>same transformation</strong> to the new data — new data gets projected onto the same axes the model was trained on:</p>
+
+  <div class="code-block"><pre><span class="cm"># Training time — PCA learns the directions from training data</span>
+pca.<span class="fn">fit</span>(X_train_scaled)
+X_train_pca = pca.<span class="fn">transform</span>(X_train_scaled)   <span class="cm"># 30 features → 2 components</span>
+model.<span class="fn">fit</span>(X_train_pca, y_train)               <span class="cm"># model trained on 2 components</span>
+
+<span class="cm"># Prediction time — apply the SAME transformation to new data</span>
+X_new_scaled = scaler.<span class="fn">transform</span>(X_new)         <span class="cm"># scale using training stats</span>
+X_new_pca    = pca.<span class="fn">transform</span>(X_new_scaled)     <span class="cm"># 30 features → 2 components</span>
+model.<span class="fn">predict</span>(X_new_pca)                        <span class="cm"># model sees 2 numbers, predicts</span></pre></div>
+
+  <p>The model <strong>never sees the original 30 features</strong>. It was trained on the 2 PCA components, and it predicts on the 2 PCA components. This works because PCA components are fixed mathematical directions — PC1 is something like:</p>
+  <div class="code-block"><pre><span class="cm">PC1 = 0.22×radius + 0.18×texture + 0.23×perimeter + 0.22×area + ...</span>
+<span class="cm"># Just a weighted sum of the original features — deterministic and fixed</span>
+<span class="cm"># New data plugs into the same formula → arrives in the same 2D space</span></pre></div>
+
+  <h3>Why You Must Use a Pipeline</h3>
+  <p>This is exactly why Pipeline is critical. Without it you must manually apply the scaler and PCA in the correct order every time — and if you forget one step or apply them in the wrong order, predictions are garbage.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+<span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
+
+pipeline = <span class="fn">Pipeline</span>([
+    (<span class="st">'scaler'</span>, <span class="fn">StandardScaler</span>()),    <span class="cm"># step 1: scale</span>
+    (<span class="st">'pca'</span>,    <span class="fn">PCA</span>(n_components=<span class="nu">2</span>)),  <span class="cm"># step 2: compress</span>
+    (<span class="st">'model'</span>,  <span class="fn">LogisticRegression</span>())   <span class="cm"># step 3: predict</span>
+])
+
+pipeline.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="cm"># At prediction time — all 3 steps happen automatically in the right order</span>
+pipeline.<span class="fn">predict</span>(X_new)   <span class="cm"># raw 30 features go in, prediction comes out</span></pre></div>
+
+  <h3>What Goes Wrong Without a Pipeline</h3>
+  <table>
+    <tr><th>Mistake</th><th>Consequence</th></tr>
+    <tr><td>Re-fit PCA on new data</td><td>New data gets different axes — the model cannot interpret the result</td></tr>
+    <tr><td>Forget to scale before transforming</td><td>PCA projects onto the wrong place in feature space</td></tr>
+    <tr><td>Fit scaler on test / new data</td><td>Different scaling stats → different PCA coordinates → garbage predictions</td></tr>
+    <tr><td>Apply steps in wrong order</td><td>Completely wrong input to the model</td></tr>
+  </table>
+  <div class="alert alert-info">The model never needs to understand the original 30 features. PCA is just a fixed mathematical transformation — new data gets fed through the same transformation (same scaler stats, same PCA directions) and arrives in the same reduced space the model was trained on.</div>
+
+  <h3>Key Terms</h3>
+  <table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td><strong>Principal Component</strong></td><td>A new axis — a linear combination of all original features — ordered by variance captured (PC1 = most)</td></tr>
+    <tr><td><strong>Component Scores</strong></td><td>Where each data point lands when projected onto a principal component — the new feature values</td></tr>
+    <tr><td><strong>Explained Variance Ratio</strong></td><td>Fraction of total variance captured by each component. Sums to 1.0 across all components.</td></tr>
+    <tr><td><strong>Scree Plot</strong></td><td>Plot of explained variance per component. Look for the elbow to choose k.</td></tr>
+    <tr><td><strong>pca.components_</strong></td><td>Shape (k, d) — the loadings matrix. Each row is a component; each value is the weight of one original feature.</td></tr>
+  </table>
 
   <div class="inline-quiz">
     <h3>🧪 Quick Check</h3>
