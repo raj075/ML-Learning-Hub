@@ -233,6 +233,7 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
     <div class="nav-item nav-item-sub" onclick="nav('w14')" id="nav-w14"><span class="icon">📍</span> L14: KNN<span class="check" id="check-w14"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('w15')" id="nav-w15"><span class="icon">↔️</span> L15: SVM<span class="check" id="check-w15"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('w16')" id="nav-w16"><span class="icon">🔄</span> L16: Full Pipeline<span class="check" id="check-w16"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('mc')"  id="nav-mc" ><span class="icon">🎯</span> L17: Multiclass<span class="check" id="check-mc"></span></div>
   </div>
 
   <div class="sidebar-section" style="margin-top:10px">Practice</div>
@@ -851,6 +852,7 @@ X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
           <div class="topic-chip" id="chip-w14" onclick="toggleChip('w14')">L14: KNN</div>
           <div class="topic-chip" id="chip-w15" onclick="toggleChip('w15')">L15: SVM</div>
           <div class="topic-chip" id="chip-w16" onclick="toggleChip('w16')">L16: Pipeline</div>
+          <div class="topic-chip" id="chip-mc"  onclick="toggleChip('mc')">L17: Multiclass</div>
         </div>
       </div>
     </div>
@@ -932,6 +934,7 @@ X_test_reduced  = pca.<span class="fn">transform</span>(X_test)
         <div class="topic-chip" id="fc-chip-w14" onclick="fcFilter('w14')">L14: KNN</div>
         <div class="topic-chip" id="fc-chip-w15" onclick="fcFilter('w15')">L15: SVM</div>
         <div class="topic-chip" id="fc-chip-w16" onclick="fcFilter('w16')">L16: Pipeline</div>
+        <div class="topic-chip" id="fc-chip-mc"  onclick="fcFilter('mc')">L17: Multiclass</div>
       </div>
     </div>
   </div>
@@ -2362,6 +2365,170 @@ grid.<span class="fn">fit</span>(X_train, y_train)
   <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w16"></div></div>
   <div class="btn-row">
     <button class="btn btn-primary" onclick="startTopicQuiz('w16')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('mc')">Next: Multiclass →</button>
+  </div>
+</div>
+
+<!-- LESSON 17 -->
+<div class="page" id="page-mc">
+  <h2>🎯 Multiclass Classification</h2>
+  <p class="subtitle">Predicting one of three or more classes — and how to extend binary classifiers to do it.</p>
+
+  <h3>Binary vs Multiclass</h3>
+  <p>Everything learned so far (logistic regression, SVM, naive bayes) was designed for <strong>binary classification</strong> — exactly 2 classes. <strong>Multiclass</strong> means predicting one of 3 or more classes:</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Binary examples</div><p>Spam / not spam · Delayed / not delayed · Cancer / no cancer</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Multiclass examples</div><p>Glass type (6 classes) · Handwritten digit (0–9) · Disease diagnosis (healthy / condition A / B / C)</p></div></div>
+  </div>
+  <p>The challenge: most classifiers output a single score (class 0 vs class 1). Extending to K classes requires a strategy.</p>
+
+  <h3>Two Types of Models</h3>
+  <table>
+    <tr><th>Native multiclass (just works)</th><th>Why</th></tr>
+    <tr><td>Decision Tree</td><td>Each leaf can be any class — splits recursively on all K classes</td></tr>
+    <tr><td>KNN</td><td>Majority vote among K neighbours — vote goes to any class</td></tr>
+    <tr><td>Random Forest</td><td>Ensemble of trees — same reason as Decision Tree</td></tr>
+    <tr><td>Naive Bayes</td><td>Computes P(class|features) for each class, picks highest</td></tr>
+  </table>
+  <table>
+    <tr><th>Binary-only (needs a strategy)</th><th>Default sklearn strategy</th></tr>
+    <tr><td>Logistic Regression</td><td>One-vs-Rest (OvR)</td></tr>
+    <tr><td>SVM (LinearSVC)</td><td>One-vs-Rest (OvR)</td></tr>
+  </table>
+
+  <h3>Strategy 1: One-vs-Rest (OvR)</h3>
+  <p>Train <strong>K separate binary classifiers</strong>, one per class. Each answers: "Is this example my class, or NOT my class?" At prediction time, all K classifiers give a confidence score — whichever is most confident wins.</p>
+  <div class="code-block"><pre><span class="cm"># 6 glass types → 6 classifiers:</span>
+<span class="cm">Classifier 1 (containers):  "I'm 15% confident"</span>
+<span class="cm">Classifier 2 (tableware):   "I'm  8% confident"</span>
+<span class="cm">Classifier 3 (headlamps):   "I'm 72% confident"  ← highest → prediction</span>
+<span class="cm">Classifier 4 (vehicle):     "I'm 31% confident"</span>
+<span class="cm">Classifier 5 (float):       "I'm 44% confident"</span>
+<span class="cm">Classifier 6 (non-float):   "I'm 20% confident"</span>
+<span class="cm">
+Final prediction → headlamps</span></pre></div>
+  <div class="alert alert-info">These scores don't sum to 1 — you're doing a relative comparison (who is most confident), not computing true probabilities. That's why softmax (multinomial LR) is sometimes better for logistic regression.</div>
+
+  <h3>Strategy 2: One-vs-One (OvO)</h3>
+  <p>Train one binary classifier for <strong>every pair of classes</strong>. For K classes: K(K−1)/2 classifiers. Each test example goes to all classifiers — the class that wins the most head-to-head duels wins overall.</p>
+  <div class="code-block"><pre><span class="cm"># 6 classes → 6×5/2 = 15 classifiers, e.g.:</span>
+<span class="cm">containers vs tableware   → containers wins</span>
+<span class="cm">containers vs headlamps   → headlamps wins</span>
+<span class="cm">headlamps  vs vehicle     → headlamps wins</span>
+<span class="cm">headlamps  vs float       → headlamps wins</span>
+<span class="cm">... (all 15 duels)</span>
+<span class="cm">
+Win counts: headlamps=4, float=4, containers=3, tableware=3 ...</span>
+<span class="cm">Final prediction → headlamps (or float — tie broken by confidence margin)</span></pre></div>
+  <p><strong>Why OvO can be better:</strong> each classifier only ever sees 2 balanced classes — no "1 class vs all others" imbalance. Classes are learned more cleanly.</p>
+
+  <h3>OvR vs OvO Comparison</h3>
+  <table>
+    <tr><th></th><th>OvR</th><th>OvO</th></tr>
+    <tr><td>Number of classifiers</td><td>K</td><td>K(K−1)/2</td></tr>
+    <tr><td>Training data per classifier</td><td>Full dataset (imbalanced)</td><td>Small subset (2 classes, balanced)</td></tr>
+    <tr><td>Speed</td><td>Faster</td><td>Slower (more models)</td></tr>
+    <tr><td>Works well when</td><td>Classes well-separated</td><td>Classes overlap, small dataset</td></tr>
+    <tr><td>sklearn default</td><td>Yes</td><td>Via OneVsOneClassifier wrapper</td></tr>
+  </table>
+
+  <h3>Evaluating Multiclass Models</h3>
+  <p>Accuracy collapses everything to one number — it hides which classes are failing. You need per-class performance.</p>
+
+  <h4>Confusion Matrix (K × K)</h4>
+  <p>Rows = true class, columns = predicted class. Diagonal = correct predictions. Off-diagonal cells reveal which classes get confused with each other.</p>
+  <div class="code-block"><pre><span class="cm">#          Predicted →</span>
+<span class="cm">#       cont tab head veh flt non</span>
+<span class="cm">cont  [ 12    0    0    1    0    0 ]  ← 1 container predicted as vehicle</span>
+<span class="cm">head  [  0    0    8    0    0    2 ]  ← 2 headlamps confused with non-float</span>
+<span class="cm">
+A perfect model has non-zero values only on the diagonal.</span></pre></div>
+
+  <h4>classification_report for Multiclass</h4>
+  <div class="code-block"><pre><span class="cm">#               precision  recall  f1-score  support</span>
+<span class="cm">containers         0.80     0.92      0.86       13</span>
+<span class="cm">tableware          0.67     0.83      0.74        6</span>
+<span class="cm">headlamps          1.00     0.80      0.89       10</span>
+<span class="cm">...
+macro avg          0.82     0.85      0.83       43   ← equal weight per class</span>
+<span class="cm">weighted avg       0.84     0.83      0.83       43   ← weighted by class size</span></pre></div>
+  <p><strong>Macro avg</strong> treats all classes equally — harsh when classes are imbalanced (rare class drags down the score). <strong>Weighted avg</strong> weights by class size — more realistic overall picture.</p>
+
+  <h3>Glass Classification Practical — Full Code</h3>
+  <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier
+<span class="kw">from</span> sklearn.neighbors <span class="kw">import</span> KNeighborsClassifier
+<span class="kw">from</span> sklearn.svm <span class="kw">import</span> LinearSVC
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report, confusion_matrix
+<span class="kw">import</span> seaborn <span class="kw">as</span> sns
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+<span class="cm"># Load and scale — always scale for SVM and LR</span>
+data = pd.<span class="fn">read_csv</span>(<span class="st">'data/glass.csv'</span>)
+features = [<span class="st">'RI'</span>, <span class="st">'Na'</span>, <span class="st">'Mg'</span>, <span class="st">'Al'</span>, <span class="st">'Si'</span>, <span class="st">'K'</span>, <span class="st">'Ca'</span>, <span class="st">'Ba'</span>, <span class="st">'Fe'</span>]
+data[features] = <span class="fn">StandardScaler</span>().<span class="fn">fit_transform</span>(data[features])
+
+X, y = data[features], data[<span class="st">'Type'</span>]
+
+<span class="cm"># Only 214 rows — use 80/20 split with stratify</span>
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    X, y, test_size=<span class="nu">0.2</span>, random_state=<span class="nu">5</span>, stratify=y)
+
+<span class="cm"># Train and compare multiple models</span>
+models = {
+    <span class="st">'Decision Tree'</span>: <span class="fn">DecisionTreeClassifier</span>(),
+    <span class="st">'KNN'</span>:           <span class="fn">KNeighborsClassifier</span>(),
+    <span class="st">'SVM'</span>:           <span class="fn">LinearSVC</span>(max_iter=<span class="nu">2000</span>, random_state=<span class="nu">5</span>),
+    <span class="st">'Logistic Reg'</span>:  <span class="fn">LogisticRegression</span>(random_state=<span class="nu">5</span>)
+}
+
+<span class="kw">for</span> name, model <span class="kw">in</span> models.items():
+    model.<span class="fn">fit</span>(X_train, y_train)
+    <span class="fn">print</span>(<span class="fn">f</span><span class="st">"{name}: train={model.score(X_train,y_train):.2f} test={model.score(X_test,y_test):.2f}"</span>)</pre></div>
+
+  <div class="code-block"><pre><span class="cm"># Per-class report — more informative than accuracy alone</span>
+lr = models[<span class="st">'Logistic Reg'</span>]
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, lr.<span class="fn">predict</span>(X_test)))
+
+<span class="cm"># Confusion matrix heatmap for all 4 models</span>
+fig, axs = plt.<span class="fn">subplots</span>(<span class="nu">2</span>, <span class="nu">2</span>, figsize=(<span class="nu">10</span>, <span class="nu">10</span>))
+<span class="kw">for</span> (name, model), ax <span class="kw">in</span> <span class="fn">zip</span>(models.items(), axs.<span class="fn">flatten</span>()):
+    matrix = <span class="fn">confusion_matrix</span>(y_test, model.<span class="fn">predict</span>(X_test))
+    sns.<span class="fn">heatmap</span>(matrix, annot=<span class="kw">True</span>, fmt=<span class="st">'d'</span>, cmap=<span class="st">'Reds'</span>, ax=ax)
+    ax.<span class="fn">set_title</span>(name)
+plt.<span class="fn">tight_layout</span>()</pre></div>
+
+  <div class="code-block"><pre><span class="cm"># Try OvO strategy — can outperform default OvR on overlapping classes</span>
+<span class="kw">from</span> sklearn.multiclass <span class="kw">import</span> OneVsOneClassifier
+
+ovo = <span class="fn">OneVsOneClassifier</span>(<span class="fn">LinearSVC</span>(max_iter=<span class="nu">2000</span>, dual=<span class="st">"auto"</span>))
+ovo.<span class="fn">fit</span>(X_train, y_train)
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, ovo.<span class="fn">predict</span>(X_test)))</pre></div>
+
+  <h3>Reading Per-Class Feature Stats</h3>
+  <p>Before modelling, use <code>.groupby().agg(['mean','std'])</code> to understand which features separate classes:</p>
+  <div class="code-block"><pre>data.<span class="fn">groupby</span>(<span class="st">'Type'</span>)[features].<span class="fn">agg</span>([<span class="st">'mean'</span>, <span class="st">'std'</span>])</pre></div>
+  <p>What to look for: a feature is useful when <strong>means are far apart between classes</strong> AND <strong>std is small within each class</strong>. For example, Barium (Ba) has mean ≈ 1.04 for headlamps but ≈ 0 for all other types — a near-perfect separator for that class.</p>
+
+  <h3>Key Takeaways</h3>
+  <div class="card">
+    <div class="key-concept"><div class="label">Multiclass in practice — 5 rules</div>
+      <ol>
+        <li><strong>Native multiclass models</strong> (trees, KNN, Naive Bayes) work out of the box — no strategy needed</li>
+        <li><strong>OvR is the sklearn default</strong> for LR and SVM — good enough for most cases</li>
+        <li><strong>Try OvO</strong> when classes overlap or dataset is small — each binary problem is cleaner and balanced</li>
+        <li><strong>Use confusion matrix</strong> — accuracy alone hides which classes are failing</li>
+        <li><strong>Stratify your split</strong> — with small datasets like glass (214 rows), stratify ensures each class is represented in train and test</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-mc"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('mc')">📝 Full Topic Quiz</button>
     <button class="btn btn-outline" onclick="nav('quiz')">📝 Take Mixed Quiz</button>
   </div>
 </div>
@@ -2388,7 +2555,8 @@ const TOPICS = {
   w13: 'L13: Random Forests',
   w14: 'L14: KNN',
   w15: 'L15: SVM',
-  w16: 'L16: Full Pipeline'
+  w16: 'L16: Full Pipeline',
+  mc:  'L17: Multiclass Classification'
 };
 
 const ALL_QUESTIONS = [
@@ -2543,6 +2711,16 @@ const ALL_QUESTIONS = [
   {t:'w16', q:'GridSearchCV trains 4 hyperparameter values × 3 hyperparameter values with 5-fold CV. How many models are trained?', opts:['4 + 3 = 7','4 × 3 = 12','4 × 3 × 5 = 60','4 × 3 + 5 = 17'], ans:2, exp:'GridSearchCV tries every combination: 4 × 3 = 12 hyperparameter combinations. For each, it runs 5-fold CV = 5 models. Total: 12 × 5 = 60 models trained.'},
   {t:'w16', q:'What does refit=False do in GridSearchCV?', opts:['Prevents re-training after the search','Disables cross-validation','Required when using multiple scoring metrics — GridSearchCV cannot auto-select the "best" model when there are multiple scores','Makes the search run faster'], ans:2, exp:'When you pass multiple scoring metrics, GridSearchCV cannot automatically decide which metric to use to pick the best model. Setting refit=False skips that step. When you use a single metric, omit refit=False and best_estimator_ becomes available.'},
   {t:'w16', q:'In a Pipeline([("scaler", StandardScaler()), ("model", LogisticRegression())]), how do you set C in GridSearchCV?', opts:['"C": [0.1, 1]','"logistic__C": [0.1, 1]','"model__C": [0.1, 1]','"scaler__C": [0.1, 1]'], ans:2, exp:'Pipeline parameter naming uses double underscore: step_name__parameter_name. The step is called "model", the parameter is "C", so the key is "model__C". This tells GridSearchCV to vary C inside the LogisticRegression step of the pipeline.'},
+
+  // MC
+  {t:'mc', q:'You have 5 classes. How many classifiers does OvO train?', opts:['5','10','15','25'], ans:1, exp:'OvO trains one classifier per pair of classes: K(K−1)/2 = 5×4/2 = 10. OvR would only train 5 (one per class vs all others).'},
+  {t:'mc', q:'Which models handle multiclass natively in sklearn without a strategy?', opts:['Logistic Regression and SVM','Decision Tree and KNN','Decision Tree, KNN, and Naive Bayes','Only Naive Bayes'], ans:2, exp:'Decision Trees, KNN, Random Forests, and Naive Bayes all handle multiclass natively. Logistic Regression and SVM are originally binary — sklearn extends them with OvR by default.'},
+  {t:'mc', q:'In a confusion matrix, what do off-diagonal values represent?', opts:['Correct predictions','Misclassifications — true class i predicted as class j','The number of test examples per class','Precision scores'], ans:1, exp:'The diagonal contains correct predictions. Off-diagonal cell (i,j) = number of examples of true class i predicted as class j. A perfect model has zeros everywhere except the diagonal.'},
+  {t:'mc', q:'Macro avg F1 = 0.55, weighted avg F1 = 0.85. What does this tell you?', opts:['The model is broken','The model performs well on large classes but poorly on small/rare classes','The model performs poorly on all classes','Macro avg is always lower than weighted avg'], ans:1, exp:'Macro avg treats all classes equally — rare classes drag it down. Weighted avg weights by class size — large classes dominate. A big gap means rare classes are being missed while common classes are classified well.'},
+  {t:'mc', q:'Why can OvO outperform OvR on overlapping classes?', opts:['It trains more models so it must be better','Each OvO classifier sees only 2 balanced classes — cleaner learning with no imbalance','OvO uses a different distance metric','OvO applies regularisation automatically'], ans:1, exp:'OvR trains on 1 class vs all others — inherently imbalanced. OvO trains on exactly 2 classes at a time — balanced data, simpler decision boundary per classifier. On overlapping data this can produce more reliable classifiers.'},
+  {t:'mc', q:'How do you explicitly use OvO strategy in sklearn?', opts:['Set strategy="ovo" in LogisticRegression','Wrap the model with OneVsOneClassifier','Set multi_class="ovo" in all models','OvO is automatic when K>3'], ans:1, exp:'from sklearn.multiclass import OneVsOneClassifier. Then: ovo = OneVsOneClassifier(LinearSVC()). Fit and predict exactly like any sklearn model. sklearn\'s default is OvR — OvO must be applied explicitly.'},
+  {t:'mc', q:'You have a dataset with 214 rows and 6 classes. What split strategy should you use?', opts:['random_state only — stratify is not needed','stratify=y to ensure each class is represented in train and test sets','Always use 25% test size regardless of dataset size','Do not split — use the full dataset for training'], ans:1, exp:'With only 214 rows and 6 classes, some classes have very few examples. Without stratify=y, your test set might accidentally contain 0 examples of a rare class. Stratified split preserves class proportions in both sets.'},
+  {t:'mc', q:'What does classification_report show for multiclass that accuracy does not?', opts:['Training accuracy','Per-class precision, recall, and F1 — revealing which specific classes the model struggles with','The confusion matrix','The number of support vectors'], ans:1, exp:'Accuracy is a single number that can look good even if rare classes are completely missed. classification_report breaks down precision, recall and F1 for every class individually, so you can see exactly where the model fails.'},
 ];
 
 const FLASHCARDS = [
@@ -2673,6 +2851,16 @@ const FLASHCARDS = [
   {t:'w16', front:'GridSearchCV vs RandomizedSearchCV?', back:'GridSearchCV: tries every combination (exhaustive). Use for small grids.\nRandomizedSearchCV: tries n_iter random combos — much faster, near-optimal for large grids.\nBoth use CV internally.'},
   {t:'w16', front:'Why is Pipeline required with GridSearchCV?', back:'Without Pipeline, the scaler is fitted on all data before CV — test folds are contaminated. Pipeline refits scaler on each training fold, so the test fold is genuinely unseen at every step.'},
   {t:'w16', front:'Pipeline parameter naming syntax?', back:'"step_name__parameter_name" with double underscore.\nPipeline([("scaler", StandardScaler()), ("model", LogisticRegression())])\nGridSearchCV(pipe, {"model__C": [0.1, 1, 10]})'},
+
+  // MC
+  {t:'mc', front:'Binary vs multiclass classification?', back:'Binary: exactly 2 classes (yes/no, spam/not spam).\nMulticlass: 3+ classes (glass types, digits 0-9).\nNative models (trees, KNN) handle multiclass directly. LR and SVM need a strategy.'},
+  {t:'mc', front:'What is One-vs-Rest (OvR)?', back:'Train K binary classifiers, one per class. Each asks "is this my class or not?"\nAt prediction: all K classifiers score the example — highest confidence wins.\nDefault strategy in sklearn for LR and SVM.'},
+  {t:'mc', front:'What is One-vs-One (OvO)?', back:'Train K(K−1)/2 classifiers — one per pair of classes.\nEach classifies the example in a head-to-head duel. Class with most wins is predicted.\n5 classes → 10 classifiers. OvO can outperform OvR on overlapping classes.'},
+  {t:'mc', front:'OvR vs OvO — key difference?', back:'OvR: K classifiers, full imbalanced data each. Faster.\nOvO: K(K−1)/2 classifiers, 2 balanced classes each. More models but cleaner learning.\nUse OvO when classes overlap or dataset is small.'},
+  {t:'mc', front:'What does a confusion matrix show for multiclass?', back:'A K×K matrix. Rows = true class, columns = predicted class.\nDiagonal = correct predictions. Off-diagonal = which classes are confused with each other.\nA perfect model has zeros everywhere except the diagonal.'},
+  {t:'mc', front:'Macro avg vs weighted avg F1?', back:'Macro avg: equal weight per class — harsh when classes are imbalanced.\nWeighted avg: weighted by class size — reflects real-world performance.\nLarge gap between them → rare classes are being missed.'},
+  {t:'mc', front:'How do you use OvO explicitly in sklearn?', back:'from sklearn.multiclass import OneVsOneClassifier\novo = OneVsOneClassifier(LinearSVC(max_iter=2000))\novo.fit(X_train, y_train)\novo.predict(X_test)'},
+  {t:'mc', front:'Why use stratify=y in train_test_split for multiclass?', back:'Without stratify, rare classes may get 0 examples in the test set by chance.\nstratify=y preserves the class proportions from the full dataset in both train and test splits. Essential for small or imbalanced datasets.'},
 ];
 
 // ===================== STATE =====================
@@ -2700,7 +2888,7 @@ function nav(page) {
   document.getElementById('main').scrollTop = 0;
   const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
   if (navEl) navEl.classList.add('active');
-  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16'].includes(page)) {
+  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc'].includes(page)) {
     markVisited(page);
     renderInlineQuiz(page);
   }
@@ -2718,9 +2906,9 @@ function markVisited(w) {
 }
 
 function updateGlobalProgress() {
-  const pct = Math.round((visited.length / 17) * 100);
+  const pct = Math.round((visited.length / 18) * 100);
   document.getElementById('global-progress-bar').style.width = pct + '%';
-  document.getElementById('global-progress-label').textContent = `${visited.length} of 17 lessons visited`;
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 18 lessons visited`;
 }
 
 // ===================== INLINE QUIZ =====================
