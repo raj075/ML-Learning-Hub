@@ -1967,62 +1967,257 @@ svm.<span class="fn">score</span>(X_test, y_test)</pre></div>
 
 <!-- LESSON 16 -->
 <div class="page" id="page-w16">
-  <h2>🔄 The Full Classification Pipeline</h2>
-  <p class="subtitle">Cross-validation, GridSearch, and Pipelines — the professional way to build and tune classifiers.</p>
+  <h2>🔄 Model Validation</h2>
+  <p class="subtitle">Cross-validation, GridSearchCV, and Pipelines — how to get an honest estimate of model performance.</p>
 
-  <h3>Cross-Validation</h3>
-  <p>A single train-test split can be lucky or unlucky. <strong>K-fold cross-validation</strong> gives a more reliable estimate by rotating which part of the data is the test set.</p>
-  <div class="card">
-    <div class="key-concept"><div class="label">K-Fold CV — how it works</div>
-      <p>Split data into K folds. Train on K-1, test on the remaining fold. Repeat K times (each fold is the test set once). Average the K scores.</p>
-    </div>
+  <h3>Why Validation Matters</h3>
+  <p>You build a model and measure its accuracy. That number only means something if it was measured on data the model <strong>never saw during training</strong>. The more your model (or your tuning) interacts with the test set, the more optimistic your results become — and the less trustworthy they are on truly unseen data.</p>
+
+  <h3>Bias and Variance — The Fundamental Tradeoff</h3>
+  <p>Every model's prediction error has three components:</p>
+  <div class="card" style="text-align:center; padding:16px; margin-bottom:14px">
+    <div style="font-size:1rem; color:var(--accent); font-family:monospace">Total Error = Bias² + Variance + Irreducible Noise</div>
+    <p style="margin:6px 0 0; font-size:0.8rem">Irreducible noise is random noise in the data — you cannot fix it. Focus on Bias and Variance.</p>
   </div>
-  <div class="alert alert-warn">⚠️ Use <strong>stratified</strong> k-fold for classification — it preserves the class ratio in each fold, essential for imbalanced datasets.</div>
+  <table>
+    <tr><th></th><th>Bias (Underfitting)</th><th>Variance (Overfitting)</th></tr>
+    <tr><td><strong>What it is</strong></td><td>Model too simple — misses the real pattern</td><td>Model too complex — memorises noise</td></tr>
+    <tr><td><strong>Symptom</strong></td><td>Poor training AND test accuracy</td><td>High training accuracy, much lower test accuracy</td></tr>
+    <tr><td><strong>Fix</strong></td><td>More complex model, more features</td><td>Regularisation, pruning, more data, CV tuning</td></tr>
+    <tr><td><strong>Example</strong></td><td>Decision tree max_depth=1</td><td>Decision tree max_depth=None</td></tr>
+  </table>
 
-  <h3>GridSearchCV — Hyperparameter Tuning</h3>
-  <p>Tries every combination of hyperparameters from a grid, using cross-validation to evaluate each. Returns the best configuration.</p>
-  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> GridSearchCV
+  <h3>Three-Way Data Split</h3>
+  <p>For serious work, split your data three ways — not two. The test set is a vault you open exactly once at the very end.</p>
+  <div class="code-block"><pre><span class="cm"># Full Dataset</span>
+<span class="cm"># ├── Training set   (70–90%) → model learns from this</span>
+<span class="cm"># ├── Validation set  (5–15%) → tune hyperparameters here (open repeatedly)</span>
+<span class="cm"># └── Test set        (5–15%) → final honest evaluation — touch ONCE</span>
 
-param_grid = {<span class="st">'C'</span>: [<span class="nu">0.1</span>, <span class="nu">1</span>, <span class="nu">10</span>], <span class="st">'kernel'</span>: [<span class="st">'linear'</span>, <span class="st">'rbf'</span>]}
-search = <span class="fn">GridSearchCV</span>(<span class="fn">SVC</span>(), param_grid, cv=<span class="nu">5</span>, scoring=<span class="st">'f1'</span>)
-search.<span class="fn">fit</span>(X_train, y_train)
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
 
-<span class="fn">print</span>(search.best_params_)       <span class="cm"># {'C': 1, 'kernel': 'rbf'}</span>
-<span class="fn">print</span>(search.best_score_)        <span class="cm"># best CV F1 score</span></pre></div>
+<span class="cm"># Step 1: carve off 20% as the held-out test set</span>
+x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=<span class="nu">0.8</span>)
 
-  <h3>sklearn Pipeline — Preventing Leakage</h3>
-  <p>Wrapping preprocessing and a model in a <strong>Pipeline</strong> ensures the scaler is fitted only on training folds — not the test fold — inside cross-validation.</p>
+<span class="cm"># Step 2: split that 20% in half → 10% validation, 10% test</span>
+x_val, x_test, y_val, y_test = train_test_split(x_test, y_test, test_size=<span class="nu">0.5</span>)
+
+<span class="fn">print</span>(len(x_train), len(x_val), len(x_test))  <span class="cm"># e.g. 3681, 460, 460</span></pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>The discipline:</strong> Every time you tune a hyperparameter based on test performance, you corrupt that number. The validation set is your proxy test set — use it for all tuning. The real test set is seen only at the end to report your final result.</p>
+  </div>
+
+  <h3>Checking Class Balance Across Splits</h3>
+  <p>Always verify that your class ratio is preserved across splits — especially important for imbalanced data like spam detection.</p>
+  <div class="code-block"><pre><span class="cm"># value_counts(normalize=True) shows proportions instead of raw counts</span>
+<span class="fn">print</span>(<span class="st">f"% spam in all data:        {data[<span class="st">'class'</span>].sum()/len(data):.3f}"</span>)
+<span class="fn">print</span>(<span class="st">f"% spam in training data:   {y_train.sum()/len(y_train):.3f}"</span>)
+<span class="fn">print</span>(<span class="st">f"% spam in validation data: {y_val.sum()/len(y_val):.3f}"</span>)
+<span class="fn">print</span>(<span class="st">f"% spam in test data:       {y_test.sum()/len(y_test):.3f}"</span>)
+
+<span class="cm"># Or use value_counts for non-binary targets</span>
+<span class="fn">print</span>(y_train.<span class="fn">value_counts</span>(normalize=<span class="kw">True</span>))</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What you're checking:</strong> If 39% of the full dataset is spam, each split should also be roughly 39% spam. A random split can accidentally put most rare examples in one set. Use <code>stratify=y</code> in train_test_split to guarantee this.</p>
+  </div>
+
+  <h3>Data Leakage in Preprocessing</h3>
+  <p>The most common mistake: fitting a scaler on the full dataset before splitting. The scaler learns the mean and std of test rows — those rows then influenced the transformation applied to them. The test set is no longer truly unseen.</p>
+  <div class="code-block"><pre><span class="cm"># ❌ WRONG — scaler has seen test data (data leakage)</span>
+scaler = <span class="fn">StandardScaler</span>()
+X_scaled = scaler.<span class="fn">fit_transform</span>(X)          <span class="cm"># test rows included in mean/std</span>
+X_train, X_test = <span class="fn">train_test_split</span>(X_scaled)
+
+<span class="cm"># ✅ CORRECT — scaler only sees training data</span>
+X_train, X_test = <span class="fn">train_test_split</span>(X)
+scaler = <span class="fn">StandardScaler</span>()
+X_train = scaler.<span class="fn">fit_transform</span>(X_train)     <span class="cm"># fit on train only</span>
+X_test  = scaler.<span class="fn">transform</span>(X_test)          <span class="cm"># apply same transform, no refit</span></pre></div>
+  <div class="alert alert-warn">⚠️ The same rule applies to <strong>any preprocessing that learns from data</strong>: imputation (mean/median), PCA, feature selection, one-hot encoding statistics. All must fit on training data only.</div>
+
+  <h3>K-Fold Cross-Validation</h3>
+  <p>A single train/test split can be lucky or unlucky. K-fold CV gives a reliable estimate by rotating which part of the data is the test set — every point gets tested exactly once.</p>
+  <div class="code-block"><pre><span class="cm"># K=5 illustration:</span>
+<span class="cm"># Fold 1: [TEST ][train][train][train][train] → score 1</span>
+<span class="cm"># Fold 2: [train][TEST ][train][train][train] → score 2</span>
+<span class="cm"># Fold 3: [train][train][TEST ][train][train] → score 3</span>
+<span class="cm"># Fold 4: [train][train][train][TEST ][train] → score 4</span>
+<span class="cm"># Fold 5: [train][train][train][train][TEST ] → score 5</span>
+<span class="cm"># Final = mean(scores) ± std(scores)</span></pre></div>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Standard KFold</div><p>Splits data into k equal folds randomly. Fast. Use for regression or balanced classification.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">StratifiedKFold</div><p>Each fold preserves the same class proportion as the full dataset. Essential for imbalanced classification — ensures rare classes appear in every fold.</p></div></div>
+  </div>
+  <p>Typical choices: k=5 or k=10. Larger k = less biased estimate, more compute. Standard deviation across folds tells you how stable the model is — high std means results depend heavily on which data it saw.</p>
+
+  <h3>cross_validate — All Metrics in One Call</h3>
+  <p>Instead of writing loops manually, <code>cross_validate</code> handles splitting, training, and evaluating for you across all folds.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> cross_validate, StratifiedKFold
+<span class="kw">from</span> sklearn.neighbors <span class="kw">import</span> KNeighborsClassifier
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+model = <span class="fn">KNeighborsClassifier</span>()
+my_cv  = <span class="fn">StratifiedKFold</span>(n_splits=<span class="nu">5</span>)
+
+<span class="cm"># Define all the metrics you want measured per fold</span>
+my_metrics = {
+    <span class="st">'accuracy'</span>:  <span class="st">'accuracy'</span>,
+    <span class="st">'precision'</span>: <span class="st">'precision_macro'</span>,
+    <span class="st">'recall'</span>:    <span class="st">'recall_macro'</span>,
+    <span class="st">'f1'</span>:        <span class="st">'f1_macro'</span>
+}
+
+scores = <span class="fn">cross_validate</span>(model, x, y, cv=my_cv, scoring=my_metrics)
+
+<span class="cm"># Put results in a DataFrame — one row per fold</span>
+df = pd.<span class="fn">DataFrame</span>(scores)
+<span class="fn">print</span>(df[[<span class="st">'test_accuracy'</span>, <span class="st">'test_precision'</span>, <span class="st">'test_recall'</span>, <span class="st">'test_f1'</span>]])</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What's happening:</strong> You never call <code>.fit()</code> or <code>.predict()</code> yourself. <code>cross_validate</code> does all of it — splits data, trains on k-1 folds, evaluates on the remaining fold, repeats k times. Returns a dictionary of arrays (one value per fold per metric). <code>_macro</code> means average the metric equally across all classes regardless of class size.</p>
+  </div>
+
+  <h3>Reporting CV Results — Mean ± Std</h3>
+  <p>With k folds you have k scores, not one. Always report both the mean and standard deviation.</p>
+  <div class="code-block"><pre><span class="cm"># Simple mean/std summary</span>
+scores_df = pd.<span class="fn">DataFrame</span>(scores).<span class="fn">drop</span>([<span class="st">'fit_time'</span>, <span class="st">'score_time'</span>], axis=<span class="nu">1</span>)
+
+<span class="fn">print</span>(scores_df.<span class="fn">agg</span>([<span class="st">'mean'</span>, <span class="st">'std'</span>]).<span class="fn">round</span>(<span class="nu">3</span>))
+
+<span class="cm"># Visualise with error bars showing std</span>
+<span class="kw">import</span> seaborn <span class="kw">as</span> sns
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+plt.<span class="fn">figure</span>(figsize=(<span class="nu">10</span>, <span class="nu">4</span>))
+sns.<span class="fn">barplot</span>(
+    data=scores_df,
+    errorbar=<span class="st">'sd'</span>,           <span class="cm"># show std as error bar, not confidence interval</span>
+    palette=<span class="st">'pastel'</span>,
+    capsize=<span class="nu">0.1</span>,
+    order=[<span class="st">'test_f1'</span>, <span class="st">'test_precision'</span>, <span class="st">'test_recall'</span>, <span class="st">'test_accuracy'</span>]
+)
+plt.<span class="fn">title</span>(<span class="st">'Model performance across CV folds'</span>)
+plt.<span class="fn">ylabel</span>(<span class="st">'Score'</span>); plt.<span class="fn">xticks</span>(rotation=<span class="nu">45</span>); plt.<span class="fn">show</span>()</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>Reading the results:</strong> A model with mean=0.88, std=0.02 is more trustworthy than one with mean=0.91, std=0.12. The first is consistently good. The second is erratic — its performance depends heavily on which data it happened to train on. High std is a warning sign worth investigating before trusting the mean.</p>
+  </div>
+
+  <h3>GridSearchCV — Hyperparameter Tuning with CV</h3>
+  <p>Never tune hyperparameters against your test set. GridSearchCV does all tuning <em>inside</em> the training data using cross-validation, then you evaluate the winner on the test set once at the end.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> GridSearchCV, StratifiedKFold
+<span class="kw">from</span> sklearn.neighbors <span class="kw">import</span> KNeighborsClassifier
+
+model  = <span class="fn">KNeighborsClassifier</span>()
+my_cv  = <span class="fn">StratifiedKFold</span>(n_splits=<span class="nu">5</span>)
+
+<span class="cm"># 5 values × 1 hyperparameter × 5 folds = 25 models trained</span>
+hyperparams = {<span class="st">'n_neighbors'</span>: [<span class="nu">1</span>, <span class="nu">2</span>, <span class="nu">3</span>, <span class="nu">4</span>, <span class="nu">5</span>]}
+
+<span class="cm"># refit=False when using multiple scoring metrics</span>
+gridsearch = <span class="fn">GridSearchCV</span>(
+    estimator=model,
+    param_grid=hyperparams,
+    scoring={<span class="st">'accuracy'</span>: <span class="st">'accuracy'</span>, <span class="st">'f1'</span>: <span class="st">'f1_macro'</span>},
+    cv=my_cv,
+    refit=<span class="kw">False</span>
+)
+gridsearch.<span class="fn">fit</span>(x, y)
+
+<span class="cm"># Results: mean score per metric per hyperparameter combination</span>
+grid_df = pd.<span class="fn">DataFrame</span>(gridsearch.cv_results_)
+<span class="fn">print</span>(grid_df[[<span class="st">'param_n_neighbors'</span>, <span class="st">'mean_test_accuracy'</span>, <span class="st">'mean_test_f1'</span>]])</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What's happening:</strong> GridSearchCV trains a model for every combination in your grid, evaluates each with k-fold CV, and stores all results in <code>cv_results_</code>. <code>refit=False</code> is needed when you pass multiple scoring metrics — sklearn can't automatically pick a "best" model when there are multiple scores. When you use a single metric, omit <code>refit=False</code> and you get <code>best_estimator_</code> directly.</p>
+  </div>
+
+  <h4>Getting the Best Model (Single Metric)</h4>
+  <div class="code-block"><pre><span class="cm"># With a single scoring metric, GridSearchCV refits the best model automatically</span>
+gridsearch = <span class="fn">GridSearchCV</span>(
+    <span class="fn">KNeighborsClassifier</span>(),
+    {<span class="st">'n_neighbors'</span>: [<span class="nu">2</span>, <span class="nu">3</span>, <span class="nu">4</span>, <span class="nu">5</span>]},
+    cv=<span class="fn">StratifiedKFold</span>(<span class="nu">5</span>),
+    scoring=<span class="st">'f1_macro'</span>     <span class="cm"># single metric → best_estimator_ available</span>
+)
+gridsearch.<span class="fn">fit</span>(x, y)
+
+<span class="fn">print</span>(gridsearch.best_estimator_)   <span class="cm"># best model, ready to use</span>
+<span class="fn">print</span>(gridsearch.best_params_)      <span class="cm"># {'n_neighbors': 4}</span>
+<span class="fn">print</span>(gridsearch.best_score_)       <span class="cm"># best mean CV F1</span>
+
+<span class="cm"># Final evaluation on the held-out test set</span>
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, gridsearch.<span class="fn">predict</span>(x_test)))</pre></div>
+
+  <h3>GridSearchCV vs RandomizedSearchCV</h3>
+  <table>
+    <tr><th></th><th>GridSearchCV</th><th>RandomizedSearchCV</th></tr>
+    <tr><td><strong>What it tries</strong></td><td>Every single combination</td><td>A random sample of combinations</td></tr>
+    <tr><td><strong>When to use</strong></td><td>Small grids (&lt; ~200 combos)</td><td>Large grids or continuous ranges</td></tr>
+    <tr><td><strong>Speed</strong></td><td>Can be very slow on large grids</td><td>Much faster for same budget</td></tr>
+    <tr><td><strong>Quality</strong></td><td>Guaranteed to find best in grid</td><td>Near-optimal with far fewer runs</td></tr>
+    <tr><td><strong>Key param</strong></td><td>param_grid (dict of lists)</td><td>n_iter controls how many combos to try</td></tr>
+  </table>
+  <div class="key-concept">
+    <div class="label">How many models does GridSearchCV train?</div>
+    <p>Combinations × folds. Tuning 3 hyperparameters with 5 values each, 10-fold CV: 5³ × 10 = <strong>1,250 models</strong>. With 6 hyperparameters at 10 values: 10⁶ × 10 = 10 million. That's when RandomizedSearchCV becomes necessary.</p>
+  </div>
+
+  <h3>sklearn Pipeline — Preventing Leakage Inside CV</h3>
+  <p>When GridSearchCV runs, it fits your model on each training fold. But if your scaler was fitted before GridSearchCV, it already saw all folds — including the test fold for each iteration. Contaminated.</p>
+  <p>The fix: wrap preprocessing and model in a <strong>Pipeline</strong>. GridSearchCV refits the entire pipeline on each training fold, guaranteeing the scaler never sees test-fold data.</p>
   <div class="code-block"><pre><span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
 <span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
-<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
 
 pipe = <span class="fn">Pipeline</span>([
-    (<span class="st">'scaler'</span>, <span class="fn">StandardScaler</span>()),
-    (<span class="st">'model'</span>,  <span class="fn">RandomForestClassifier</span>(n_estimators=<span class="nu">200</span>))
+    (<span class="st">'scaler'</span>, <span class="fn">StandardScaler</span>()),    <span class="cm"># step 1 — name: 'scaler'</span>
+    (<span class="st">'model'</span>,  <span class="fn">LogisticRegression</span>())  <span class="cm"># step 2 — name: 'model'</span>
 ])
 
-pipe.<span class="fn">fit</span>(X_train, y_train)
-pipe.<span class="fn">score</span>(X_test, y_test)</pre></div>
-
-  <h3>End-to-End Example</h3>
-  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split, GridSearchCV
-<span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
-<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
-<span class="kw">from</span> sklearn.svm <span class="kw">import</span> SVC
-<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report
-
-<span class="cm"># 1. Split</span>
-X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(X, y, test_size=<span class="nu">0.2</span>, stratify=y)
-
-<span class="cm"># 2. Pipeline</span>
-pipe = <span class="fn">Pipeline</span>([(<span class="st">'scaler'</span>, <span class="fn">StandardScaler</span>()), (<span class="st">'svm'</span>, <span class="fn">SVC</span>(probability=<span class="kw">True</span>))])
-
-<span class="cm"># 3. Tune with GridSearch</span>
-grid = <span class="fn">GridSearchCV</span>(pipe, {<span class="st">'svm__C'</span>: [<span class="nu">0.1</span>, <span class="nu">1</span>, <span class="nu">10</span>]}, cv=<span class="nu">5</span>, scoring=<span class="st">'f1'</span>)
+<span class="cm"># Tune model parameters using __ (double underscore) to reference inside pipeline</span>
+grid = <span class="fn">GridSearchCV</span>(pipe, {<span class="st">'model__C'</span>: [<span class="nu">0.01</span>, <span class="nu">0.1</span>, <span class="nu">1</span>, <span class="nu">10</span>]}, cv=<span class="nu">5</span>, scoring=<span class="st">'f1'</span>)
 grid.<span class="fn">fit</span>(X_train, y_train)
 
-<span class="cm"># 4. Evaluate on held-out test set</span>
+<span class="cm"># Final evaluation</span>
 <span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, grid.<span class="fn">predict</span>(X_test)))</pre></div>
+  <div class="card">
+    <p style="margin:0; font-size:0.85rem"><strong>What's happening:</strong> Inside each CV fold, <code>pipe.fit(X_train_fold)</code> triggers <code>scaler.fit_transform(X_train_fold)</code> then <code>model.fit(X_train_scaled)</code>. The held-out fold only ever sees <code>scaler.transform()</code> — never <code>fit_transform()</code>. The <code>model__C</code> syntax means "the parameter C of the step named model".</p>
+  </div>
+
+  <h3>The Complete Professional Workflow</h3>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split, GridSearchCV, StratifiedKFold
+<span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+<span class="cm"># Step 1 — carve off test set, never touch it again until the end</span>
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=<span class="nu">0.2</span>, stratify=y, random_state=<span class="nu">42</span>
+)
+
+<span class="cm"># Step 2 — build Pipeline (scaler + model together)</span>
+pipe = <span class="fn">Pipeline</span>([
+    (<span class="st">'scaler'</span>, <span class="fn">StandardScaler</span>()),
+    (<span class="st">'model'</span>,  <span class="fn">LogisticRegression</span>(max_iter=<span class="nu">1000</span>))
+])
+
+<span class="cm"># Step 3 — tune hyperparameters inside training data only</span>
+param_grid = {<span class="st">'model__C'</span>: [<span class="nu">0.01</span>, <span class="nu">0.1</span>, <span class="nu">1</span>, <span class="nu">10</span>, <span class="nu">100</span>]}
+grid = <span class="fn">GridSearchCV</span>(pipe, param_grid, cv=<span class="fn">StratifiedKFold</span>(<span class="nu">5</span>), scoring=<span class="st">'f1'</span>)
+grid.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="fn">print</span>(<span class="st">"Best params:"</span>, grid.best_params_)
+<span class="fn">print</span>(<span class="st">"Best CV F1:"</span>,  grid.best_score_)
+
+<span class="cm"># Step 4 — final evaluation on the held-out test set (do this ONCE)</span>
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, grid.<span class="fn">predict</span>(X_test)))</pre></div>
+  <div class="card" style="background: rgba(91,138,245,0.06); border-color: var(--accent)">
+    <p style="margin:0; font-size:0.87rem"><strong>The four rules of this workflow:</strong><br>
+    1. Split train/test first, before anything else.<br>
+    2. All preprocessing is inside a Pipeline — never fitted on the full dataset.<br>
+    3. All tuning happens inside GridSearchCV using only training data.<br>
+    4. The test set is evaluated exactly once at the very end. Its score is your final reported result.</p>
+  </div>
 
   <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w16"></div></div>
   <div class="btn-row">
@@ -2196,11 +2391,14 @@ const ALL_QUESTIONS = [
   {t:'nb', q:'What does stratify=major_delay do in train_test_split?', opts:['Sorts the data by delay before splitting','Ensures both train and test sets contain the same proportion of major vs non-major delays','Balances the dataset by removing excess examples','Makes the split deterministic'], ans:1, exp:'Without stratify, a random split might cluster rare "major delay" examples in one set. stratify=y ensures each split reflects the same class ratio as the full dataset — important when one class is less frequent.'},
   {t:'nb', q:'Laplace smoothing is primarily used to address which problem in Naive Bayes?', opts:['Overfitting on large datasets','Zero probability — a class feature count of 0 makes the entire product zero','Correlated features causing biased predictions','Continuous features requiring discretisation'], ans:1, exp:'If a category never appears with a given class in training, P(category|class) = 0. One zero anywhere in the product makes the whole class probability zero, regardless of all other evidence. Laplace smoothing adds a small count α to prevent this.'},
 
-  {t:'w16', q:'What is k-fold cross-validation?', opts:['Splitting data into k random subsets and training k separate models','Dividing data into k folds, training on k-1 and testing on the held-out fold, repeating k times','Training on k% of data','A technique for choosing the number of classes'], ans:1, exp:'K-fold CV rotates which fold is the test set — each of the k folds serves as the test set once. The k scores are averaged for a reliable performance estimate.'},
-  {t:'w16', q:'Why should preprocessing be inside the cross-validation loop?', opts:['For computational efficiency','To prevent data leakage — the scaler must not learn from test fold data','sklearn requires it','It reduces training time'], ans:1, exp:'Fitting a scaler on the full dataset before CV lets test-fold information leak into training (look-ahead bias). Use a Pipeline to ensure the scaler fits only on each training fold.'},
-  {t:'w16', q:'What does GridSearchCV do?', opts:['Trains a grid of neural networks','Exhaustively tries all combinations of hyperparameters using cross-validation to find the best','Visualises model performance','Randomly selects hyperparameters'], ans:1, exp:'GridSearchCV takes a parameter grid, trains the model for every combination using CV, and returns the best-performing configuration and its score.'},
-  {t:'w16', q:'What is stratified k-fold cross-validation?', opts:['K-fold applied only to stratified samples','K-fold where each fold maintains the same class proportion as the full dataset','K-fold with a fixed random seed','K-fold where K equals the number of classes'], ans:1, exp:'Stratified folds preserve the class ratio in every fold. This is crucial for imbalanced datasets — without it some folds might have no minority class examples at all.'},
-  {t:'w16', q:'What is the purpose of a sklearn Pipeline?', opts:['To visualise the model architecture','To chain preprocessing steps and a model so they are fitted and applied together, preventing leakage','To run multiple models in parallel','To cache training results'], ans:1, exp:'Pipeline([(\'scaler\', StandardScaler()), (\'model\', SVC())]) ensures the scaler is fitted on training data only inside CV. It makes the workflow clean and leak-free.'},
+  {t:'w16', q:'What is the difference between bias and variance in a model?', opts:['Bias is training error, variance is test error','Bias is error from oversimplification (underfitting), variance is error from over-sensitivity to training data (overfitting)','Bias and variance are both types of regularisation','Bias is the model intercept, variance is the spread of predictions'], ans:1, exp:'Bias = systematic error from wrong assumptions — model misses the real pattern. Variance = sensitivity to training data — small changes cause large prediction swings. Total error = Bias² + Variance + Irreducible Noise.'},
+  {t:'w16', q:'What is wrong with fitting StandardScaler on the full dataset before train/test split?', opts:['It makes the model train slower','It causes data leakage — the scaler learns from test rows, making the test set no longer truly unseen','It applies the wrong transformation','It increases variance'], ans:1, exp:'The scaler computes mean and std from all rows including test rows. Those test rows then influenced their own transformation. Always fit preprocessing only on training data and apply (transform only) to test data.'},
+  {t:'w16', q:'What does K-fold cross-validation give you that a single train/test split does not?', opts:['A faster training process','A more reliable performance estimate — every data point is in the test set exactly once, and results are averaged across k splits','A larger training set','Automatic hyperparameter tuning'], ans:1, exp:'A single split can be lucky or unlucky. K-fold rotates which part is the test set — every point gets evaluated exactly once. The mean score is more reliable, and the std tells you how stable the model is.'},
+  {t:'w16', q:'Why use StratifiedKFold instead of regular KFold for classification?', opts:['It is faster','It guarantees each fold has the same class proportion as the full dataset — essential for imbalanced data','It automatically scales features','It produces more folds'], ans:1, exp:'Without stratification, a random fold might contain very few (or zero) minority class examples. StratifiedKFold ensures every fold is representative, giving you valid precision/recall/F1 estimates per fold.'},
+  {t:'w16', q:'You tune max_depth by evaluating different values on your test set, then report test accuracy. What is the problem?', opts:['Nothing — this is standard practice','You have corrupted the test set — by using it for tuning, the final score is overly optimistic','The test set should not be used for decision trees','You need more data to do this correctly'], ans:1, exp:'Every time you make a decision based on test performance (even choosing hyperparameters), you leak information from the test set into your model choices. Use a separate validation set or GridSearchCV with cross-validation for all tuning. Save the test set for one final evaluation.'},
+  {t:'w16', q:'GridSearchCV trains 4 hyperparameter values × 3 hyperparameter values with 5-fold CV. How many models are trained?', opts:['4 + 3 = 7','4 × 3 = 12','4 × 3 × 5 = 60','4 × 3 + 5 = 17'], ans:2, exp:'GridSearchCV tries every combination: 4 × 3 = 12 hyperparameter combinations. For each, it runs 5-fold CV = 5 models. Total: 12 × 5 = 60 models trained.'},
+  {t:'w16', q:'What does refit=False do in GridSearchCV?', opts:['Prevents re-training after the search','Disables cross-validation','Required when using multiple scoring metrics — GridSearchCV cannot auto-select the "best" model when there are multiple scores','Makes the search run faster'], ans:2, exp:'When you pass multiple scoring metrics, GridSearchCV cannot automatically decide which metric to use to pick the best model. Setting refit=False skips that step. When you use a single metric, omit refit=False and best_estimator_ becomes available.'},
+  {t:'w16', q:'In a Pipeline([("scaler", StandardScaler()), ("model", LogisticRegression())]), how do you set C in GridSearchCV?', opts:['"C": [0.1, 1]','"logistic__C": [0.1, 1]','"model__C": [0.1, 1]','"scaler__C": [0.1, 1]'], ans:2, exp:'Pipeline parameter naming uses double underscore: step_name__parameter_name. The step is called "model", the parameter is "C", so the key is "model__C". This tells GridSearchCV to vary C inside the LogisticRegression step of the pipeline.'},
 ];
 
 const FLASHCARDS = [
@@ -2318,12 +2516,15 @@ const FLASHCARDS = [
   {t:'nb', front:'Naive Bayes vs KNN — key differences?', back:'Naive Bayes: generative, assumes Gaussian per feature, very fast, works well with small data.\nKNN: lazy learner, no assumptions, slow at prediction, sensitive to scale and irrelevant features.'},
 
   // L16
-  {t:'w16', front:'What is k-fold cross-validation?', back:'Split data into k folds. Train on k-1, test on the remaining fold. Rotate k times. Average the k scores for a reliable estimate.'},
-  {t:'w16', front:'Why put preprocessing inside CV?', back:'To prevent data leakage. Fitting a scaler on the full dataset lets test-fold information leak into training (look-ahead bias). Use Pipeline.'},
-  {t:'w16', front:'What is GridSearchCV?', back:'Tries every combination of hyperparameters from a grid using CV. Returns the best-performing configuration.'},
-  {t:'w16', front:'What is stratified k-fold?', back:'K-fold that preserves the class ratio in every fold. Essential for imbalanced datasets — ensures each fold has representative class proportions.'},
-  {t:'w16', front:'What is a sklearn Pipeline?', back:'Pipeline([(\'scaler\', StandardScaler()), (\'model\', SVC())]). Chains preprocessing and model. Prevents leakage by fitting the scaler inside CV.'},
-  {t:'w16', front:'GridSearchCV vs RandomizedSearchCV?', back:'GridSearchCV: tries all combinations (exhaustive).\nRandomizedSearchCV: tries random combinations — faster, nearly as good for large grids.'},
+  {t:'w16', front:'Bias vs Variance — one line each?', back:'Bias: error from oversimplification — model misses the real pattern (underfitting).\nVariance: error from over-sensitivity to training data — memorises noise (overfitting).'},
+  {t:'w16', front:'What is data leakage in preprocessing?', back:'Fitting a scaler (or imputer/PCA) on the full dataset before splitting. The scaler learns from test rows → test set is no longer unseen. Fix: fit only on training data, then transform test data.'},
+  {t:'w16', front:'Three-way split — what each set is for?', back:'Training (70–90%): model learns from this.\nValidation (5–15%): tune hyperparameters here, repeatedly.\nTest (5–15%): final honest evaluation — open ONCE at the very end.'},
+  {t:'w16', front:'What does K-fold CV give you that a single split does not?', back:'Every data point gets tested exactly once. Mean score is more reliable than a single lucky/unlucky split. Std deviation tells you how stable the model is across different data subsets.'},
+  {t:'w16', front:'StratifiedKFold vs KFold?', back:'StratifiedKFold: each fold preserves the same class proportion as the full dataset. Essential for imbalanced classification.\nKFold: random splits — some folds may have no minority class examples.'},
+  {t:'w16', front:'What does cross_validate() return?', back:'A dictionary of arrays — one value per fold per metric. Keys like test_accuracy, test_f1. Put in a DataFrame and report mean ± std. You never call .fit() or .predict() yourself.'},
+  {t:'w16', front:'GridSearchCV vs RandomizedSearchCV?', back:'GridSearchCV: tries every combination (exhaustive). Use for small grids.\nRandomizedSearchCV: tries n_iter random combos — much faster, near-optimal for large grids.\nBoth use CV internally.'},
+  {t:'w16', front:'Why is Pipeline required with GridSearchCV?', back:'Without Pipeline, the scaler is fitted on all data before CV — test folds are contaminated. Pipeline refits scaler on each training fold, so the test fold is genuinely unseen at every step.'},
+  {t:'w16', front:'Pipeline parameter naming syntax?', back:'"step_name__parameter_name" with double underscore.\nPipeline([("scaler", StandardScaler()), ("model", LogisticRegression())])\nGridSearchCV(pipe, {"model__C": [0.1, 1, 10]})'},
 ];
 
 // ===================== STATE =====================
