@@ -1923,40 +1923,156 @@ score = knn.<span class="fn">score</span>(X_test_scaled, y_test)         <span c
 <!-- LESSON 15 -->
 <div class="page" id="page-w15">
   <h2>↔️ Support Vector Machines (SVM)</h2>
-  <p class="subtitle">Find the boundary that keeps classes as far apart as possible.</p>
+  <p class="subtitle">Find the boundary that keeps classes as far apart as possible — and prove it's the best possible one.</p>
 
-  <h3>The Margin</h3>
-  <p>SVM doesn't just find any decision boundary — it finds the one that <strong>maximises the margin</strong>: the perpendicular distance between the boundary and the nearest training points from each class.</p>
+  <h3>The Problem With Other Boundaries</h3>
+  <p>For a linearly separable dataset, there are <strong>infinitely many valid hyperplanes</strong> that correctly separate two classes. Logistic Regression picks one via gradient descent — it works, but the choice is somewhat arbitrary. SVM asks a sharper question:</p>
   <div class="card">
-    <div class="key-concept"><div class="label">Why maximise the margin?</div>
-      <p>A wider margin means the model is further from uncertainty at the boundary. This gives better generalisation to unseen data — the model is more confident everywhere except the boundary zone.</p>
+    <div class="key-concept"><div class="label">SVM's core question</div>
+      <p>Of all the valid decision boundaries, which one is the <em>most confident</em>? The answer: the one furthest from all training points — the <strong>maximum-margin hyperplane</strong>.</p>
     </div>
   </div>
 
-  <h3>Support Vectors</h3>
-  <p>The <strong>support vectors</strong> are the training points that lie directly on the margin boundary. Only these points define the decision boundary — the rest of the training data could be removed without changing the model.</p>
-
-  <h3>The C Parameter</h3>
-  <table>
-    <tr><th>C value</th><th>Margin</th><th>Misclassifications</th><th>Risk</th></tr>
-    <tr><td>Small C (e.g. 0.01)</td><td>Wide</td><td>More allowed</td><td>Underfitting</td></tr>
-    <tr><td>Large C (e.g. 1000)</td><td>Narrow</td><td>Few allowed</td><td>Overfitting</td></tr>
-  </table>
-
-  <h3>The Kernel Trick — Non-Linear Boundaries</h3>
-  <p>For data that isn't linearly separable, SVM uses a <strong>kernel</strong> to implicitly map data to a higher-dimensional space where it becomes separable — without ever computing the transformation directly.</p>
-  <div class="card-grid">
-    <div class="card"><div class="key-concept"><div class="label">Linear kernel</div><p>Standard SVM. Fast. Best when data is linearly separable or you have many features.</p></div></div>
-    <div class="card"><div class="key-concept"><div class="label">RBF kernel</div><p>Radial Basis Function. Creates curved boundaries. Default choice for non-linear data. Controlled by γ (gamma).</p></div></div>
+  <h3>The Margin — What It Is and Why It Matters</h3>
+  <p>The <strong>margin</strong> is the perpendicular distance between the decision boundary and the nearest training points from each class. Visualise it as a "no-man's-land" strip around the boundary:</p>
+  <div class="code-block"><pre><span class="cm">Class A (●)    Margin edge     Boundary     Margin edge    Class B (○)</span>
+<span class="cm">    ●              |               |               |            ○</span>
+<span class="cm">      ●       ←───|───────────────|───────────────|───→        ○</span>
+<span class="cm">    ●              |               |               |            ○</span>
+<span class="cm">                       ← margin ←   → margin →</span>
+<span class="cm">                          (maximise the total width)</span></pre></div>
+  <p>A wider margin means the model has a large safe zone around its decision boundary. Test points that land in this zone are classified confidently. A narrow margin means the boundary is dangerously close to training points — small noise in new data tips it the wrong way.</p>
+  <div class="card">
+    <div class="key-concept"><div class="label">The maths behind the margin</div>
+      <p>The hyperplane is <strong>w · x + b = 0</strong>. The two margin edges sit at <strong>w · x + b = +1</strong> and <strong>w · x + b = −1</strong>. The margin width = <strong>2 / ‖w‖</strong>. Maximising the margin means minimising ‖w‖ — a convex quadratic optimisation with a unique global solution.</p>
+    </div>
   </div>
 
+  <h3>Support Vectors — The Only Points That Matter</h3>
+  <p>The <strong>support vectors</strong> are the training points that sit exactly on the margin edges (where w · x + b = ±1). These are the closest points to the boundary from each class.</p>
+  <div class="alert alert-info">Key insight: <strong>only the support vectors define the decision boundary.</strong> You could delete every other training point and the model would be identical. The entire SVM solution depends on just these few critical points.</div>
+  <p>This is unlike logistic regression or neural networks where every training point influences the final model. SVM is a sparse solution — usually only 5–30% of training points end up as support vectors.</p>
+
+  <h3>Why Use SVM? Advantages Over Other Models</h3>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Works in high-dimensional spaces</div><p>SVM is effective even when there are more features than training examples — common in text classification and genomics. Most other models struggle here.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Memory efficient</div><p>Only support vectors are stored after training — a small fraction of the dataset. Logistic regression stores full weight vectors; SVMs are compact.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Globally optimal solution</div><p>The margin maximisation is a convex optimisation — no local minima. You always get the same best answer, unlike neural networks where random initialisation matters.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Robust to outliers</div><p>Non-support-vector points have zero influence. Outliers far from the boundary don't distort the model (unlike linear regression where every point pulls the fit).</p></div></div>
+  </div>
+
+  <h3>When SVM Is the Best Choice</h3>
+  <table>
+    <tr><th>Scenario</th><th>Why SVM wins</th></tr>
+    <tr><td>Small-to-medium dataset (&lt;50k rows)</td><td>Finds the globally optimal boundary; other models need more data to converge reliably</td></tr>
+    <tr><td>High-dimensional features (text, gene expression)</td><td>Linear SVM handles more features than samples; sparse solution avoids overfitting</td></tr>
+    <tr><td>Clear margin of separation exists in data</td><td>SVM is specifically designed to find and exploit this structure</td></tr>
+    <tr><td>You need a theoretically grounded boundary</td><td>Maximum margin has statistical learning theory backing (VC dimension bounds)</td></tr>
+    <tr><td>Non-linear patterns with moderate data</td><td>RBF kernel creates flexible boundaries without a deep model</td></tr>
+  </table>
+  <div class="alert alert-warn">When NOT to use SVM: datasets &gt;100k rows (training is O(n²–n³), very slow), when you need fast probability outputs, or when the data is noisy with heavy class overlap.</div>
+
+  <h3>Soft Margin SVM and the C Parameter</h3>
+  <p>Real data overlaps — a "hard margin" that allows zero misclassifications either fails or overfits to noise. <strong>Soft margin SVM</strong> allows some points to violate the margin, but penalises each violation. The parameter <strong>C</strong> controls this trade-off:</p>
+  <table>
+    <tr><th>C value</th><th>Margin</th><th>Violations allowed</th><th>Risk</th></tr>
+    <tr><td>Small (0.01)</td><td>Wide</td><td>Many</td><td>Underfitting — boundary too simple</td></tr>
+    <tr><td>Default (1.0)</td><td>Balanced</td><td>Some</td><td>Good starting point</td></tr>
+    <tr><td>Large (1000)</td><td>Narrow</td><td>Very few</td><td>Overfitting — boundary wraps training data</td></tr>
+  </table>
+  <p>Think of C as the <strong>inverse of regularisation</strong> — exactly like the C parameter in logistic regression. Higher C = less regularisation = more complex boundary = risk of overfitting.</p>
+  <div class="card">
+    <div class="key-concept"><div class="label">Overfitting symptom with high C</div>
+      <p>99% training accuracy, 70% test accuracy. The boundary has contorted to classify nearly every training point correctly — including noise. Fix: lower C and use GridSearchCV to find the right value.</p>
+    </div>
+  </div>
+
+  <h3>The Kernel Trick — Non-Linear Boundaries</h3>
+  <p>Most real data isn't linearly separable. The solution: <strong>map data to a higher-dimensional space</strong> where it becomes linearly separable, then fit a standard SVM there.</p>
+  <div class="code-block"><pre><span class="cm"># 1D — not separable:   ● ○○ ●</span>
+<span class="cm"># Map to 2D (x → x²):  ●        ●</span>
+<span class="cm">#                          ○○</span>
+<span class="cm"># Now a straight line separates them</span></pre></div>
+  <p>The <strong>kernel trick</strong>: you never compute the transformation φ(x) directly. Instead, the kernel function K(x, x') = φ(x)·φ(x') computes the dot product in the high-dimensional space using only the original features. This is computationally cheap but gives the power of a high-dimensional separation.</p>
+
+  <h3>Common Kernels</h3>
+  <table>
+    <tr><th>Kernel</th><th>Formula</th><th>Boundary shape</th><th>Use when</th></tr>
+    <tr><td><strong>Linear</strong></td><td>K(x,x') = x·x'</td><td>Straight hyperplane</td><td>Text data, high-dim features, large datasets</td></tr>
+    <tr><td><strong>RBF (Gaussian)</strong></td><td>K(x,x') = exp(−γ‖x−x'‖²)</td><td>Flexible curved</td><td>General purpose, default choice for non-linear data</td></tr>
+    <tr><td><strong>Polynomial</strong></td><td>K(x,x') = (x·x' + r)^d</td><td>Polynomial curves</td><td>When feature interactions matter</td></tr>
+  </table>
+
+  <h3>Gamma (γ) — RBF Influence Radius</h3>
+  <p>γ controls how far each support vector's influence reaches in the RBF kernel:</p>
+  <table>
+    <tr><th>γ value</th><th>Influence radius</th><th>Boundary</th><th>Risk</th></tr>
+    <tr><td>Small γ</td><td>Wide — affects far-away points</td><td>Smooth, simple</td><td>Underfitting</td></tr>
+    <tr><td>Large γ</td><td>Narrow — only affects nearby points</td><td>Wiggly, complex</td><td>Overfitting</td></tr>
+  </table>
+  <p>High γ makes each support vector act like a spike — the boundary wraps tightly around training points. Low γ makes each support vector cast a wide net — the boundary is smooth and general. <strong>Always tune C and γ together.</strong> Use <code>gamma='scale'</code> as a safe default (sklearn sets γ = 1 / (n_features × variance)).</p>
+
+  <h3>SVC vs LinearSVC</h3>
+  <table>
+    <tr><th></th><th>SVC(kernel='linear')</th><th>LinearSVC</th></tr>
+    <tr><td>Algorithm</td><td>Kernel-based quadratic optimisation</td><td>Direct linear optimisation</td></tr>
+    <tr><td>Speed</td><td>Slow O(n²–n³)</td><td>Fast O(n) — scales to large data</td></tr>
+    <tr><td>Probability output</td><td>Yes with probability=True</td><td>No</td></tr>
+    <tr><td>Use when</td><td>Small/medium datasets, non-linear kernels</td><td>Large datasets, text classification</td></tr>
+  </table>
+  <div class="alert alert-info"><strong>Rule:</strong> If your dataset has &gt;100k rows and linear separation is reasonable, use LinearSVC. Otherwise start with SVC(kernel='rbf').</div>
+
+  <h3>The Scaling Requirement</h3>
+  <p>SVM computes distances between points (‖x − x'‖). If one feature has values in [0, 1000] and another in [0, 1], the first dominates every distance calculation and the second becomes invisible. <strong>Always scale before SVM — wrap it in a Pipeline so scaling is never accidentally skipped.</strong></p>
+
+  <h3>Full sklearn Code</h3>
   <div class="code-block"><pre><span class="kw">from</span> sklearn.svm <span class="kw">import</span> SVC
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+<span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split, GridSearchCV
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report
 
-svm = <span class="fn">SVC</span>(kernel=<span class="st">'rbf'</span>, C=<span class="nu">1.0</span>, gamma=<span class="st">'scale'</span>, probability=<span class="kw">True</span>)
-svm.<span class="fn">fit</span>(X_train, y_train)
-svm.<span class="fn">score</span>(X_test, y_test)</pre></div>
+<span class="cm"># Step 1: Always scale inside a Pipeline — prevents data leakage</span>
+pipeline = <span class="fn">Pipeline</span>([
+    (<span class="st">'scaler'</span>, <span class="fn">StandardScaler</span>()),
+    (<span class="st">'svm'</span>,    <span class="fn">SVC</span>(kernel=<span class="st">'rbf'</span>, probability=<span class="kw">True</span>))
+])
 
-  <div class="alert alert-warn">⚠️ Always scale features before SVM. The margin calculation is distance-based and highly sensitive to feature scales.</div>
+<span class="cm"># Step 2: Tune C and gamma together — they interact</span>
+param_grid = {
+    <span class="st">'svm__C'</span>:     [<span class="nu">0.1</span>, <span class="nu">1</span>, <span class="nu">10</span>, <span class="nu">100</span>],
+    <span class="st">'svm__gamma'</span>: [<span class="st">'scale'</span>, <span class="nu">0.001</span>, <span class="nu">0.01</span>, <span class="nu">0.1</span>]
+}
+grid = <span class="fn">GridSearchCV</span>(pipeline, param_grid, cv=<span class="nu">5</span>, scoring=<span class="st">'f1'</span>, n_jobs=<span class="nu">-1</span>)
+grid.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="cm"># Step 3: Evaluate on held-out test set</span>
+best = grid.best_estimator_
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, best.<span class="fn">predict</span>(X_test)))
+<span class="fn">print</span>(<span class="st">"Best params:"</span>, grid.best_params_)</pre></div>
+
+  <div class="code-block"><pre><span class="cm"># For large datasets — use LinearSVC instead</span>
+<span class="kw">from</span> sklearn.svm <span class="kw">import</span> LinearSVC
+
+pipeline_linear = <span class="fn">Pipeline</span>([
+    (<span class="st">'scaler'</span>, <span class="fn">StandardScaler</span>()),
+    (<span class="st">'svm'</span>,    <span class="fn">LinearSVC</span>(C=<span class="nu">1.0</span>, max_iter=<span class="nu">2000</span>))
+])
+pipeline_linear.<span class="fn">fit</span>(X_train, y_train)
+<span class="fn">print</span>(pipeline_linear.<span class="fn">score</span>(X_test, y_test))</pre></div>
+
+  <h3>Key Rules Card</h3>
+  <div class="card">
+    <div class="key-concept"><div class="label">SVM in practice — 5 rules</div>
+      <ol>
+        <li><strong>Always scale</strong> — margin is distance-based; unscaled features destroy it</li>
+        <li><strong>Use a Pipeline</strong> — scaler must be fit on training data only</li>
+        <li><strong>Tune C and γ together</strong> — they interact; grid search both simultaneously</li>
+        <li><strong>Start with RBF</strong> — if that fails try linear; only try polynomial for specific reasons</li>
+        <li><strong>Switch to LinearSVC at scale</strong> — SVC is O(n²–n³), brutal on large datasets</li>
+      </ol>
+    </div>
+  </div>
 
   <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-w15"></div></div>
   <div class="btn-row">
@@ -2376,9 +2492,13 @@ const ALL_QUESTIONS = [
   // L15
   {t:'w15', q:'What does SVM try to maximise?', opts:['The number of training points correctly classified','The margin — the distance between the decision boundary and the nearest points of each class','Training accuracy','The depth of the feature space'], ans:1, exp:'SVM finds the hyperplane that maximises the margin — the gap between the boundary and the closest points of each class. Larger margin → better generalisation.'},
   {t:'w15', q:'What are support vectors?', opts:['All training data points','The features selected by the model','The training points closest to the decision boundary that define the margin','The dimensions of the feature space'], ans:2, exp:'Support vectors are the critical training points on the margin boundary. The decision boundary is entirely defined by these — removing all other training data would not change the model.'},
+  {t:'w15', q:'If you remove all training points EXCEPT the support vectors, what happens to the SVM model?', opts:['The model changes completely','The model stays exactly the same','The model improves because of less noise','The margin widens'], ans:1, exp:'The SVM model is defined entirely by the support vectors. All other training points have zero influence on the final boundary. Removing them leaves the model unchanged.'},
   {t:'w15', q:'What does the kernel trick allow SVM to do?', opts:['Train faster on large datasets','Implicitly map data to a higher-dimensional space where it becomes linearly separable without computing the transformation directly','Remove the need for hyperparameter tuning','Use gradient descent'], ans:1, exp:'The kernel trick computes dot products in a high-dimensional space without the explicit transformation. This lets SVM fit non-linear boundaries without the computational cost.'},
   {t:'w15', q:'A high C value in SVM means:', opts:['Wide margin, more misclassifications allowed','Narrow margin, fewer misclassifications allowed, risk of overfitting','Stronger regularisation','The model ignores outliers'], ans:1, exp:'High C penalises misclassification heavily, forcing the boundary to correctly classify most training points even at the cost of a narrow margin. This can overfit. Low C allows some errors for a wider, more general margin.'},
   {t:'w15', q:'Which SVM kernel is most commonly used for non-linearly separable data?', opts:['Linear kernel','Polynomial kernel','RBF (Radial Basis Function) kernel','Sigmoid kernel'], ans:2, exp:'The RBF (Gaussian) kernel measures similarity by distance between points and creates flexible curved boundaries. It is the default choice for non-linear SVM problems.'},
+  {t:'w15', q:'What does a high gamma value in the RBF kernel cause?', opts:['A smooth, wide decision boundary that may underfit','A wiggly, localised decision boundary that may overfit','Faster training speed','A linear decision boundary'], ans:1, exp:'High gamma means each support vector only influences a narrow local region. The boundary wraps tightly around training points — overfitting. Low gamma gives each support vector wide influence, producing a smooth boundary.'},
+  {t:'w15', q:'Your dataset has 500,000 rows. Should you use SVC(kernel="rbf") or LinearSVC?', opts:['SVC(kernel="rbf") — it handles non-linear patterns better','LinearSVC — SVC is O(n²–n³) and will be extremely slow or infeasible','Either — they have the same speed','SVC with probability=True for best results'], ans:1, exp:'SVC\'s kernel optimisation is O(n²) to O(n³). On 500k rows, training could take hours or never finish. LinearSVC uses a direct linear solver that scales linearly with data size.'},
+  {t:'w15', q:'Why must you always scale features before using SVM?', opts:['SVM requires features in the range [0,1]','SVM computes distances and unscaled features with larger ranges dominate the margin calculation','sklearn SVC raises an error without scaling','Scaling improves the kernel trick computation'], ans:1, exp:'The margin is based on distances between points. A feature with values [0, 1000] completely dominates a feature with values [0, 1], making the second invisible to the model. Always use StandardScaler, ideally inside a Pipeline.'},
 
   // L16
   // L9b Naive Bayes
@@ -2499,11 +2619,15 @@ const FLASHCARDS = [
   {t:'w14', front:'How does KNN produce probabilities?', back:'Vote counts among K neighbours give class proportions directly. 3 of 5 neighbours are class A → P(A)=0.6. Use predict_proba() in sklearn.'},
   {t:'w14', front:'Bias and variance in KNN?', back:'Small K → low bias, high variance (overfit). Large K → high bias, low variance (underfit). Bias = systematic error. Variance = sensitivity to training data.'},
   // L15
-  {t:'w15', front:'What does SVM maximise?', back:'The margin — the perpendicular distance between the decision boundary and the nearest training points (support vectors) of each class.'},
-  {t:'w15', front:'What are support vectors?', back:'The training points on the margin boundary that define the decision boundary. Removing all other training data would not change the model.'},
-  {t:'w15', front:'What is the kernel trick?', back:'Computing dot products in a high-dimensional space without explicitly transforming the data. Allows SVM to fit non-linear boundaries efficiently.'},
-  {t:'w15', front:'What does C control in SVM?', back:'Misclassification penalty. High C = narrow margin, few errors, risk of overfitting.\nLow C = wide margin, more errors allowed, simpler model.'},
-  {t:'w15', front:'What is the RBF kernel?', back:'Radial Basis Function — measures similarity by distance. Creates flexible curved boundaries. Default kernel for non-linear SVM.'},
+  {t:'w15', front:'What does SVM maximise?', back:'The margin — the perpendicular distance between the decision boundary and the nearest training points (support vectors) of each class. Larger margin = better generalisation.'},
+  {t:'w15', front:'What are support vectors?', back:'The training points sitting exactly on the margin edges. They are the only points that define the decision boundary — remove all others and the model is unchanged.'},
+  {t:'w15', front:'What is the margin in SVM?', back:'The "no-man\'s-land" strip on both sides of the decision boundary. Width = 2 / ‖w‖. Maximising margin = minimising ‖w‖ = convex optimisation with a unique global solution.'},
+  {t:'w15', front:'What does C control in SVM?', back:'Misclassification penalty (inverse of regularisation).\nHigh C → narrow margin, few errors, risk of overfitting.\nLow C → wide margin, more violations allowed, simpler model.'},
+  {t:'w15', front:'What is the kernel trick?', back:'Computing dot products K(x,x\') in a high-dimensional space without explicitly computing the mapping φ(x). Allows non-linear boundaries at the cost of only computing a kernel function.'},
+  {t:'w15', front:'What is the RBF kernel and what does gamma control?', back:'RBF: K(x,x\') = exp(−γ‖x−x\'‖²). Gamma controls influence radius: high γ → each support vector has narrow local influence → wiggly boundary → overfit. Low γ → wide influence → smooth boundary → underfit.'},
+  {t:'w15', front:'SVC vs LinearSVC — when to use each?', back:'SVC: small/medium data (<50k rows), non-linear kernels, needs probabilities. LinearSVC: large datasets (scales linearly), text classification. SVC is O(n²–n³) and cannot scale to large data.'},
+  {t:'w15', front:'Why must you always scale before SVM?', back:'SVM margin is distance-based. Unscaled features with large ranges dominate distances, making small-range features invisible. Use StandardScaler inside a Pipeline.'},
+  {t:'w15', front:'When is SVM the best choice?', back:'Small-to-medium datasets, high-dimensional features (text, genomics), clear margin of separation exists, or you need a theoretically optimal boundary. Not for >100k rows or when speed matters.'},
   // L9b Naive Bayes
   {t:'nb', front:'What are the 3 terms of Bayes\' Rule?', back:'P(y|x) = P(x|y) × P(y) / P(x)\nPosterior = Likelihood × Prior / Normalisation\nIgnore P(x) — same for all classes, doesn\'t affect which wins.'},
   {t:'nb', front:'What is the "naive" assumption?', back:'Given the class, all features are independent of each other. So P(x₁, x₂, ...|y) = P(x₁|y) × P(x₂|y) × ... — a product of simple per-feature probabilities.'},
