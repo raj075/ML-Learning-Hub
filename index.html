@@ -238,6 +238,14 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
     <div class="nav-item nav-item-sub" onclick="nav('csheet')" id="nav-csheet"><span class="icon">📋</span> Classification Cheat Sheet</div>
   </div>
 
+  <div class="nav-item nav-item-chapter" onclick="toggleChapter('ensemble')"><span class="icon">📚</span> Ensemble Methods<span class="chapter-arrow" id="arrow-ensemble">▾</span></div>
+  <div class="nav-chapter-items" id="chapter-ensemble">
+    <div class="nav-item nav-item-sub" onclick="nav('en1')" id="nav-en1"><span class="icon">🧩</span> L1: Intro to Ensembles<span class="check" id="check-en1"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('en2')" id="nav-en2"><span class="icon">⚡</span> L2: Boosting & AdaBoost<span class="check" id="check-en2"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('en3')" id="nav-en3"><span class="icon">🔀</span> L3: Stacking<span class="check" id="check-en3"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('en4')" id="nav-en4"><span class="icon">📉</span> L4: Gradient Boosting<span class="check" id="check-en4"></span></div>
+  </div>
+
   <div class="sidebar-section" style="margin-top:10px">Practice</div>
   <div class="nav-item" onclick="nav('quiz')"><span class="icon">📝</span> Quiz</div>
   <div class="nav-item" onclick="nav('flashcards')"><span class="icon">🃏</span> Flashcards</div>
@@ -3119,6 +3127,1110 @@ ovo.<span class="fn">fit</span>(X_train, y_train)
   </div>
 </div>
 
+<!-- ENSEMBLE METHODS — LESSON 2 -->
+<div class="page" id="page-en2">
+  <h2>⚡ Boosting &amp; AdaBoost</h2>
+  <p class="subtitle">Train weak learners sequentially — each one fixing what the previous got wrong. Bias melts away, round by round.</p>
+
+  <div class="alert alert-info">💡 Unlike bagging (parallel, reduces variance), boosting is <strong>sequential</strong> and targets <strong>bias reduction</strong>.</div>
+
+  <h3>Core Idea</h3>
+  <p>Boosting trains models one at a time. After each model, the training data is <strong>re-weighted</strong> — samples the current ensemble got wrong receive higher weight, so the next model is forced to focus on them.</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Sequential training</div><p>Each stump is trained after seeing the mistakes of all previous stumps — not in parallel like bagging.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Weighted vote</div><p>Stumps with lower error get higher weight α in the final vote. Better stumps have more say.</p></div></div>
+  </div>
+
+  <h3>AdaBoost — Step by Step</h3>
+  <p>The diagram below walks through two full rounds using a 5-sample dataset (Age, BMI, Gender → Risk label). Follow the flow left to right, top to bottom.</p>
+
+  <div class="card" style="padding:12px; text-align:center;">
+    <img src="Ensemble%20methods/combining-weak-models-with-boosting/lessons/adaboost_diagram.png"
+         alt="AdaBoost step-by-step diagram"
+         style="max-width:100%; border-radius:8px;" />
+    <p style="font-size:0.75rem; margin:8px 0 0; color:var(--text-muted)">Round 1 dataset → Stump 1 → weight update → Round 2 dataset → Stump 2 → final weighted vote</p>
+  </div>
+
+  <h3>The Algorithm</h3>
+  <ol style="margin-bottom:14px">
+    <li style="margin-bottom:8px">Initialise equal sample weights: <strong>wᵢ = 1/N</strong></li>
+    <li style="margin-bottom:8px">Train a weak learner (decision stump) on the weighted data</li>
+    <li style="margin-bottom:8px">Calculate weighted error: <strong>ε = Σ wᵢ · 𝟙[prediction ≠ label]</strong></li>
+    <li style="margin-bottom:8px">Calculate stump weight: <strong>α = ½ · ln((1−ε) / ε)</strong></li>
+    <li style="margin-bottom:8px">Update sample weights — misclassified samples go <strong>up</strong>, correct ones go <strong>down</strong></li>
+    <li style="margin-bottom:8px">Normalise weights so they sum to 1, repeat from step 2</li>
+  </ol>
+  <div class="card">
+    <div class="key-concept"><div class="label">Final prediction</div>
+      <p>F(x) = sign( α₁·h₁(x) + α₂·h₂(x) + … + αₖ·hₖ(x) ) — each stump's vote is weighted by how accurate it was.</p>
+    </div>
+  </div>
+
+  <h3>Weight Update Formula</h3>
+  <table>
+    <tr><th>Sample result</th><th>New weight</th><th>Effect</th></tr>
+    <tr><td>✓ Correct</td><td>wᵢ · e<sup>−α</sup></td><td>Weight decreases — already well-handled</td></tr>
+    <tr><td>✗ Wrong</td><td>wᵢ · e<sup>+α</sup></td><td>Weight increases — next stump must focus here</td></tr>
+  </table>
+  <p>After updating, all weights are normalised so they sum to 1 (divide by Z = Σ raw weights).</p>
+
+  <h3>Stump Weight α</h3>
+  <p>α controls how much each stump contributes to the final vote:</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">ε → 0 (near perfect)</div><p>α → ∞. Stump gets huge weight — it rarely makes mistakes.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">ε = 0.5 (random)</div><p>α = 0. Stump gets zero weight — equivalent to random guessing, ignored.</p></div></div>
+  </div>
+
+  <h3>AdaBoost vs Gradient Boosting</h3>
+  <table>
+    <tr><th></th><th>AdaBoost</th><th>Gradient Boosting</th></tr>
+    <tr><td><strong>Re-weighting</strong></td><td>Sample weights (exponential)</td><td>Fit to pseudo-residuals (loss gradient)</td></tr>
+    <tr><td><strong>Loss function</strong></td><td>Fixed: exponential loss</td><td>Any differentiable loss (MSE, log loss…)</td></tr>
+    <tr><td><strong>Base learner depth</strong></td><td>Stumps (depth=1)</td><td>Shallow trees (depth 3–8 typical)</td></tr>
+    <tr><td><strong>Libraries</strong></td><td>sklearn AdaBoostClassifier</td><td>XGBoost, LightGBM, CatBoost</td></tr>
+  </table>
+
+  <h3>Boosting in Practice</h3>
+  <div class="card-grid">
+    <div class="card" style="border-left:3px solid var(--green)">
+      <h4 style="margin-top:0; color:var(--green)">Pros</h4>
+      <ul>
+        <li>Very high predictive performance</li>
+        <li>Works well on structured/tabular data</li>
+        <li>Feature importance available</li>
+        <li>Can use any weak learner</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--red)">
+      <h4 style="margin-top:0; color:var(--red)">Cons</h4>
+      <ul>
+        <li>Prone to overfitting on noisy data</li>
+        <li>Hard to parallelise (sequential by nature)</li>
+        <li>Sensitive to outliers (outliers get upweighted)</li>
+        <li>More hyperparameters to tune</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> AdaBoostClassifier
+<span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier
+
+<span class="cm"># AdaBoost with decision stumps (depth=1)</span>
+ada = <span class="fn">AdaBoostClassifier</span>(
+    estimator=<span class="fn">DecisionTreeClassifier</span>(max_depth=<span class="nu">1</span>),
+    n_estimators=<span class="nu">100</span>,
+    learning_rate=<span class="nu">1.0</span>,
+    random_state=<span class="nu">42</span>
+)
+ada.<span class="fn">fit</span>(X_train, y_train)
+ada.<span class="fn">score</span>(X_test, y_test)
+
+<span class="cm"># Gradient Boosting (XGBoost) — more powerful in practice</span>
+<span class="kw">from</span> xgboost <span class="kw">import</span> XGBClassifier
+xgb = <span class="fn">XGBClassifier</span>(n_estimators=<span class="nu">200</span>, max_depth=<span class="nu">4</span>, learning_rate=<span class="nu">0.1</span>)
+xgb.<span class="fn">fit</span>(X_train, y_train)</pre></div>
+
+  <div class="alert alert-warn">⚠️ AdaBoost is sensitive to noisy data and outliers — they get upweighted repeatedly, potentially dominating the model. Use robust preprocessing or switch to Gradient Boosting for noisy datasets.</div>
+
+  <hr>
+  <h3>🧪 Practical: Predicting Online Purchase Intent with LightGBM</h3>
+  <p>We classify e-commerce visitors as likely to purchase or not, using 12,330 sessions from the <a href="https://archive.ics.uci.edu/ml/datasets/Online+Shoppers+Purchasing+Intention+Dataset" style="color:var(--accent)">UCI Online Shoppers dataset</a>. Binary target: <code>Revenue</code> (True = made a purchase).</p>
+
+  <div class="alert alert-info">LightGBM is a gradient boosting library optimised for speed and memory. It handles categorical features natively — <strong>no one-hot encoding needed</strong>.</div>
+
+  <h4>Dataset Overview</h4>
+  <table>
+    <tr><th>Feature group</th><th>Examples</th><th>Type</th></tr>
+    <tr><td>Page metrics</td><td>Administrative, Informational, ProductRelated (count + duration)</td><td>Numeric</td></tr>
+    <tr><td>Analytics</td><td>BounceRates, ExitRates, PageValues</td><td>Numeric (float)</td></tr>
+    <tr><td>Session context</td><td>Month, VisitorType, Weekend, SpecialDay</td><td>Categorical / bool</td></tr>
+    <tr><td>Technical</td><td>OperatingSystems, Browser, Region, TrafficType</td><td>Categorical (int codes)</td></tr>
+    <tr><td><strong>Target</strong></td><td>Revenue</td><td>Boolean (True / False)</td></tr>
+  </table>
+
+  <h4>Step 1 — Load Data &amp; Mark Categoricals</h4>
+  <p>LightGBM requires data to be <code>int</code>, <code>float</code>, or <code>bool</code>. Columns that are truly categorical (even if stored as integers like Region or Browser) must be cast to <code>category</code> dtype so LightGBM treats them correctly instead of assuming numeric ordering.</p>
+  <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+data = pd.<span class="fn">read_csv</span>(<span class="st">'data/online_shoppers_intention.csv'</span>)
+
+<span class="cm"># Cast all categorical columns — both string types AND integer-coded categories</span>
+<span class="cm"># e.g. Region=1 doesn't mean "less than" Region=3 — it's just a label</span>
+cat_cols = [<span class="st">'Month'</span>, <span class="st">'VisitorType'</span>, <span class="st">'OperatingSystems'</span>,
+            <span class="st">'Browser'</span>, <span class="st">'Region'</span>, <span class="st">'TrafficType'</span>]
+data[cat_cols] = data[cat_cols].<span class="fn">astype</span>(<span class="st">'category'</span>)
+
+data.<span class="fn">info</span>()    <span class="cm"># confirm dtypes — category columns now show as CategoricalDtype</span></pre></div>
+
+  <h4>Step 2 — Train/Test Split with Stratification</h4>
+  <p>Only ~15% of sessions result in a purchase. Without <code>stratify=y</code>, a random split could put nearly all buyers in one set.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+
+X = data.<span class="fn">drop</span>(<span class="st">'Revenue'</span>, axis=<span class="nu">1</span>)
+y = data.Revenue                        <span class="cm"># boolean: True=purchase, False=no purchase</span>
+
+<span class="cm"># stratify=y ensures both splits have the same ~15% purchase rate</span>
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    X, y, stratify=y, random_state=<span class="nu">136</span>
+)</pre></div>
+
+  <h4>Step 3 — Create LightGBM Datasets</h4>
+  <p>LightGBM uses its own <code>Dataset</code> format instead of raw arrays. The <code>reference=lgb_train</code> argument on the test set is critical — it tells LightGBM to use the <em>same categorical encoding</em> that was built from training data, preventing data leakage.</p>
+  <div class="code-block"><pre><span class="kw">import</span> lightgbm <span class="kw">as</span> lgb
+
+lgb_train = lgb.<span class="fn">Dataset</span>(X_train, y_train)
+
+<span class="cm"># reference=lgb_train: share the categorical encoding from train — same bins and category maps</span>
+<span class="cm"># Without this, test set gets its own encoding, which can differ and cause silent errors</span>
+lgb_test  = lgb.<span class="fn">Dataset</span>(X_test, y_test, reference=lgb_train)</pre></div>
+
+  <h4>Step 4 — Configure Parameters</h4>
+  <table>
+    <tr><th>Parameter</th><th>Value</th><th>What it means</th></tr>
+    <tr><td><code>boosting_type</code></td><td>'gbdt'</td><td>Gradient Boosting Decision Trees — the standard algorithm</td></tr>
+    <tr><td><code>objective</code></td><td>'binary'</td><td>Binary classification (log loss objective)</td></tr>
+    <tr><td><code>metric</code></td><td>list</td><td>What to track/report: logloss, AUC, average precision</td></tr>
+    <tr><td><code>num_leaves</code></td><td>31</td><td>Max leaves per tree — controls complexity. More leaves = more expressive but more overfit risk</td></tr>
+    <tr><td><code>learning_rate</code></td><td>0.1</td><td>How much each new tree contributes. Smaller = more trees needed but better generalisation</td></tr>
+    <tr><td><code>max_depth</code></td><td>-1</td><td>No depth limit — tree depth is controlled via <code>num_leaves</code> instead</td></tr>
+    <tr><td><code>seed</code></td><td>0</td><td>Reproducibility — same results every run</td></tr>
+  </table>
+  <div class="code-block"><pre>params = {
+    <span class="st">'boosting_type'</span>: <span class="st">'gbdt'</span>,          <span class="cm"># gradient boosted decision trees</span>
+    <span class="st">'objective'</span>:     <span class="st">'binary'</span>,         <span class="cm"># binary classification task</span>
+    <span class="st">'metric'</span>:        [<span class="st">'binary_logloss'</span>, <span class="st">'auc'</span>, <span class="st">'average_precision'</span>],
+    <span class="st">'num_leaves'</span>:    <span class="nu">31</span>,               <span class="cm"># max leaves per tree — main complexity control</span>
+    <span class="st">'learning_rate'</span>: <span class="nu">0.1</span>,             <span class="cm"># shrinkage: lower = slower but more stable</span>
+    <span class="st">'max_depth'</span>:     <span class="nu">-1</span>,              <span class="cm"># -1 = unlimited; num_leaves controls depth implicitly</span>
+    <span class="st">'verbose'</span>:       <span class="nu">0</span>,               <span class="cm"># 0 = warnings only, -1 = silent</span>
+    <span class="st">'seed'</span>:          <span class="nu">0</span>,               <span class="cm"># reproducibility</span>
+}</pre></div>
+
+  <h4>Step 5 — Train &amp; Monitor Seen vs Unseen Loss</h4>
+  <p>By passing both <code>lgb_train</code> and <code>lgb_test</code> to <code>valid_sets</code>, we track the loss curve on training and test simultaneously. The gap between them reveals overfitting.</p>
+  <div class="code-block"><pre><span class="cm"># evals dict stores metric values at each boosting round — used for plotting</span>
+evals = {}
+
+model = lgb.<span class="fn">train</span>(
+    params=params,
+    train_set=lgb_train,
+    num_boost_round=<span class="nu">200</span>,              <span class="cm"># number of boosting iterations (trees to build)</span>
+    valid_sets=[lgb_train, lgb_test],  <span class="cm"># monitor both sets every round</span>
+    valid_names=[<span class="st">'seen'</span>, <span class="st">'unseen'</span>],   <span class="cm"># labels for the plot</span>
+    callbacks=[
+        lgb.<span class="fn">record_evaluation</span>(evals),  <span class="cm"># saves metrics into evals dict each round</span>
+        lgb.<span class="fn">log_evaluation</span>(<span class="nu">10</span>)         <span class="cm"># prints metrics every 10 rounds</span>
+    ]
+)
+
+<span class="cm"># Plot all 3 metrics across 200 rounds for seen vs unseen</span>
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+f, a = plt.<span class="fn">subplots</span>(<span class="nu">1</span>, <span class="nu">3</span>, figsize=(<span class="nu">16</span>, <span class="nu">5</span>))
+<span class="kw">for</span> e, m <span class="kw">in</span> <span class="fn">enumerate</span>([<span class="st">'binary_logloss'</span>, <span class="st">'auc'</span>, <span class="st">'average_precision'</span>]):
+    lgb.<span class="fn">plot_metric</span>(evals, metric=m, ax=a[e], title=<span class="fn">f</span><span class="st">"{m} during training"</span>)
+plt.<span class="fn">tight_layout</span>()</pre></div>
+  <div class="card"><div class="key-concept"><div class="label">Key observation — overfitting</div><p>The model overfits quickly — 200 rounds is too many. The unseen loss starts rising while training loss keeps dropping. Peak unseen performance is around 50–70 iterations. Fix: use fewer rounds or add early stopping.</p></div></div>
+
+  <h4>Step 6 — Feature Importance: split vs gain</h4>
+  <p>LightGBM provides two importance types — always check both, they tell different stories:</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">split</div><p>How many times a feature was used to make a split across all trees. High split count = the model relies on this feature heavily to make decisions.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">gain</div><p>Total improvement in the loss function brought by all splits on this feature. High gain = this feature produces the biggest quality improvements when split on. More meaningful than split count alone.</p></div></div>
+  </div>
+  <div class="code-block"><pre><span class="kw">for</span> imp_type <span class="kw">in</span> [<span class="st">'split'</span>, <span class="st">'gain'</span>]:
+    lgb.<span class="fn">plot_importance</span>(model,
+                         importance_type=imp_type,
+                         dpi=<span class="nu">100</span>,
+                         title=<span class="fn">f</span><span class="st">"Feature importance by {imp_type}"</span>)
+
+<span class="cm"># Result: PageValues, ExitRates, ProductRelated_Duration dominate both metrics</span>
+<span class="cm"># Human activity features (time spent, pages visited) are far more predictive than technical ones (OS, Browser)</span></pre></div>
+
+  <h4>Step 7 — Predicting on New Data</h4>
+  <p>LightGBM's <code>model.predict()</code> returns <strong>probabilities</strong> (0–1), not class labels. We need a helper function to apply a threshold and convert to 0/1.</p>
+  <div class="code-block"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">def</span> <span class="fn">predict_class</span>(model, data, threshold=<span class="nu">0.5</span>):
+    y_prob = model.<span class="fn">predict</span>(data)            <span class="cm"># returns float probabilities e.g. [0.12, 0.87, 0.43]</span>
+    <span class="kw">return</span> np.<span class="fn">where</span>(y_prob > threshold, <span class="nu">1</span>, <span class="nu">0</span>) <span class="cm"># above threshold → 1 (purchase), else 0</span>
+    <span class="cm"># Lower threshold → catch more buyers (higher recall, lower precision)</span>
+    <span class="cm"># Higher threshold → fewer false positives (higher precision, lower recall)</span>
+
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> accuracy_score
+<span class="fn">print</span>(<span class="st">"Test accuracy:"</span>, <span class="fn">accuracy_score</span>(y_test, <span class="fn">predict_class</span>(model, X_test)))
+<span class="cm"># Train accuracy ~0.99 vs test ~0.88 — large gap confirms overfitting with 200 rounds</span></pre></div>
+
+  <h4>Step 8 — Hyperparameter Tuning with GridSearchCV</h4>
+  <p><code>lgb.LGBMClassifier</code> is the sklearn-compatible API — works with GridSearchCV exactly like any sklearn model.</p>
+  <table>
+    <tr><th>Parameter</th><th>Values tried</th><th>What it controls</th></tr>
+    <tr><td><code>max_bin</code></td><td>155, 255</td><td>Number of bins for continuous features. More bins = more precise splits but slower. Default 255.</td></tr>
+    <tr><td><code>num_leaves</code></td><td>7, 15, 31</td><td>Max leaves per tree. Lower = simpler, less overfit. Higher = more expressive, more overfit risk.</td></tr>
+    <tr><td><code>min_data_in_leaf</code></td><td>15, 20</td><td>Minimum samples in a leaf. Higher = smoother, more generalised model.</td></tr>
+    <tr><td><code>min_gain_to_split</code></td><td>0, 0.01</td><td>Minimum gain required to make a split. Positive value prunes uninformative splits.</td></tr>
+  </table>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> GridSearchCV
+
+params_grid = <span class="fn">dict</span>(
+    max_bin=[<span class="nu">155</span>, <span class="nu">255</span>],          <span class="cm"># bins for continuous features — more = slower but more precise</span>
+    num_leaves=[<span class="nu">7</span>, <span class="nu">15</span>, <span class="nu">31</span>],       <span class="cm"># tree complexity — 7 is simple/robust, 31 is default</span>
+    min_data_in_leaf=[<span class="nu">15</span>, <span class="nu">20</span>],    <span class="cm"># minimum samples per leaf — higher prevents tiny overfit leaves</span>
+    min_gain_to_split=[<span class="nu">0</span>, <span class="nu">0.01</span>], <span class="cm"># prune splits below this gain threshold — 0 = no pruning</span>
+    verbose=[<span class="nu">-1</span>],                 <span class="cm"># suppress per-fold output</span>
+    seed=[<span class="nu">0</span>],
+)
+
+<span class="cm"># LGBMClassifier = sklearn-compatible LightGBM — works with GridSearchCV, Pipeline, cross_validate</span>
+classifier = lgb.<span class="fn">LGBMClassifier</span>()
+
+<span class="cm"># 2×3×2×2 = 24 combinations × 5 CV folds = 120 models trained in parallel (n_jobs=-1)</span>
+gcv = <span class="fn">GridSearchCV</span>(estimator=classifier, param_grid=params_grid, n_jobs=<span class="nu">-1</span>, verbose=<span class="nu">1</span>)
+gcv.<span class="fn">fit</span>(X_train, y_train)</pre></div>
+
+  <h4>Step 9 — Evaluate Best Model</h4>
+  <div class="code-block"><pre><span class="fn">print</span>(<span class="fn">f</span><span class="st">"Best CV accuracy:     {gcv.best_score_:.4f}"</span>)
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Best hyperparameters: {gcv.best_params_}"</span>)
+
+best_model = gcv.best_estimator_
+
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Train accuracy: {best_model.score(X_train, y_train):.4f}"</span>)
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Test  accuracy: {best_model.score(X_test,  y_test ):.4f}"</span>)
+<span class="cm"># Train ≈ test after tuning — overfitting resolved. Accuracy up to ~90.7%</span>
+
+<span class="cm"># Per-class breakdown — critical because only ~15% of sessions are purchases</span>
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report, confusion_matrix
+
+best_pred = best_model.<span class="fn">predict</span>(X_test)       <span class="cm"># LGBMClassifier.predict() returns class labels directly</span>
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, best_pred))
+<span class="fn">print</span>(<span class="fn">confusion_matrix</span>(y_test, best_pred))
+
+<span class="cm"># Feature importances from the sklearn-compatible best model</span>
+f_imp = pd.<span class="fn">DataFrame</span>(<span class="fn">dict</span>(
+    feature=best_model.feature_name_,         <span class="cm"># column names used during training</span>
+    importance=best_model.feature_importances_ <span class="cm"># importance_type set by best_model.importance_type</span>
+)).<span class="fn">sort_values</span>(<span class="st">'importance'</span>, ascending=<span class="nu">False</span>)
+<span class="fn">print</span>(f_imp.<span class="fn">head</span>(<span class="nu">10</span>))</pre></div>
+
+  <h4>Key Learnings from the Practical</h4>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">No encoding needed</div><p>LightGBM handles categorical columns natively via <code>.astype('category')</code>. No <code>get_dummies()</code> required — it finds optimal splits across categories directly.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Overfitting is fast</div><p>200 boosting rounds badly overfit this data. Training accuracy hit ~99% while test stayed ~88%. Peak unseen performance was around 50–70 rounds. Always monitor both curves.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">PageValues is #1</div><p>How much a page was "worth" (based on conversion data) is by far the strongest signal — makes sense, users who land on high-value pages are further down the purchase funnel.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Tuning fixed overfitting</div><p>GridSearchCV brought train and test accuracy close together (~90.7% both). <code>min_data_in_leaf</code> and smaller <code>num_leaves</code> were key — they constrained tree complexity.</p></div></div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--green); margin-top:4px">
+    <h4 style="margin-top:0; color:var(--green)">LightGBM vs sklearn GBT — when to use which</h4>
+    <table style="margin:0">
+      <tr><th></th><th>LightGBM</th><th>sklearn GradientBoostingClassifier</th></tr>
+      <tr><td><strong>Speed</strong></td><td>Very fast (histogram-based)</td><td>Slower on large datasets</td></tr>
+      <tr><td><strong>Categoricals</strong></td><td>Native support</td><td>Needs encoding</td></tr>
+      <tr><td><strong>API</strong></td><td>Native API + LGBMClassifier (sklearn)</td><td>sklearn only</td></tr>
+      <tr><td><strong>Use when</strong></td><td>Large data, speed matters, tabular data</td><td>Small-medium data, familiarity</td></tr>
+    </table>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-en2"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('en2')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('en1')">← Intro to Ensembles</button>
+    <button class="btn btn-outline" onclick="nav('en3')">Stacking →</button>
+  </div>
+</div>
+
+<!-- ENSEMBLE METHODS — LESSON 1 -->
+<div class="page" id="page-en1">
+  <h2>🧩 Introduction to Ensemble Methods</h2>
+  <p class="subtitle">Combine many weak models into one strong one — the core idea behind Random Forests, Gradient Boosting, and Stacking.</p>
+
+  <div class="alert alert-info">💡 "Ensemble" is the meta-technique. Bagging, Boosting, and Stacking are three different ways to build one.</div>
+
+  <h3>The Core Idea</h3>
+  <p>Instead of training one strong model (which is hard to achieve), ensemble methods combine many <strong>weak learners</strong> — models that are only slightly better than random guessing — into a powerful collective prediction.</p>
+  <div class="card">
+    <div class="key-concept"><div class="label">Wisdom of Crowds</div>
+      <p>No single person can exactly guess the weight of a cow, but averaging many independent guesses is surprisingly accurate. Ensembles work the same way: diverse models cover each other's mistakes.</p>
+    </div>
+  </div>
+
+  <h3>A Model's Output Changes Based on Two Things</h3>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Hyperparameters</div><p>Set by you before training — e.g. max depth, regularisation strength. Fixed across runs.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Learned Parameters</div><p>Estimated from the training data. Different data → different parameters → different predictions. Ensembles exploit this.</p></div></div>
+  </div>
+
+  <h3>3 Components of Every Ensemble</h3>
+  <ol style="margin-bottom:14px">
+    <li style="margin-bottom:6px"><strong>Base model</strong> — the weak learner (usually a decision tree)</li>
+    <li style="margin-bottom:6px"><strong>Meta-algorithm</strong> — how to generate diverse instances of the base model</li>
+    <li style="margin-bottom:6px"><strong>Combination strategy</strong> — how to merge individual predictions into a final decision</li>
+  </ol>
+
+  <h3>3 Types of Ensemble Methods</h3>
+  <table>
+    <tr><th>Type</th><th>Training</th><th>Data</th><th>Combination</th><th>Example</th></tr>
+    <tr><td><strong>Bagging</strong></td><td>Parallel</td><td>Random subsets (bootstrap)</td><td>Equal vote / mean</td><td>Random Forest</td></tr>
+    <tr><td><strong>Boosting</strong></td><td>Sequential</td><td>All data, re-weighted</td><td>Weighted vote</td><td>XGBoost, AdaBoost</td></tr>
+    <tr><td><strong>Stacking</strong></td><td>Any</td><td>Different model families</td><td>Meta-learner model</td><td>Netflix Prize winner</td></tr>
+  </table>
+
+  <h3>Bagging — How It Works</h3>
+  <p>The diagram below shows the full Bagging / Random Forest flow. Each bootstrap sample trains a Decision Tree on a different subset of rows and features. A majority vote across all trees gives the final prediction.</p>
+
+  <div class="card" style="padding:12px; text-align:center;">
+    <img src="Ensemble%20methods/bagging-and-random-forest-algorithm/lessons/bagging_diagram.png"
+         alt="Bagging and Random Forest diagram"
+         style="max-width:100%; border-radius:8px;" />
+    <p style="font-size:0.75rem; margin:8px 0 0; color:var(--text-muted)">Dataset → bootstrap samples → diverse trees → aggregate → final prediction</p>
+  </div>
+
+  <h3>Why Does It Work? Bias–Variance Tradeoff</h3>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">High Bias (underfitting)</div><p>Model is too simple — misses real patterns. Low training AND test accuracy.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">High Variance (overfitting)</div><p>Model memorises noise — great on training, poor on test. Bagging directly reduces variance by averaging.</p></div></div>
+  </div>
+  <p>When many models each overfit <em>differently</em>, their errors are uncorrelated. Averaging them lets errors cancel out while the true signal accumulates — variance drops dramatically.</p>
+
+  <h3>Suitable Base Models</h3>
+  <p>Ensembles work best with <strong>unstable</strong> base models — ones that change significantly when training data changes. Decision trees are ideal: they overfit easily and produce very different structures on different samples.</p>
+  <div class="card">
+    <div class="key-concept"><div class="label">Key intuition</div>
+      <p>A model with only 51% accuracy on binary classification becomes very powerful in an ensemble. If 1,000 independent 51%-accurate models vote, the majority vote accuracy is far above 51%.</p>
+    </div>
+  </div>
+
+  <h3>Pros and Cons</h3>
+  <div class="card-grid">
+    <div class="card" style="border-left:3px solid var(--green)">
+      <h4 style="margin-top:0; color:var(--green)">Advantages</h4>
+      <ul>
+        <li>Improved predictive performance</li>
+        <li>Variance reduction (bagging) or bias reduction (boosting)</li>
+        <li>Uncertainty estimation via prediction spread</li>
+        <li>Feature importance still available</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--red)">
+      <h4 style="margin-top:0; color:var(--red)">Disadvantages</h4>
+      <ul>
+        <li>Reduced interpretability ("black box")</li>
+        <li>Additional training overhead</li>
+        <li>Boosting is hard to parallelise</li>
+        <li>More hyperparameters to tune</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> BaggingClassifier, RandomForestClassifier
+<span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier
+
+<span class="cm"># Manual bagging with any base model</span>
+bag = <span class="fn">BaggingClassifier</span>(estimator=<span class="fn">DecisionTreeClassifier</span>(), n_estimators=<span class="nu">20</span>, random_state=<span class="nu">42</span>)
+bag.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="cm"># Random Forest = bagging + random feature subsets (highly optimised)</span>
+rf = <span class="fn">RandomForestClassifier</span>(n_estimators=<span class="nu">100</span>, max_features=<span class="st">'sqrt'</span>, random_state=<span class="nu">42</span>)
+rf.<span class="fn">fit</span>(X_train, y_train)
+<span class="fn">print</span>(rf.feature_importances_)   <span class="cm"># which features drove the splits</span></pre></div>
+
+  <hr>
+  <h3>🧪 Practical: Account Churn Prediction</h3>
+  <p>Can we predict which users will close their account? We have 20 behavioural features (login frequency, purchase count, etc.) per user. We compare a single Naive Bayes model against a bagging ensemble of the same base model.</p>
+
+  <div class="alert alert-info">Dataset: <code>account_data.csv</code> — binary target <code>closed_account</code> (1 = churned, 0 = retained)</div>
+
+  <h4>Step 1 — Load &amp; Explore the Data</h4>
+  <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+data = pd.<span class="fn">read_csv</span>(<span class="st">'data/account_data.csv'</span>)
+<span class="fn">print</span>(data.<span class="fn">head</span>())
+<span class="fn">print</span>(data[<span class="st">'closed_account'</span>].<span class="fn">value_counts</span>())</pre></div>
+  <div class="card"><div class="key-concept"><div class="label">What to look for</div><p>Check the class balance — if 0s massively outnumber 1s, accuracy will be misleading. Use precision/recall to evaluate churned-account detection.</p></div></div>
+
+  <h4>Step 2 — Feature / Target Split &amp; Train-Test Split</h4>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+
+X = data.<span class="fn">drop</span>(<span class="st">'closed_account'</span>, axis=<span class="nu">1</span>)   <span class="cm"># 20 behavioural features</span>
+y = data[<span class="st">'closed_account'</span>]                   <span class="cm"># binary target (0 / 1)</span>
+
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    X, y, random_state=<span class="nu">5</span>                       <span class="cm"># 75% train / 25% test (default)</span>
+)</pre></div>
+
+  <h4>Step 3 — Baseline: Single Naive Bayes Model</h4>
+  <p>Establish a baseline before building the ensemble. Train on training data, evaluate on both sets to check for overfitting.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.naive_bayes <span class="kw">import</span> GaussianNB
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report
+
+model = <span class="fn">GaussianNB</span>()
+model.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="cm"># Training performance</span>
+y_pred_train = model.<span class="fn">predict</span>(X_train)
+<span class="fn">print</span>(<span class="st">"Train accuracy:"</span>, model.<span class="fn">score</span>(X_train, y_train))
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_train, y_pred_train))
+
+<span class="cm"># Test performance (unseen data)</span>
+y_pred_test = model.<span class="fn">predict</span>(X_test)
+<span class="fn">print</span>(<span class="st">"Test accuracy:"</span>, model.<span class="fn">score</span>(X_test, y_test))
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_pred_test))</pre></div>
+
+  <h4>Step 4 — Bagging Ensemble of Naive Bayes Models</h4>
+  <p><code>BaggingClassifier</code> wraps any sklearn model. It trains <code>n_estimators</code> copies on bootstrap samples and combines predictions by majority vote — same interface as any sklearn model.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> BaggingClassifier
+
+ensemble = <span class="fn">BaggingClassifier</span>(
+    estimator=<span class="fn">GaussianNB</span>(),     <span class="cm"># same base model as the baseline</span>
+    n_estimators=<span class="nu">10</span>,             <span class="cm"># 10 models trained on different bootstrap subsets</span>
+    random_state=<span class="nu">5</span>
+)
+ensemble.<span class="fn">fit</span>(X_train, y_train)
+
+y_pred_ens = ensemble.<span class="fn">predict</span>(X_test)
+<span class="fn">print</span>(<span class="st">"Ensemble test accuracy:"</span>, ensemble.<span class="fn">score</span>(X_test, y_test))
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_pred_ens))</pre></div>
+
+  <h4>Step 5 — Compare Results</h4>
+  <table>
+    <tr><th>Model</th><th>What changed</th><th>Expected effect</th></tr>
+    <tr><td>Single GaussianNB</td><td>One model, all training data</td><td>Baseline — may miss the minority (churned) class</td></tr>
+    <tr><td>BaggingClassifier (n=10)</td><td>10 models, bootstrap subsets, majority vote</td><td>Higher accuracy, better recall on churned class</td></tr>
+  </table>
+
+  <div class="card"><div class="key-concept"><div class="label">Conclusion from the practical</div>
+    <p>Bagging improved performance even with the same simple Naive Bayes base model. Diverse models trained on different subsets cover different error patterns — their mistakes cancel when combined. To go further: increase <code>n_estimators</code> to 50–100, or swap <code>GaussianNB</code> for <code>DecisionTreeClassifier</code> to see a larger effect.</p>
+  </div></div>
+
+  <hr>
+  <h3>🧪 Practical 2: Kickstarter Success Prediction</h3>
+  <p>Predict whether a crowdfunding project will succeed, fail, or be cancelled — a 3-class problem. We'll go from raw data → baseline → Random Forest → hyperparameter tuning → feature importance.</p>
+
+  <div class="alert alert-info">Dataset: <code>kickstarter_sample.csv</code> — 5,000 Kickstarter projects, target <code>outcome</code> (successful / failed / canceled)</div>
+
+  <h4>Dataset Features</h4>
+  <table>
+    <tr><th>Feature</th><th>Description</th></tr>
+    <tr><td><strong>main_category</strong></td><td>Major category the project belongs to</td></tr>
+    <tr><td><strong>category</strong></td><td>More detailed category label</td></tr>
+    <tr><td><strong>goal</strong></td><td>How much money the project wants to raise</td></tr>
+    <tr><td><strong>backers</strong></td><td>Number of people who donated when time was up</td></tr>
+    <tr><td><strong>country</strong></td><td>Country the project came from</td></tr>
+    <tr><td><strong>outcome</strong></td><td>successful / failed / canceled (target)</td></tr>
+  </table>
+
+  <h4>Step 1 — Load Data &amp; EDA</h4>
+  <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+data = pd.<span class="fn">read_csv</span>(<span class="st">'data/kickstarter_sample.csv'</span>)
+
+X = data.<span class="fn">drop</span>([<span class="st">'outcome'</span>], axis=<span class="nu">1</span>)
+y = data[<span class="st">'outcome'</span>]
+
+<span class="cm"># Class balance</span>
+<span class="fn">print</span>(data[<span class="st">'outcome'</span>].<span class="fn">value_counts</span>(normalize=<span class="nu">True</span>))
+
+<span class="cm"># Mean goal by outcome — do successful projects aim lower?</span>
+<span class="fn">print</span>(data.<span class="fn">groupby</span>(<span class="st">'outcome'</span>)[<span class="st">'goal'</span>].<span class="fn">mean</span>())</pre></div>
+  <div class="card"><div class="key-concept"><div class="label">Key insight from EDA</div><p>Just over half of projects fail (~53%), ~35% succeed, ~10% are cancelled. Successful projects have a much lower mean goal — ambitious targets tend to fall short.</p></div></div>
+
+  <h4>Step 2 — Preprocessing: One-Hot Encode &amp; Split</h4>
+  <p>Categorical features (<code>country</code>, <code>category</code>, <code>main_category</code>) must be one-hot encoded before any sklearn model can use them.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+
+<span class="cm"># One-hot encode all categorical columns in one step</span>
+X = pd.<span class="fn">get_dummies</span>(X)
+
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(X, y, random_state=<span class="nu">5</span>)</pre></div>
+
+  <h4>Step 3 — Baseline: Naive Bayes &amp; Decision Tree</h4>
+  <p>Always set a baseline before building an ensemble. Here we compare two single models so we know what the Random Forest needs to beat.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.naive_bayes <span class="kw">import</span> GaussianNB
+<span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> classification_report
+
+nb_model  = <span class="fn">GaussianNB</span>()
+dtc_model = <span class="fn">DecisionTreeClassifier</span>(random_state=<span class="nu">5</span>)
+
+nb_model.<span class="fn">fit</span>(X_train, y_train)
+dtc_model.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">'Naive Bayes accuracy:    {nb_model.score(X_test, y_test):.3f}'</span>)
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">'Decision Tree accuracy:  {dtc_model.score(X_test, y_test):.3f}'</span>)
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, nb_model.<span class="fn">predict</span>(X_test)))
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, dtc_model.<span class="fn">predict</span>(X_test)))</pre></div>
+  <div class="card"><div class="key-concept"><div class="label">What to look for</div><p>Both baselines struggle on the <em>canceled</em> class (rare, ~10%). Accuracy looks acceptable overall but per-class precision/recall tells the real story.</p></div></div>
+
+  <h4>Step 4 — Random Forest (Default Hyperparameters)</h4>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier
+
+rf = <span class="fn">RandomForestClassifier</span>(random_state=<span class="nu">5</span>)   <span class="cm"># 100 trees, unlimited depth</span>
+rf.<span class="fn">fit</span>(X_train, y_train)
+
+rf_y_pred = rf.<span class="fn">predict</span>(X_test)
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, rf_y_pred))</pre></div>
+  <div class="card"><div class="key-concept"><div class="label">Result</div><p>Accuracy is higher overall vs the baselines, but still mostly driven by the majority class (failed). The canceled class remains hard to predict — it is both rare and noisier.</p></div></div>
+
+  <h4>Step 5 — Hyperparameter Tuning with GridSearchCV</h4>
+  <p>GridSearchCV trains one model per combination of parameters × CV folds and picks the winner. Below we explain every parameter being searched.</p>
+
+  <h4>Understanding class_weight</h4>
+  <p>Our dataset is imbalanced: <strong>~53% failed, ~35% successful, ~10% canceled</strong>. Without adjustment, the forest ignores the rare class to maximise overall accuracy. <code>class_weight</code> changes the misclassification penalty per class — a higher weight means the model is punished more for getting that class wrong.</p>
+
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Manual weights (grid approach)</div><p>Each dictionary in the list is one candidate. GridSearch tries all three and picks whichever scores best on CV. The factor of 2 is a rough nudge — not derived from data, just "let's try doubling the cost for each class and see which helps."</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Computed weights (principled approach)</div><p><code>compute_class_weight('balanced')</code> calculates the weight automatically from class frequencies: <code>weight = total / (n_classes × class_count)</code>. Rare classes automatically get higher weight. No guessing required.</p></div></div>
+  </div>
+
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.utils.class_weight <span class="kw">import</span> compute_class_weight
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cm"># Computes weight = total_samples / (n_classes × class_count) for each class</span>
+<span class="cm"># Rare classes automatically get higher weight — no manual tuning needed</span>
+weights = <span class="fn">compute_class_weight</span>(
+    class_weight=<span class="st">'balanced'</span>,          <span class="cm"># use class frequencies to calculate weights</span>
+    classes=np.<span class="fn">unique</span>(y_train),       <span class="cm"># array of unique class labels</span>
+    y=y_train                          <span class="cm"># training labels to count frequencies from</span>
+)
+<span class="cm"># Example output: [3.1, 0.63, 0.95] → canceled gets ~3x weight because it's only 10% of data</span>
+<span class="fn">print</span>(<span class="fn">dict</span>(<span class="fn">zip</span>(np.<span class="fn">unique</span>(y_train), weights)))</pre></div>
+
+  <h4>All GridSearchCV Parameters Explained</h4>
+  <table>
+    <tr><th>Parameter</th><th>What it controls</th><th>Values tried</th><th>Why</th></tr>
+    <tr><td><strong>n_estimators</strong></td><td>Number of trees in the forest</td><td>100, 200, 300</td><td>More trees = more stable, diminishing returns after ~200. Each value costs proportionally more time.</td></tr>
+    <tr><td><strong>min_samples_leaf</strong></td><td>Minimum samples required in a leaf node</td><td>1, 2, 3</td><td>Higher = simpler trees = less overfitting. 1 = trees can grow until each leaf has 1 sample (default, complex). 3 = each leaf must summarise at least 3 samples.</td></tr>
+    <tr><td><strong>max_samples</strong></td><td>Fraction of training rows in each bootstrap sample</td><td>0.25, 0.75</td><td>0.75 = each tree sees 75% of data (more stable). 0.25 = each tree sees 25% (more diversity, higher variance per tree but better ensemble decorrelation).</td></tr>
+    <tr><td><strong>class_weight</strong></td><td>Misclassification penalty per class</td><td>3 dicts (each class upweighted once)</td><td>Corrects for class imbalance by making the model pay more for missing the rare class. Each dict is one candidate — GridSearch picks the winner.</td></tr>
+  </table>
+
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> GridSearchCV
+
+params = <span class="fn">dict</span>(
+
+    <span class="cm"># How many trees? More = more stable but slower to train</span>
+    n_estimators=[<span class="nu">100</span>, <span class="nu">200</span>, <span class="nu">300</span>],
+
+    <span class="cm"># Minimum samples per leaf — higher = simpler, less overfit trees</span>
+    min_samples_leaf=[<span class="nu">1</span>, <span class="nu">2</span>, <span class="nu">3</span>],
+
+    <span class="cm"># Bootstrap fraction — what % of rows each tree sees</span>
+    <span class="cm"># 0.75 = diverse but stable  |  0.25 = very diverse, each tree only sees a quarter</span>
+    max_samples=[<span class="nu">0.25</span>, <span class="nu">0.75</span>],
+
+    <span class="cm"># class_weight: misclassification penalty per class</span>
+    <span class="cm"># Each dict is one candidate — GridSearch trains all 3 and picks the best</span>
+    <span class="cm"># Weight of 2 = "punish getting this class wrong twice as hard"</span>
+    <span class="cm"># 'canceled' = 10% of data, 'failed' = 53%, 'successful' = 35%</span>
+    class_weight=[
+        {<span class="st">'canceled'</span>: <span class="nu">2</span>, <span class="st">'failed'</span>: <span class="nu">1</span>, <span class="st">'successful'</span>: <span class="nu">1</span>},  <span class="cm"># prioritise finding canceled (rarest)</span>
+        {<span class="st">'canceled'</span>: <span class="nu">1</span>, <span class="st">'failed'</span>: <span class="nu">2</span>, <span class="st">'successful'</span>: <span class="nu">1</span>},  <span class="cm"># prioritise finding failures</span>
+        {<span class="st">'canceled'</span>: <span class="nu">1</span>, <span class="st">'failed'</span>: <span class="nu">1</span>, <span class="st">'successful'</span>: <span class="nu">2</span>},  <span class="cm"># prioritise finding successes</span>
+        <span class="cm"># Better alternative: 'balanced' — auto-computes weights from class frequencies</span>
+    ],
+)
+
+<span class="cm"># n_jobs=-1 uses all CPU cores in parallel — training 3×3×2×3 = 54 combinations × 5 CV folds = 270 models</span>
+rf  = <span class="fn">RandomForestClassifier</span>(random_state=<span class="nu">5</span>, n_jobs=<span class="nu">-1</span>)
+gcv = <span class="fn">GridSearchCV</span>(estimator=rf, param_grid=params, n_jobs=<span class="nu">-1</span>, verbose=<span class="nu">2</span>)
+gcv.<span class="fn">fit</span>(X_train, y_train)</pre></div>
+
+  <h4>Step 6 — Best Model &amp; Feature Importance</h4>
+  <div class="code-block"><pre><span class="cm"># gcv.best_score_  → mean CV accuracy of the winning combination</span>
+<span class="cm"># gcv.best_params_ → the exact hyperparameter values that won</span>
+<span class="cm"># gcv.best_estimator_ → the already-fitted model with those params</span>
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Best CV accuracy: {gcv.best_score_:.3f}"</span>)
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Best params:      {gcv.best_params_}"</span>)
+
+best_model = gcv.best_estimator_    <span class="cm"># already fitted — no need to call .fit() again</span>
+
+<span class="cm"># Evaluate on the held-out test set (not used in grid search)</span>
+y_pred = best_model.<span class="fn">predict</span>(X_test)
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_pred))
+
+<span class="cm"># ── Feature Importance ──────────────────────────────────────────────────────</span>
+<span class="cm"># feature_importances_ = proportion of total Gini reduction each feature contributed</span>
+<span class="cm"># across all splits in all trees. Values sum to 1. Higher = more important.</span>
+<span class="cm"># Align scores with column names by zipping X_train.columns</span>
+f_imp = pd.<span class="fn">DataFrame</span>(<span class="fn">dict</span>(
+    feature=X_train.columns,            <span class="cm"># column names (after get_dummies)</span>
+    score=best_model.feature_importances_  <span class="cm"># importance score per feature</span>
+))
+
+<span class="cm"># Sort descending, show top 10 most influential features</span>
+<span class="fn">print</span>(f_imp.<span class="fn">sort_values</span>(<span class="st">'score'</span>, ascending=<span class="nu">False</span>)[:<span class="nu">10</span>])
+<span class="cm"># Result: backers >> goal >> country_... >> category_...</span>
+<span class="cm"># backers is #1 but only known at end of campaign — useful for analysis, not prediction upfront</span>
+<span class="cm"># goal is #2 and IS known before the campaign — a genuinely predictive feature</span></pre></div>
+
+  <h4>Key Learnings from the Practical</h4>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">#1 Feature: backers</div><p>Unsurprisingly the strongest predictor. More backers = more likely successful. But this is only known at the end of the campaign — limits real-world use.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">#2 Feature: goal</div><p>Successful projects had a much lower mean goal. Ambitious targets tend to fail. Goal is known upfront — a genuinely useful predictor.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">#3 Feature: country</div><p>Country of origin is a meaningful signal. US projects dominate the dataset; different markets have different success rates.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Tuning vs features</div><p>GridSearch gave only modest improvements. The bottleneck was feature quality, not hyperparameters — better features would help more than more trees.</p></div></div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--green); margin-top:4px">
+    <h4 style="margin-top:0; color:var(--green)">Conclusion</h4>
+    <p>Random Forest outperformed both single baselines out of the box. It handles categorical features (after encoding), multiclass targets, and class imbalance (via <code>class_weight</code>) with minimal setup. Feature importance gives interpretability even in a "black box" ensemble — you always know which features mattered most.</p>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-en1"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('en1')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('quiz')">Practice All Topics</button>
+    <button class="btn btn-outline" onclick="nav('en2')">Boosting →</button>
+  </div>
+</div>
+
+<!-- ENSEMBLE METHODS — LESSON 3 -->
+<div class="page" id="page-en3">
+  <h2>🔀 Stacking — Ensembles with a Meta-Learner</h2>
+  <p class="subtitle">Combine entirely different model families through a second-level meta-learner that learns the optimal blend — used by Kaggle champions and the Netflix Prize winner.</p>
+
+  <div class="alert alert-info">💡 Stacking is the most powerful and flexible ensemble technique. Instead of averaging predictions equally, a <strong>meta-learner</strong> learns <em>how</em> to combine them.</div>
+
+  <h3>Why Stacking?</h3>
+  <p>Bagging and boosting combine many copies of the <em>same</em> model family. Stacking goes further — it combines fundamentally <strong>different model families</strong> (e.g. KNN + Random Forest + Naive Bayes) through a second-level model that learns to assign each base model its optimal weight and role.</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Diverse model families</div><p>Instead of 100 decision trees (Random Forest), use KNN + Random Forest + Naive Bayes. Completely different representations capture different aspects of the data.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Meta-learner</div><p>A second-level model trained on the base models' predictions. It learns which model to trust more and in which situations — far smarter than a simple average.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">When to use</div><p>When you want maximum performance and have multiple strong models. Common in Kaggle competitions and production systems where small gains matter (finance, medicine, ad-tech).</p></div></div>
+  </div>
+
+  <h3>Architecture at a Glance</h3>
+  <img src="Ensemble%20methods/combining-diverse-models-with-stacking/lessons/stacking_diagram.png"
+       alt="Stacking architecture diagram"
+       style="width:100%; max-width:860px; display:block; margin:12px auto 20px; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+
+  <h3>The 4-Step Stacking Algorithm</h3>
+  <p>Stacking has a clean 4-step structure. Each step is separated to prevent data leakage between levels.</p>
+
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <h4 style="margin-top:0; color:var(--accent)">Step 1 — Train individual (base) models</h4>
+    <p>Train multiple models on the <strong>training data</strong>. The models can be from entirely different classes — Random Forest, SVM, Neural Network, KNN, Naive Bayes. Diversity is the goal: models that make different errors complement each other.</p>
+    <p style="font-size:0.85rem; color:var(--text-muted)">You can also vary hyperparameters within the same family — e.g. two Random Forests with different depths — to create additional diversity.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid #533483">
+    <h4 style="margin-top:0; color:#533483">Step 2 — Generate predictions on a held-out set</h4>
+    <p>Use the trained base models to predict on a <strong>validation set</strong> — data the models did NOT see during training. This is critical: if you predict on training data, the meta-learner sees "too good" predictions and learns the wrong thing (data leakage).</p>
+    <p>With N base models, you get N columns of predictions. These become the <strong>new feature matrix</strong> for the meta-learner.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--red)">
+    <h4 style="margin-top:0; color:var(--red)">Step 3 — Train the meta-learner</h4>
+    <p>Train a second-level model using the base models' validation predictions as inputs and the true labels as targets. For classification, <strong>Logistic Regression</strong> is a common meta-learner — it learns a weighted blend. For regression, <strong>Linear Regression</strong> works well.</p>
+    <p style="font-size:0.85rem; color:var(--text-muted)">More complex meta-learners (Decision Trees, Neural Networks) can capture non-linear interactions between base model predictions, but risk overfitting.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--green)">
+    <h4 style="margin-top:0; color:var(--green)">Step 4 — Validate the ensemble</h4>
+    <p>To evaluate the full pipeline, use a <strong>third, separate test set</strong> that was not used in either training step. Run each base model on it, collect their predictions, run the meta-learner on those predictions, and evaluate the final output.</p>
+  </div>
+
+  <h3>Cross-Validation Schemes</h3>
+  <p>Getting the CV scheme right is the trickiest part of stacking. The simple approach splits data into 3 sets; K-fold variants make better use of data.</p>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Scheme</th><th>How it works</th><th>Trade-off</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Simple 2-level</strong></td><td>Split once: train set (level 1), val set (level 2), test set (evaluation). Easiest to implement.</td><td>Less data for base model training. May underfit if data is small.</td></tr>
+      <tr><td><strong>K-fold stacking</strong></td><td>Train K ensembles using K-fold CV. Collect out-of-fold predictions for every sample → use as meta-learner input. Train final base models on full data.</td><td>Uses all data. Must train base models K+1 times — expensive.</td></tr>
+      <tr><td><strong>2-level K-fold</strong></td><td>Apply K-fold at both levels. Uses the whole dataset for both training stages.</td><td>Very data-efficient. Each model trained K₁×K₂ times — can be prohibitively slow.</td></tr>
+      <tr><td><strong>2-level ensembles</strong></td><td>Stack multiple meta-learners (e.g. Linear + Neural Net) and stack again. In theory, unlimited levels.</td><td>Maximum performance. Rapidly increasing complexity and compute cost.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="card" style="background:var(--bg-card-alt)">
+    <h4 style="margin-top:0">The golden rule</h4>
+    <p>Base models must <strong>never</strong> predict on data they were trained on when generating the meta-learner's training features. That would let the meta-learner see artificially good predictions (training error, not generalisation error), causing it to learn the wrong blend.</p>
+  </div>
+
+  <h3>Practical — Stacking on the Iris Dataset</h3>
+  <p>We compare three individual models against a stacking ensemble using <strong>mlxtend</strong> — a popular library for ensemble methods. All models are evaluated with 3-fold cross-validation on the Iris dataset (2 features: petal width, petal length).</p>
+
+  <h4>Step 1 — Imports and Data</h4>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
+<span class="kw">from</span> sklearn.naive_bayes <span class="kw">import</span> GaussianNB
+<span class="kw">from</span> sklearn.neighbors <span class="kw">import</span> KNeighborsClassifier
+<span class="kw">from</span> sklearn <span class="kw">import</span> model_selection, datasets
+<span class="kw">from</span> mlxtend.classifier <span class="kw">import</span> StackingClassifier   <span class="cm"># Note: mlxtend, not sklearn</span>
+
+iris = datasets.<span class="fn">load_iris</span>()
+X_train = iris.data[:, 1:3]   <span class="cm"># Use only 2 features: petal width, petal length</span>
+y_train = iris.target          <span class="cm"># 3-class labels: 0, 1, 2</span></pre></div>
+
+  <div class="alert alert-warning" style="margin-top:8px">
+    <strong>mlxtend vs sklearn:</strong> sklearn also has <code>StackingClassifier</code> but mlxtend's version has a simpler API and was widely adopted before sklearn's version existed. The interfaces differ — mlxtend uses <code>classifiers=[]</code> and <code>meta_classifier=</code>.
+  </div>
+
+  <h4>Step 2 — Define Base Models (Level 1)</h4>
+  <div class="code-block"><pre><span class="cm"># Three completely different model families — the source of diversity</span>
+myclf1 = <span class="fn">KNeighborsClassifier</span>(n_neighbors=<span class="num">1</span>)   <span class="cm"># Instance-based, no training phase</span>
+myclf2 = <span class="fn">RandomForestClassifier</span>(random_state=<span class="num">1</span>) <span class="cm"># Tree ensemble — handles non-linearity</span>
+myclf3 = <span class="fn">GaussianNB</span>()                           <span class="cm"># Probabilistic, fast, works with small data</span></pre></div>
+
+  <p>Each model has fundamentally different decision boundaries. KNN uses local similarity, Random Forest uses tree splits, Naive Bayes uses probability distributions. When they disagree, the meta-learner must decide who to trust.</p>
+
+  <h4>Step 3 — Define Meta-Learner (Level 2)</h4>
+  <div class="code-block"><pre><span class="cm"># The meta-learner receives [KNN_pred, RF_pred, NB_pred] as its input features</span>
+mylr = <span class="fn">LogisticRegression</span>()   <span class="cm"># Simple, interpretable — learns optimal blend weights</span></pre></div>
+
+  <h4>Step 4 — Build the Stacking Ensemble</h4>
+  <div class="code-block"><pre>stackingclf = <span class="fn">StackingClassifier</span>(
+    classifiers=[myclf1, myclf2, myclf3],  <span class="cm"># Level-1 base models (any number)</span>
+    meta_classifier=mylr                    <span class="cm"># Level-2 meta-learner</span>
+)</pre></div>
+
+  <h4>Step 5 — Compare All Models with Cross-Validation</h4>
+  <div class="code-block"><pre><span class="kw">for</span> clf, label <span class="kw">in</span> <span class="fn">zip</span>(
+    [myclf1, myclf2, myclf3, stackingclf],
+    [<span class="st">'KNN'</span>, <span class="st">'Random Forest'</span>, <span class="st">'Naive Bayes'</span>, <span class="st">'StackingClassifier'</span>]
+):
+    scores = model_selection.<span class="fn">cross_val_score</span>(
+        clf, X_train, y_train,
+        cv=<span class="num">3</span>,              <span class="cm"># 3 folds: train on 2/3, test on 1/3, repeat 3×</span>
+        scoring=<span class="st">'accuracy'</span>
+    )
+    <span class="fn">print</span>(<span class="st">f"Accuracy: {scores.mean():.3f} (+/- {scores.std():.3f}) [{label}]"</span>)
+
+<span class="cm"># Output:</span>
+<span class="cm"># Accuracy: 0.913 (+/- 0.008) [KNN]</span>
+<span class="cm"># Accuracy: 0.934 (+/- 0.051) [Random Forest]</span>
+<span class="cm"># Accuracy: 0.921 (+/- 0.027) [Naive Bayes]</span>
+<span class="cm"># Accuracy: 0.947 (+/- 0.033) [StackingClassifier]  ← BEST</span></pre></div>
+
+  <div class="card" style="border-left:3px solid var(--green); margin-top:4px">
+    <h4 style="margin-top:0; color:var(--green)">Result</h4>
+    <p>The stacking ensemble (94.7%) outperforms all individual models — KNN (91.3%), Random Forest (93.4%), and Naive Bayes (92.1%). The meta-learner learned which model to trust for which region of the feature space.</p>
+  </div>
+
+  <h3>Real-World Example — Netflix Prize</h3>
+  <div class="card" style="background:var(--bg-card-alt)">
+    <h4 style="margin-top:0">The $1,000,000 Ensemble</h4>
+    <p>The Netflix Prize challenged teams to improve their movie recommendation system by 10%. The winning team, <strong>BellKor's Pragmatic Chaos</strong>, was a partnership of three separate teams that won by building a massive stacking ensemble.</p>
+    <ul>
+      <li><strong>100+ individual models:</strong> K-Nearest Neighbours, Restricted Boltzmann Machines (RBM), SVD matrix factorization, Neural Networks — all completely different approaches.</li>
+      <li><strong>Residual training:</strong> Individual models were stopped when they stopped improving the <em>ensemble</em> predictions, not their own predictions alone.</li>
+      <li><strong>Blending (their name for stacking):</strong> Started with linear stacking, then tried neural networks and polynomial functions as meta-learners. Later stacked the stacked ensembles into a 2-level meta-learner.</li>
+      <li><strong>Complementary weaknesses:</strong> RBMs were not great predictors alone, but they got some samples right that all other models got wrong — making them irreplaceable in the ensemble.</li>
+    </ul>
+    <p style="font-size:0.85rem; color:var(--text-muted)">Key insight: even models that are worse than the best individual model can still improve the ensemble, as long as their errors are <em>different</em> from the other models' errors.</p>
+  </div>
+
+  <h3>Stacking vs Bagging vs Boosting — Summary</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th></th><th>Bagging</th><th>Boosting</th><th>Stacking</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Training</strong></td><td>Parallel</td><td>Sequential</td><td>Parallel (base), then meta</td></tr>
+      <tr><td><strong>Base models</strong></td><td>Same type</td><td>Same type (weak)</td><td>Different families</td></tr>
+      <tr><td><strong>Combination</strong></td><td>Equal vote / avg</td><td>Weighted vote (α)</td><td>Meta-learner</td></tr>
+      <tr><td><strong>Targets</strong></td><td>Variance reduction</td><td>Bias reduction</td><td>Both (via diversity)</td></tr>
+      <tr><td><strong>Data requirement</strong></td><td>Medium</td><td>Medium</td><td>More (need held-out set)</td></tr>
+      <tr><td><strong>Complexity</strong></td><td>Low</td><td>Medium</td><td>High</td></tr>
+      <tr><td><strong>Best for</strong></td><td>High-variance models</td><td>Iterative refinement</td><td>Maximum performance</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-en3"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('en3')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('en2')">← Boosting &amp; AdaBoost</button>
+    <button class="btn btn-outline" onclick="nav('en4')">Gradient Boosting →</button>
+  </div>
+</div>
+
+<!-- ENSEMBLE METHODS — LESSON 4 -->
+<div class="page" id="page-en4">
+  <h2>📉 Gradient Boosting</h2>
+  <p class="subtitle">The generalisation of AdaBoost — fit each new tree to the <em>residuals</em> of the current ensemble, using gradient descent on any loss function.</p>
+
+  <div class="alert alert-info">💡 Gradient Boosting is the engine behind XGBoost, LightGBM, and CatBoost — the algorithms that win most tabular ML competitions.</div>
+
+  <h3>From AdaBoost to Gradient Boosting</h3>
+  <p>AdaBoost works by re-weighting misclassified samples and fitting stumps to those weighted samples. It implicitly minimises an <strong>exponential loss</strong>. Gradient Boosting generalises this: instead of re-weighting, each new tree is fitted directly to the <strong>negative gradient</strong> of any differentiable loss function — the <em>pseudo-residuals</em>.</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">AdaBoost</div><p>Re-weights samples. Works only with exponential loss. Stumps (depth-1 trees) only. Sensitive to outliers — misclassified points get exponentially high weight.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Gradient Boosting</div><p>Fits new trees to pseudo-residuals (negative gradient). Works with <em>any</em> loss function — MSE for regression, log-loss for classification. Deeper trees allowed. Far more flexible.</p></div></div>
+  </div>
+
+  <h3>The Core Idea — Residual Fitting</h3>
+  <p>Think of it as learning in steps. The first tree makes a rough prediction. The next tree looks at where it was wrong (the residuals) and tries to correct those errors. Repeat. Each round adds a small correction in the direction that most reduces the loss.</p>
+  <img src="Ensemble%20methods/combining-weak-models-with-boosting/lessons/gradient_boosting_diagram.png"
+       alt="Gradient Boosting residual fitting diagram"
+       style="width:100%; max-width:940px; display:block; margin:12px auto 20px; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+
+  <h3>The Algorithm — Step by Step</h3>
+  <div class="card" style="border-left:3px solid #3498db">
+    <h4 style="margin-top:0; color:#3498db">Step 1 — Initialise with a constant prediction</h4>
+    <p>Start with the simplest possible prediction: for regression, use the mean of y. For classification, use the log-odds of the positive class. This is <strong>F₀(x)</strong>.</p>
+    <p><code>F₀(x) = argmin<sub>γ</sub> Σ L(yᵢ, γ)</code> — the single value that minimises total loss.</p>
+  </div>
+  <div class="card" style="border-left:3px solid var(--red)">
+    <h4 style="margin-top:0; color:var(--red)">Step 2 — Compute pseudo-residuals</h4>
+    <p>Calculate the negative gradient of the loss with respect to the current predictions. For MSE loss, these are just the ordinary residuals <strong>rᵢ = yᵢ − F(xᵢ)</strong>. For other losses (log-loss, Huber), the formula differs but the idea is the same: "how should each prediction move to reduce the loss?"</p>
+    <div class="code-block"><pre>r_ik = -∂L(yᵢ, F(xᵢ)) / ∂F(xᵢ)
+
+<span class="cm"># For MSE: L = (y - F)² → gradient = -(y - F) → negative gradient = y - F</span>
+<span class="cm"># i.e. pseudo-residuals = ordinary residuals for regression</span></pre></div>
+  </div>
+  <div class="card" style="border-left:3px solid #533483">
+    <h4 style="margin-top:0; color:#533483">Step 3 — Fit a new tree to the pseudo-residuals</h4>
+    <p>Train a decision tree (typically depth 3–8, not just stumps like AdaBoost) on the dataset <strong>{(xᵢ, rᵢ)}</strong>. The tree learns to predict the residuals — the <em>direction</em> in which predictions should move.</p>
+  </div>
+  <div class="card" style="border-left:3px solid #e67e22">
+    <h4 style="margin-top:0; color:#e67e22">Step 4 — Update predictions with a learning rate</h4>
+    <p>Add the tree's predictions to the current ensemble, scaled by <strong>η (learning rate)</strong>:</p>
+    <p><code>F_k(x) = F_{k-1}(x) + η · h_k(x)</code></p>
+    <p>The learning rate shrinks each tree's contribution. A small η (0.01–0.1) means many trees are needed but generalisation is better. A large η is fast but overshoots and overfits.</p>
+  </div>
+  <div class="card" style="border-left:3px solid var(--green)">
+    <h4 style="margin-top:0; color:var(--green)">Step 5 — Repeat until K trees are built</h4>
+    <p>Go back to Step 2 using the updated F_k. Each round, the residuals get smaller. After K rounds, the final prediction is F_K(x) — the sum of all tree contributions plus the baseline.</p>
+  </div>
+
+  <div class="card" style="background:var(--bg-card-alt)">
+    <h4 style="margin-top:0">Why "gradient" boosting?</h4>
+    <p>Fitting a tree to pseudo-residuals is equivalent to one step of gradient descent — but in <em>function space</em> rather than parameter space. Instead of updating weights (like neural networks), we update the entire prediction function by adding a new tree. The learning rate η plays the same role as step size in regular gradient descent.</p>
+  </div>
+
+  <h3>Key Hyperparameters</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Parameter</th><th>What it controls</th><th>Effect of increasing</th><th>Typical range</th></tr></thead>
+    <tbody>
+      <tr><td><strong>n_estimators</strong></td><td>Number of trees (boosting rounds)</td><td>More rounds → lower bias, but risks overfitting</td><td>100–1000</td></tr>
+      <tr><td><strong>learning_rate (η)</strong></td><td>Shrinks each tree's contribution</td><td>Slower learning — needs more trees but generalises better</td><td>0.01–0.3</td></tr>
+      <tr><td><strong>max_depth</strong></td><td>Depth of each tree</td><td>More complex trees — captures more interactions but overfits faster</td><td>3–8</td></tr>
+      <tr><td><strong>subsample</strong></td><td>Fraction of training rows per tree (stochastic GB)</td><td>Lower = more randomness, less overfitting, like bagging</td><td>0.5–1.0</td></tr>
+      <tr><td><strong>min_samples_leaf</strong></td><td>Minimum samples in a leaf node</td><td>Higher = smoother trees, better regularisation</td><td>1–20</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="alert alert-warning"><strong>Learning rate vs n_estimators trade-off:</strong> Always tune these together. Halving the learning rate usually means you need roughly double the trees for the same performance. Use early stopping (monitor validation loss) to find the right number of trees automatically.</div>
+
+  <h3>Practical — sklearn GradientBoostingClassifier</h3>
+  <p>The digits dataset has 1,797 samples of 8×8 pixel images of handwritten digits (0–9). We train a Gradient Boosting ensemble with 200 trees and watch accuracy grow at each boosting iteration.</p>
+
+  <h4>Step 1 — Load data and train</h4>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> GradientBoostingClassifier
+<span class="kw">import</span> sklearn.datasets
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+data = sklearn.datasets.<span class="fn">load_digits</span>()
+
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    data[<span class="st">'data'</span>], data[<span class="st">'target'</span>], random_state=<span class="num">0</span>
+)
+
+gbc = <span class="fn">GradientBoostingClassifier</span>(n_estimators=<span class="num">200</span>)
+gbc.<span class="fn">fit</span>(X_train, y_train)</pre></div>
+
+  <h4>Step 2 — Track accuracy at each boosting round</h4>
+  <p><code>staged_predict()</code> is a generator that yields predictions at each stage — very useful for finding the optimal number of trees without retraining.</p>
+  <div class="code-block"><pre><span class="cm"># staged_predict() yields predictions after each individual tree is added</span>
+train_scores = [
+    np.<span class="fn">mean</span>(np.<span class="fn">equal</span>(preds, y_train))
+    <span class="kw">for</span> preds <span class="kw">in</span> gbc.<span class="fn">staged_predict</span>(X_train)
+]
+test_scores = [
+    np.<span class="fn">mean</span>(np.<span class="fn">equal</span>(preds, y_test))
+    <span class="kw">for</span> preds <span class="kw">in</span> gbc.<span class="fn">staged_predict</span>(X_test)
+]
+
+plt.<span class="fn">plot</span>(train_scores, label=<span class="st">"Training"</span>)
+plt.<span class="fn">plot</span>(test_scores,  label=<span class="st">"Validation"</span>)
+plt.<span class="fn">legend</span>(loc=<span class="st">"lower right"</span>)
+plt.<span class="fn">xlabel</span>(<span class="st">"Boosting iteration"</span>)
+plt.<span class="fn">ylabel</span>(<span class="st">"Accuracy"</span>)
+
+<span class="cm"># Training accuracy → ~1.0; Validation peaks ~100 trees then plateaus</span>
+<span class="cm"># The gap tells you if you're overfitting — use it to set n_estimators</span></pre></div>
+
+  <div class="card" style="border-left:3px solid var(--green); margin-top:4px">
+    <h4 style="margin-top:0; color:var(--green)">Key insight</h4>
+    <p>Training accuracy climbs to ~100% (boosting can memorise data). Validation accuracy peaks earlier then plateaus or drops — that peak is your optimal <code>n_estimators</code>. Always monitor validation loss to avoid over-boosting.</p>
+  </div>
+
+  <h3>The Big Three Libraries</h3>
+  <p>sklearn's implementation is clean but slow on large datasets. Three dedicated libraries dominate real-world use:</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Library</th><th>Speed</th><th>Key features</th><th>Best for</th></tr></thead>
+    <tbody>
+      <tr><td><strong>XGBoost</strong></td><td>Fast</td><td>Sparse data handling, column blocks for parallel splits, L1/L2 regularisation, out-of-core computation</td><td>General purpose, sparse features, competition ML</td></tr>
+      <tr><td><strong>LightGBM</strong></td><td>Very fast</td><td>Leaf-wise tree growth (vs level-wise), histogram binning, native categorical support, GOSS sampling</td><td>Large datasets, high-dimensional features, speed-critical tasks</td></tr>
+      <tr><td><strong>CatBoost</strong></td><td>Fast</td><td>Native categorical encoding (no manual encoding needed), symmetric trees, ordered boosting</td><td>Datasets with many categorical features, less preprocessing</td></tr>
+      <tr><td><strong>sklearn GB</strong></td><td>Slow</td><td>Pure Python, easy to integrate, staged_predict for monitoring</td><td>Small datasets, learning, prototyping</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>sklearn-compatible API (same for all three libraries)</h4>
+  <div class="code-block"><pre><span class="kw">import</span> lightgbm <span class="kw">as</span> lgb
+<span class="kw">from</span> xgboost <span class="kw">import</span> XGBClassifier
+
+<span class="cm"># All follow the sklearn fit/predict/score pattern</span>
+lgb_model = lgb.<span class="fn">LGBMClassifier</span>(
+    n_estimators=<span class="num">200</span>,
+    learning_rate=<span class="num">0.05</span>,
+    num_leaves=<span class="num">31</span>,         <span class="cm"># controls tree complexity (LightGBM)</span>
+    random_state=<span class="num">42</span>
+)
+lgb_model.<span class="fn">fit</span>(X_train, y_train)
+<span class="fn">print</span>(lgb_model.<span class="fn">score</span>(X_test, y_test))
+
+<span class="cm"># XGBoost</span>
+xgb_model = <span class="fn">XGBClassifier</span>(
+    n_estimators=<span class="num">200</span>,
+    learning_rate=<span class="num">0.05</span>,
+    max_depth=<span class="num">4</span>,
+    use_label_encoder=<span class="kw">False</span>,
+    eval_metric=<span class="st">'mlogloss'</span>
+)
+xgb_model.<span class="fn">fit</span>(X_train, y_train)
+<span class="fn">print</span>(xgb_model.<span class="fn">score</span>(X_test, y_test))</pre></div>
+
+  <h3>LightGBM — Leaf-wise vs Level-wise Growth</h3>
+  <p>Standard decision trees (and XGBoost) grow level-by-level: all nodes at depth 1 before depth 2. LightGBM grows <strong>leaf-wise</strong>: always split the leaf with the highest loss reduction, regardless of depth. This means fewer splits achieve the same error reduction — much faster.</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Level-wise (XGBoost, sklearn)</div><p>Split all leaves at the same depth before going deeper. Balanced tree. Safe — less likely to overfit on small data.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Leaf-wise (LightGBM)</div><p>Always split the highest-gain leaf. Asymmetric, deep trees. More efficient on large data. Can overfit on small datasets — control with <code>min_data_in_leaf</code>.</p></div></div>
+  </div>
+
+  <h3>Overfitting and How to Fight It</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Problem</th><th>Solution</th></tr></thead>
+    <tbody>
+      <tr><td>Too many trees (over-boosting)</td><td>Use early stopping: monitor validation loss, stop when it stops improving</td></tr>
+      <tr><td>Trees too deep</td><td>Reduce <code>max_depth</code> (3–5 is usually enough) or <code>num_leaves</code></td></tr>
+      <tr><td>Learning rate too high</td><td>Reduce <code>learning_rate</code> to 0.01–0.05 and increase <code>n_estimators</code></td></tr>
+      <tr><td>Noisy features</td><td>Use <code>colsample_bytree</code> / <code>feature_fraction</code> — random feature subsets per tree (like Random Forest)</td></tr>
+      <tr><td>Small dataset</td><td>Use <code>subsample</code> / <code>bagging_fraction</code> — row sampling adds randomness and reduces overfitting</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Practical 2 — Regression on Boston Housing</h3>
+  <p>Predicting median house prices (continuous output) using <code>GradientBoostingRegressor</code>. This shows how the same algorithm applies to regression — the only difference is the loss function (MSE instead of log-loss).</p>
+
+  <div class="alert alert-warning"><strong>Note:</strong> <code>load_boston</code> is deprecated in newer sklearn versions due to ethical concerns about the dataset. A modern equivalent is <code>fetch_california_housing()</code> — the code structure is identical.</div>
+
+  <h4>Step 1 — Imports and Data</h4>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> GradientBoostingRegressor
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split, GridSearchCV
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> mean_squared_error, mean_absolute_error, r2_score
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+<span class="cm"># Modern alternative to load_boston (deprecated)</span>
+<span class="kw">from</span> sklearn.datasets <span class="kw">import</span> fetch_california_housing
+housing = fetch_california_housing()
+X = pd.<span class="fn">DataFrame</span>(housing.data, columns=housing.feature_names)
+y = pd.<span class="fn">Series</span>(housing.target)   <span class="cm"># Median house value (target)</span>
+
+<span class="cm"># 80% train, 20% test</span>
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(X, y, test_size=<span class="num">0.2</span>)</pre></div>
+
+  <h4>Step 2 — Train a Baseline Model</h4>
+  <p>Start simple — just 3 trees, depth 2, learning rate 1.0. This is intentionally weak to show what a poorly tuned model looks like before hyperparameter search.</p>
+  <div class="code-block"><pre>gradientregressor = <span class="fn">GradientBoostingRegressor</span>(
+    max_depth=<span class="num">2</span>,          <span class="cm"># shallow trees — each captures only simple interactions</span>
+    n_estimators=<span class="num">3</span>,       <span class="cm"># only 3 boosting rounds — deliberately weak baseline</span>
+    learning_rate=<span class="num">1.0</span>     <span class="cm"># large steps — risky, but OK with very few trees</span>
+)
+
+model = gradientregressor.<span class="fn">fit</span>(X_train, y_train)
+y_pred = model.<span class="fn">predict</span>(X_test)
+
+<span class="fn">print</span>(<span class="st">"R² score:"</span>, <span class="fn">r2_score</span>(y_test, y_pred))   <span class="cm"># ~0.74 — decent but not great</span>
+<span class="fn">print</span>(<span class="st">"MAE:"</span>,      <span class="fn">mean_absolute_error</span>(y_test, y_pred))
+<span class="fn">print</span>(<span class="st">"MSE:"</span>,      <span class="fn">mean_squared_error</span>(y_test, y_pred))</pre></div>
+
+  <div class="card" style="background:var(--bg-card-alt)">
+    <h4 style="margin-top:0">R² score explained</h4>
+    <p>R² (coefficient of determination) measures how much of the variance in y the model explains. R²=1.0 is a perfect fit. R²=0 means the model is no better than predicting the mean. R²=0.74 means the model explains 74% of the variance — a solid starting point with just 3 trees.</p>
+  </div>
+
+  <h4>Step 3 — Feature Importance</h4>
+  <p>After fitting, <code>model.feature_importances_</code> gives the relative contribution of each feature to the ensemble's splits. Normalise by the maximum to get relative importance (0–100).</p>
+  <div class="code-block"><pre>feature_importance = model.feature_importances_
+
+<span class="cm"># Normalise to range 0–100 relative to the most important feature</span>
+feature_importance = <span class="num">100.0</span> * (feature_importance / feature_importance.<span class="fn">max</span>())
+
+sorted_idx = np.<span class="fn">argsort</span>(feature_importance)
+pos = np.<span class="fn">arange</span>(sorted_idx.shape[<span class="num">0</span>]) + <span class="num">0.5</span>
+
+plt.<span class="fn">barh</span>(pos, feature_importance[sorted_idx], align=<span class="st">'center'</span>)
+plt.<span class="fn">yticks</span>(pos, housing.feature_names[sorted_idx])
+plt.<span class="fn">xlabel</span>(<span class="st">'Relative Importance'</span>)
+plt.<span class="fn">title</span>(<span class="st">'Variable Importance'</span>)
+plt.<span class="fn">show</span>()
+
+<span class="cm"># MedInc (median income) and AveOccup (avg occupants) dominate</span>
+<span class="cm"># Geographic features (lat/lon) matter more than you might expect</span></pre></div>
+
+  <h4>Step 4 — Hyperparameter Tuning with GridSearchCV</h4>
+  <p>The baseline uses only 3 trees. A proper grid search over <code>learning_rate</code> and <code>n_estimators</code> finds a much better combination. R² jumps from ~0.74 to ~0.88.</p>
+  <div class="code-block"><pre>param_grid = {
+    <span class="st">'learning_rate'</span>: [<span class="num">0.15</span>, <span class="num">0.1</span>, <span class="num">0.05</span>],   <span class="cm"># smaller rate = smaller steps = better generalisation</span>
+    <span class="st">'n_estimators'</span>:  [<span class="num">100</span>, <span class="num">150</span>, <span class="num">200</span>, <span class="num">250</span>]   <span class="cm"># more trees compensate for smaller steps</span>
+}
+
+tuning = <span class="fn">GridSearchCV</span>(
+    estimator=<span class="fn">GradientBoostingRegressor</span>(),
+    param_grid=param_grid,
+    scoring=<span class="st">'r2'</span>,    <span class="cm"># optimise for R²</span>
+    cv=<span class="num">5</span>              <span class="cm"># 5-fold cross-validation</span>
+)
+tuning.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="fn">print</span>(<span class="st">"Best params:"</span>,   tuning.best_params_)    <span class="cm"># {'learning_rate': 0.1, 'n_estimators': 250}</span>
+<span class="fn">print</span>(<span class="st">"Best CV R²:"</span>,    tuning.best_score_)     <span class="cm"># ~0.876</span>
+<span class="fn">print</span>(<span class="st">"Test R²:"</span>, tuning.best_estimator_.<span class="fn">score</span>(X_test, y_test))
+
+<span class="cm"># Other params worth tuning in a second round:</span>
+<span class="cm"># max_depth (try 3, 4, 5), min_samples_leaf (5, 10, 20), subsample (0.7, 0.8, 1.0)</span></pre></div>
+
+  <div class="card" style="border-left:3px solid var(--green); margin-top:4px">
+    <h4 style="margin-top:0; color:var(--green)">Result</h4>
+    <p>Best params: <code>learning_rate=0.1</code>, <code>n_estimators=250</code>. R² improves from ~0.74 (3 trees) to ~0.88 (250 trees). The key insight: a moderate learning rate with enough trees consistently beats a fast rate with few trees. <code>GridSearchCV</code> explores all combinations and picks the one with best average cross-validation R².</p>
+  </div>
+
+  <h3>Pros and Cons</h3>
+  <div class="card-grid">
+    <div class="card" style="border-left:3px solid var(--green)">
+      <h4 style="margin-top:0; color:var(--green)">Pros</h4>
+      <ul>
+        <li>Iteratively corrects the mistakes of weak learners — very high accuracy</li>
+        <li>Works with any differentiable loss function (classification, regression, ranking)</li>
+        <li>Built-in feature importance — interpretable despite being a "black box"</li>
+        <li>Handles mixed data types well; robust to outliers with Huber loss</li>
+        <li>Outperforms most other algorithms on tabular data</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--red)">
+      <h4 style="margin-top:0; color:var(--red)">Cons</h4>
+      <ul>
+        <li>Space and time complexity — sequential training cannot be parallelised</li>
+        <li>Many hyperparameters to tune (learning_rate, n_estimators, max_depth, subsample…)</li>
+        <li>Sensitive to noisy data and outliers (with default squared loss)</li>
+        <li>Prone to overfitting if n_estimators is too high or learning_rate too large</li>
+        <li>Not ideal for very large datasets — use LightGBM / XGBoost instead</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-en4"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('en4')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('en2')">← AdaBoost</button>
+    <button class="btn btn-outline" onclick="nav('en3')">Stacking →</button>
+  </div>
+</div>
+
 </div><!-- end main -->
 
 <script>
@@ -3142,7 +4254,11 @@ const TOPICS = {
   w14: 'L14: KNN',
   w15: 'L15: SVM',
   w16: 'L16: Full Pipeline',
-  mc:  'L17: Multiclass Classification'
+  mc:  'L17: Multiclass Classification',
+  en1: 'Ensemble L1: Intro to Ensembles',
+  en2: 'Ensemble L2: Boosting & AdaBoost',
+  en3: 'Ensemble L3: Stacking',
+  en4: 'Ensemble L4: Gradient Boosting'
 };
 
 const ALL_QUESTIONS = [
@@ -3307,6 +4423,46 @@ const ALL_QUESTIONS = [
   {t:'mc', q:'How do you explicitly use OvO strategy in sklearn?', opts:['Set strategy="ovo" in LogisticRegression','Wrap the model with OneVsOneClassifier','Set multi_class="ovo" in all models','OvO is automatic when K>3'], ans:1, exp:'from sklearn.multiclass import OneVsOneClassifier. Then: ovo = OneVsOneClassifier(LinearSVC()). Fit and predict exactly like any sklearn model. sklearn\'s default is OvR — OvO must be applied explicitly.'},
   {t:'mc', q:'You have a dataset with 214 rows and 6 classes. What split strategy should you use?', opts:['random_state only — stratify is not needed','stratify=y to ensure each class is represented in train and test sets','Always use 25% test size regardless of dataset size','Do not split — use the full dataset for training'], ans:1, exp:'With only 214 rows and 6 classes, some classes have very few examples. Without stratify=y, your test set might accidentally contain 0 examples of a rare class. Stratified split preserves class proportions in both sets.'},
   {t:'mc', q:'What does classification_report show for multiclass that accuracy does not?', opts:['Training accuracy','Per-class precision, recall, and F1 — revealing which specific classes the model struggles with','The confusion matrix','The number of support vectors'], ans:1, exp:'Accuracy is a single number that can look good even if rare classes are completely missed. classification_report breaks down precision, recall and F1 for every class individually, so you can see exactly where the model fails.'},
+
+  // Ensemble L1
+  {t:'en1', q:'What is the main goal of ensemble methods?', opts:['Train a single very powerful model','Combine many weak learners to get a strong collective prediction','Reduce the number of features','Speed up training time'], ans:1, exp:'Ensemble methods combine many weak models (each only slightly better than random) into a powerful collective. Diversity between models is the key — their uncorrelated errors cancel out when predictions are aggregated.'},
+  {t:'en1', q:'Which ensemble type trains models sequentially, focusing on examples the previous model got wrong?', opts:['Bagging','Stacking','Boosting','Voting'], ans:2, exp:'Boosting trains models one at a time. After each model, data is re-weighted so the next model focuses on the hardest examples — those the current ensemble gets wrong. This sequentially reduces bias.'},
+  {t:'en1', q:'In bagging, how are bootstrap samples created?', opts:['Random split without replacement','Sampling rows with replacement from the training data','Taking every k-th row','Stratified random sampling'], ans:1, exp:'Bootstrap sampling draws rows randomly WITH replacement. Some rows appear multiple times, some not at all. This creates diverse training subsets — the source of variety between base models.'},
+  {t:'en1', q:'Why do decision trees make ideal base learners for bagging?', opts:['They are interpretable','They are fast to train','They are unstable — small data changes produce very different trees, creating the diversity ensembles need','They never overfit'], ans:2, exp:'Bagging needs diverse base models. Decision trees are highly unstable: trained on slightly different data, they produce very different structures. This instability is a feature in ensembles — it guarantees diverse errors that cancel when aggregated.'},
+  {t:'en1', q:'What does a Random Forest add on top of basic bagging?', opts:['Weighted voting','Sequential training','Random feature subsets at each split to decorrelate trees','A meta-learner second stage'], ans:2, exp:'Basic bagging trains each model on a random data subset. Random Forest adds random feature subsampling at each split (usually √N features for classification). This prevents dominant features making all trees similar — more diversity, better ensemble.'},
+  {t:'en1', q:'Stacking is different from bagging and boosting because it:', opts:['Trains models in parallel','Trains models sequentially on re-weighted data','Combines different model families using a second-level meta-learner','Samples data with replacement'], ans:2, exp:'Stacking combines different model types (e.g. Random Forest + SVM + Neural Network) rather than many copies of the same base model. A second-level meta-learner is trained on their predictions to learn the optimal blend.'},
+  {t:'en1', q:'What is the primary benefit ensembles offer over individual models?', opts:['They are faster to train','They are easier to interpret','They reduce variance by averaging out individual model errors','They always eliminate overfitting'], ans:2, exp:'When many models each overfit differently (uncorrelated errors), averaging their predictions lets errors cancel out while the signal accumulates. Variance drops, so performance on unseen data improves — even if each individual model is weak.'},
+  {t:'en1', q:'A model achieves 51% accuracy on a binary classification task. What happens when 1,000 such independent models vote by majority?', opts:['Final accuracy stays at 51%','Final accuracy is lower — errors compound','Final accuracy is much higher than 51% due to error cancellation','The model cannot be used in an ensemble'], ans:2, exp:'By the law of large numbers, if 1,000 independent models each have 51% chance of being right, the majority vote will be correct far more than 51% of the time. Independence (diversity) is the critical requirement.'},
+
+  // Ensemble L2 — Boosting & AdaBoost
+  {t:'en2', q:'What is the key difference between boosting and bagging?', opts:['Boosting uses more trees','Boosting trains models sequentially, each focusing on the previous model\'s mistakes; bagging trains in parallel on random subsets','Bagging uses weighted voting; boosting uses equal voting','Boosting requires decision trees; bagging can use any model'], ans:1, exp:'Bagging trains N models simultaneously on random data subsets and combines with equal votes (reduces variance). Boosting trains models one at a time — each focuses on what the current ensemble gets wrong — reducing bias iteratively.'},
+  {t:'en2', q:'In AdaBoost, what happens to the weight of a misclassified sample after each round?', opts:['It decreases so the model forgets it','It stays the same','It increases so the next stump focuses on it','It is set to zero and removed'], ans:2, exp:'AdaBoost multiplies misclassified sample weights by e^α (where α>0), increasing them. Correctly classified samples get multiplied by e^−α, decreasing their weight. This forces the next stump to prioritise what the current ensemble gets wrong.'},
+  {t:'en2', q:'What does the stump weight α represent in AdaBoost?', opts:['The learning rate','How much that stump\'s vote counts in the final prediction — higher α means the stump was more accurate','The number of samples it trained on','The depth of the decision tree used'], ans:1, exp:'α = ½·ln((1−ε)/ε). A stump with very low error gets a large α — its vote counts heavily. A stump at 50% error (random) gets α=0 — completely ignored. This is how AdaBoost automatically weights better stumps more.'},
+  {t:'en2', q:'If a decision stump in AdaBoost achieves ε = 0.5 (50% error), what is α?', opts:['α = 1','α = 0.5','α = 0 — the stump is useless and gets no vote','α = −1'], ans:2, exp:'α = ½·ln((1−0.5)/0.5) = ½·ln(1) = ½·0 = 0. A stump at 50% accuracy is no better than random guessing — it contributes nothing to the ensemble and is effectively ignored.'},
+  {t:'en2', q:'Why is AdaBoost sensitive to outliers?', opts:['Outliers cause overfitting in decision trees','Outliers are always misclassified and get upweighted every round, eventually dominating the model','Outliers reduce the learning rate','Outliers make α negative'], ans:1, exp:'If a data point is consistently misclassified (perhaps it is mislabelled or a true outlier), AdaBoost keeps increasing its weight each round. Eventually the ensemble becomes obsessed with classifying that one point correctly, hurting generalisation.'},
+  {t:'en2', q:'What is the final AdaBoost prediction formula?', opts:['Majority vote of all stumps with equal weight','F(x) = sign(Σ αₖ · hₖ(x)) — a weighted sum of all stump predictions','F(x) = average of all stump probabilities','F(x) = prediction of the last stump only'], ans:1, exp:'Each stump hₖ(x) predicts −1 or +1. Its vote is scaled by αₖ (its accuracy weight). The sign of the total weighted sum determines the final class. Better stumps get more say via larger α.'},
+  {t:'en2', q:'How does Gradient Boosting generalise AdaBoost?', opts:['It uses more stumps','It works with any differentiable loss function, not just AdaBoost\'s fixed exponential loss','It trains stumps in parallel for speed','It removes the need for sample weights'], ans:1, exp:'AdaBoost is tied to exponential loss and re-weights samples explicitly. Gradient Boosting frames boosting as gradient descent on any loss function — at each step, it fits a new tree to the negative gradient (pseudo-residuals) of the current ensemble\'s loss.'},
+  {t:'en2', q:'Which of the following is NOT an advantage of boosting over a single decision tree?', opts:['Better generalisation performance','Reduced bias through iterative refinement','Easy to parallelise across multiple CPU cores','Feature importance is still available'], ans:2, exp:'Boosting is inherently sequential — each model depends on the previous one\'s errors. This makes it very hard to parallelise (unlike bagging/random forests which train all trees independently). Libraries like XGBoost use GPU tricks but the algorithm is still fundamentally sequential.'},
+
+  // Ensemble L3 — Stacking
+  {t:'en3', q:'What is the key difference between stacking and bagging/boosting?', opts:['Stacking trains models sequentially','Stacking uses weighted voting like AdaBoost','Stacking combines different model families using a second-level meta-learner trained on base model predictions','Stacking samples data with replacement like bagging'], ans:2, exp:'Bagging and boosting combine many copies of the same model type. Stacking combines fundamentally different model families (e.g. KNN + Random Forest + Naive Bayes) through a meta-learner that learns the optimal blend — much more flexible.'},
+  {t:'en3', q:'Why must base models predict on held-out data when building the meta-learner\'s training set?', opts:['To reduce training time','To avoid data leakage — base models would have artificially good predictions on their own training data','To increase diversity between models','sklearn requires it'], ans:1, exp:'If a base model predicts on data it was trained on, its predictions are based on memorised patterns (training error), not true generalisation. The meta-learner would then learn to blend artificially good predictions — completely useless at test time. Always use held-out (validation) data.'},
+  {t:'en3', q:'In the mlxtend StackingClassifier, what role does the meta_classifier play?', opts:['It pre-processes the data before base models see it','It replaces the weakest base model','It is trained on the base models\' predictions and learns to blend them into a final prediction','It controls the number of cross-validation folds'], ans:2, exp:'meta_classifier receives the base models\' predictions as its feature inputs and the true labels as targets. It learns weights (via e.g. logistic regression) that optimally combine the base models\' outputs — a much smarter aggregation than simple averaging.'},
+  {t:'en3', q:'What was the winning tactic of BellKor\'s Pragmatic Chaos in the Netflix Prize?', opts:['They used the deepest neural network in the competition','They used only the KNN model with a massive K','They built a huge stacking ensemble of 100+ diverse models including KNN, RBM, SVD, and Neural Networks','They used a single linear regression model with advanced features'], ans:2, exp:'The Netflix Prize winners combined over 100 models of completely different types using stacking (they called it "blending"). Even models that were mediocre alone (like RBMs) improved the ensemble by making errors different from other models — complementary weaknesses.'},
+  {t:'en3', q:'Why is diversity between base models crucial for stacking?', opts:['More diverse models train faster','Models from different families must make different errors — correlated errors cannot cancel out','Diversity reduces the number of features needed','sklearn requires diverse models for StackingClassifier'], ans:1, exp:'If all base models make the same mistakes (correlated errors), the meta-learner has nothing to exploit — it just sees the same wrong answer repeated. When models have uncorrelated errors, the meta-learner can learn to avoid the mistakes of each model by listening to the others.'},
+  {t:'en3', q:'Why does K-fold stacking use all training data more efficiently than simple 2-level splitting?', opts:['K-fold uses no validation set at all','K-fold trains K ensembles and collects out-of-fold predictions for every sample, so all samples contribute to meta-learner training','K-fold automatically tunes the meta-learner hyperparameters','K-fold is faster because it trains fewer models'], ans:1, exp:'Simple splitting gives only 1/3 (or similar) of data to base model training and 1/3 to meta-learner training. K-fold stacking trains K models using K-1 folds and predicts on the remaining fold — rotating so every sample gets a prediction eventually. All data trains base models AND meta-learner.'},
+  {t:'en3', q:'Which meta-learner is most commonly used for regression stacking tasks?', opts:['K-Nearest Neighbours','Decision Tree','Linear Regression — it learns optimal blend weights with N inputs (one per base model)','Naive Bayes'], ans:2, exp:'Linear Regression is a natural choice: with N base models, it has N features (their predictions) and learns optimal weights for blending them. It also handles correlated predictions by adjusting contributions of similar models. Complex meta-learners risk overfitting the small meta-training set.'},
+  {t:'en3', q:'What is the main downside of K-fold stacking versus simple 2-level splitting?', opts:['It cannot be used for classification','The meta-learner sees training data','Base models must be trained K+1 times — expensive for slow models','It requires more base models'], ans:2, exp:'K-fold stacking trains K different ensembles (one per fold) plus the final ensemble on all data. If each model is slow (e.g. SVM on large data), this becomes K+1 times more expensive. The simple split approach is much faster but wastes some training data.'},
+
+  // Ensemble L4 — Gradient Boosting
+  {t:'en4', q:'What are "pseudo-residuals" in Gradient Boosting?', opts:['The residuals from the final tree only','The negative gradient of the loss function with respect to the current predictions — the direction each prediction should move','The difference between training and test accuracy','The weights assigned to each sample, like AdaBoost'], ans:1, exp:'At each round, GB computes rᵢ = −∂L/∂F(xᵢ). For MSE loss, this equals the simple residual (y − F). For other losses the formula differs, but the idea is the same: pseudo-residuals point in the direction that reduces loss most. The new tree is trained to predict these.'},
+  {t:'en4', q:'How does Gradient Boosting update its prediction at each step?', opts:['F_k(x) = mean of all trees so far','F_k(x) = F_{k-1}(x) + η · h_k(x) — add the new tree scaled by learning rate','F_k(x) = best tree found so far','F_k(x) = F_{k-1}(x) × h_k(x)'], ans:1, exp:'Each round adds a new tree h_k(x) scaled by the learning rate η to the current ensemble F_{k-1}. This is additive — the final prediction is the sum of all tree contributions plus the baseline. η shrinks each step to prevent overshooting.'},
+  {t:'en4', q:'What is the role of the learning rate (η) in Gradient Boosting?', opts:['It controls the depth of each tree','It shrinks each tree\'s contribution — smaller η needs more trees but improves generalisation','It sets the number of boosting rounds','It controls the fraction of samples used per tree'], ans:1, exp:'η multiplies each tree\'s output before adding it to the ensemble. Small η means tiny steps — safe but slow. Large η means big steps — fast but overshoots and overfits. Always tune n_estimators and learning_rate together: smaller η typically needs more trees.'},
+  {t:'en4', q:'What makes Gradient Boosting a generalisation of AdaBoost?', opts:['It uses deeper trees','It works with any differentiable loss function, whereas AdaBoost is tied to exponential loss','It trains trees in parallel','It uses random feature subsets like Random Forest'], ans:1, exp:'AdaBoost implicitly minimises exponential loss and re-weights samples to reflect that. Gradient Boosting frames boosting as gradient descent on any loss function — plug in MSE for regression, log-loss for binary classification, etc. AdaBoost becomes a special case.'},
+  {t:'en4', q:'What does staged_predict() do in sklearn\'s GradientBoostingClassifier?', opts:['Splits data into stages for cross-validation','Yields predictions after each tree is added — lets you track accuracy at every boosting round without retraining','Applies the model in stages to reduce memory use','Returns feature importances at each depth level'], ans:1, exp:'staged_predict() is a generator that produces predictions at each intermediate stage of the ensemble. You can plot train vs validation accuracy at every n_estimators value. The point where validation accuracy peaks tells you the optimal number of trees — without retraining.'},
+  {t:'en4', q:'What is the key difference between LightGBM\'s leaf-wise and XGBoost\'s level-wise tree growth?', opts:['LightGBM uses more trees','Leaf-wise always splits the highest-gain leaf regardless of depth — faster but can overfit; level-wise grows all nodes at the same depth first — safer but slower','LightGBM builds shallower trees','XGBoost uses random feature subsets at each split'], ans:1, exp:'Level-wise (XGBoost, sklearn): split all nodes at depth d before going to depth d+1. Balanced, safe. Leaf-wise (LightGBM): always split whichever leaf has the highest loss reduction. Asymmetric trees, fewer splits needed for the same error — much faster on large data, but can overfit on small datasets.'},
+  {t:'en4', q:'Which LightGBM parameter is most effective at preventing overfitting on small datasets?', opts:['learning_rate','num_leaves — reducing it limits tree complexity and prevents excessive memorisation','n_estimators','boosting_type'], ans:1, exp:'num_leaves controls the maximum number of leaves in each tree. LightGBM\'s leaf-wise growth can create very deep, complex trees quickly. Reducing num_leaves (e.g. from 31 to 15) is the primary lever for regularisation in LightGBM. Also useful: min_data_in_leaf (minimum samples per leaf).'},
+  {t:'en4', q:'What is the best strategy to find the optimal number of boosting rounds?', opts:['Always use 100 trees','Try 10, 100, and 1000 and pick the best','Use early stopping: monitor validation loss and stop when it hasn\'t improved for N consecutive rounds','Use cross-validation with n_estimators as a grid search parameter'], ans:2, exp:'Early stopping is the standard approach. You monitor validation loss at each round and stop training when it hasn\'t improved for a set number of consecutive rounds (patience). This avoids over-boosting (which causes overfitting) without the cost of trying many fixed n_estimators values.'},
 ];
 
 const FLASHCARDS = [
@@ -3447,6 +4603,50 @@ const FLASHCARDS = [
   {t:'mc', front:'Macro avg vs weighted avg F1?', back:'Macro avg: equal weight per class — harsh when classes are imbalanced.\nWeighted avg: weighted by class size — reflects real-world performance.\nLarge gap between them → rare classes are being missed.'},
   {t:'mc', front:'How do you use OvO explicitly in sklearn?', back:'from sklearn.multiclass import OneVsOneClassifier\novo = OneVsOneClassifier(LinearSVC(max_iter=2000))\novo.fit(X_train, y_train)\novo.predict(X_test)'},
   {t:'mc', front:'Why use stratify=y in train_test_split for multiclass?', back:'Without stratify, rare classes may get 0 examples in the test set by chance.\nstratify=y preserves the class proportions from the full dataset in both train and test splits. Essential for small or imbalanced datasets.'},
+
+  // Ensemble L1
+  {t:'en1', front:'What is an ensemble method?', back:'A meta-algorithm that combines many base models (weak learners) into one strong collective prediction. The three main types are Bagging, Boosting, and Stacking.'},
+  {t:'en1', front:'3 components of every ensemble?', back:'1. Base model (the weak learner)\n2. Meta-algorithm (how to generate diverse models)\n3. Combination strategy (vote, average, or meta-learner)'},
+  {t:'en1', front:'Bagging vs Boosting — key differences?', back:'Bagging: parallel training on random subsets, equal vote. Reduces variance.\nBoosting: sequential training on re-weighted data, weighted vote. Reduces bias.\nBoth commonly use decision trees as base learners.'},
+  {t:'en1', front:'What is bootstrap sampling?', back:'Sampling rows from the dataset WITH replacement. Some rows appear multiple times, some not at all. Creates diverse training subsets — the source of diversity in bagging.'},
+  {t:'en1', front:'Why are decision trees ideal for bagging?', back:'They are unstable: small changes in training data produce very different trees. This creates the diverse errors ensembles need. Unstable models benefit most from bagging.'},
+  {t:'en1', front:'What does Random Forest add to plain bagging?', back:'At each split, only a random subset of features is considered (√N for classification, N/3 for regression). This decorrelates trees — dominant features no longer appear in every tree.'},
+  {t:'en1', front:'What is stacking?', back:'Combining different model families (e.g. Random Forest + SVM + Neural Network) using a second-level meta-learner trained on their predictions. A key technique in competition ML — it won the Netflix Prize.'},
+  {t:'en1', front:'Why does averaging diverse model predictions reduce error?', back:'When models overfit differently (uncorrelated errors), averaging lets errors cancel out while the signal accumulates. The key word is diverse — correlated models with the same errors gain nothing from averaging.'},
+  {t:'en1', front:'Ensemble pros and cons?', back:'+ Improved performance, variance reduction (bagging), bias reduction (boosting), feature importance\n− Reduced interpretability, more training overhead, boosting is hard to parallelise, more hyperparameters'},
+  {t:'en1', front:'What is a weak learner?', back:'A model only slightly better than random guessing (e.g. 51% accuracy). Ensembles can combine many weak learners into a strong model — even a 51% model becomes powerful in a majority vote of 1,000 independent models.'},
+
+  // Ensemble L2 — Boosting & AdaBoost
+  {t:'en2', front:'Bagging vs Boosting — one line each?', back:'Bagging: parallel training on random subsets, equal vote — reduces variance.\nBoosting: sequential training on re-weighted data, weighted vote — reduces bias.'},
+  {t:'en2', front:'What happens to misclassified sample weights in AdaBoost?', back:'They are multiplied by e^α (increased). Correctly classified samples are multiplied by e^−α (decreased). Weights are then normalised to sum to 1.'},
+  {t:'en2', front:'What is α in AdaBoost and how is it calculated?', back:'α = ½ · ln((1−ε) / ε)\nIt is the stump\'s vote weight in the final ensemble. Low error → high α → more say. ε=0.5 → α=0 (ignored). ε≈0 → α very large.'},
+  {t:'en2', front:'What is the AdaBoost final prediction formula?', back:'F(x) = sign( Σ αₖ · hₖ(x) )\nEach stump hₖ predicts −1 or +1, weighted by αₖ. The sign of the total decides the class.'},
+  {t:'en2', front:'Why is AdaBoost sensitive to outliers?', back:'Outliers are consistently misclassified → their weight increases every round → the ensemble increasingly obsesses over them → generalisation suffers. Use robust preprocessing or switch to Gradient Boosting.'},
+  {t:'en2', front:'AdaBoost vs Gradient Boosting?', back:'AdaBoost: re-weights samples, uses exponential loss, depth-1 stumps.\nGradient Boosting: fits new tree to pseudo-residuals (loss gradient), works with any differentiable loss, deeper trees.'},
+  {t:'en2', front:'What is a decision stump?', back:'A decision tree with depth=1 — one single split on one feature. The most common base learner for AdaBoost. Weak individually but powerful in an ensemble of hundreds.'},
+  {t:'en2', front:'AdaBoost 6-step algorithm?', back:'1. Init equal weights wᵢ=1/N\n2. Train stump on weighted data\n3. Compute error ε = Σwᵢ·𝟙[wrong]\n4. Compute α = ½·ln((1−ε)/ε)\n5. Update weights (up for wrong, down for correct)\n6. Normalise weights, repeat'},
+  {t:'en2', front:'Boosting pros and cons?', back:'+ High performance, reduces bias, feature importance\n− Sequential (hard to parallelise), overfits noisy data, sensitive to outliers, more hyperparameters'},
+  {t:'en2', front:'Popular Gradient Boosting libraries?', back:'XGBoost — sparse data, column blocks for speed\nLightGBM — very fast, leaf-wise growth\nCatBoost — native categorical feature handling\nsklearn GradientBoostingClassifier — flexible but slower'},
+
+  // Ensemble L3 — Stacking
+  {t:'en3', front:'What is stacking in one sentence?', back:'Train diverse model families on the same data, collect their predictions on held-out data, then train a meta-learner to blend those predictions into a final output.'},
+  {t:'en3', front:'Why use held-out data for meta-learner training?', back:'If base models predict on their own training data, they appear artificially accurate (training error). The meta-learner would learn to blend these "too-good" predictions — useless at test time. Always separate data for each training stage.'},
+  {t:'en3', front:'mlxtend StackingClassifier syntax?', back:'StackingClassifier(\n  classifiers=[clf1, clf2, clf3],  # base models\n  meta_classifier=lr               # level-2 model\n)'},
+  {t:'en3', front:'Stacking 4-step algorithm?', back:'1. Train diverse base models on training data\n2. Use base models to predict on held-out validation set\n3. Train meta-learner on those predictions (new features)\n4. Validate full pipeline on a 3rd unseen test set'},
+  {t:'en3', front:'Why does diversity between base models matter?', back:'Correlated errors cannot cancel. If all models make the same mistakes, the meta-learner sees the same wrong answer repeated. Diverse models (different families) make different errors — the meta-learner learns to avoid each model\'s weaknesses.'},
+  {t:'en3', front:'Netflix Prize winner\'s stacking approach?', back:'BellKor\'s Pragmatic Chaos used 100+ diverse models (KNN, RBM, SVD, Neural Nets) with blending (stacking). Even weak individual models helped if their errors were different. Won $1M prize.'},
+  {t:'en3', front:'Bagging vs Boosting vs Stacking — key differences?', back:'Bagging: parallel, same model type, equal vote — reduces variance\nBoosting: sequential, same model type, weighted vote — reduces bias\nStacking: parallel then meta, different model families, meta-learner — flexibility + performance'},
+  {t:'en3', front:'What is the trade-off of K-fold stacking vs simple split?', back:'Simple split: fast but wastes data (only 1/3 trains base models).\nK-fold stacking: uses all data, but trains base models K+1 times — expensive for slow models.'},
+
+  // Ensemble L4 — Gradient Boosting
+  {t:'en4', front:'What is the Gradient Boosting update rule?', back:'F_k(x) = F_{k-1}(x) + η · h_k(x)\nAdd the new tree h_k, scaled by learning rate η, to the current ensemble F_{k-1}.'},
+  {t:'en4', front:'What are pseudo-residuals?', back:'rᵢ = −∂L(yᵢ, F(xᵢ))/∂F(xᵢ)\nThe negative gradient of the loss w.r.t. current predictions. For MSE: pseudo-residuals = yᵢ − F(xᵢ) (ordinary residuals). Each tree is trained to predict these.'},
+  {t:'en4', front:'AdaBoost vs Gradient Boosting — one key difference?', back:'AdaBoost: re-weights samples, tied to exponential loss, depth-1 stumps only.\nGradient Boosting: fits trees to pseudo-residuals, any differentiable loss function, any tree depth.'},
+  {t:'en4', front:'What does learning_rate control in GB?', back:'Shrinks each tree\'s contribution to the ensemble. Small η (0.01–0.1) = small steps, needs more trees, better generalisation. Large η = fast but overfits. Always tune with n_estimators together.'},
+  {t:'en4', front:'LightGBM leaf-wise vs level-wise?', back:'Level-wise (sklearn, XGBoost): split all nodes at depth d before d+1. Safe, balanced.\nLeaf-wise (LightGBM): always split the highest-gain leaf. Faster, but can overfit small data. Control with num_leaves and min_data_in_leaf.'},
+  {t:'en4', front:'What is staged_predict() used for?', back:'Returns predictions at each boosting round. Use it to plot train vs validation accuracy and identify the optimal n_estimators — the point where validation accuracy peaks — without retraining the model.'},
+  {t:'en4', front:'XGBoost vs LightGBM vs CatBoost — one-liner each?', back:'XGBoost: general purpose, sparse data, column blocks for speed.\nLightGBM: fastest on large data, leaf-wise growth, native categoricals.\nCatBoost: best for heavy categorical features, no manual encoding needed.'},
+  {t:'en4', front:'GB 5-step algorithm?', back:'1. F₀ = constant (mean/log-odds)\n2. Compute pseudo-residuals rᵢ = −∂L/∂F\n3. Fit tree h_k to {(xᵢ, rᵢ)}\n4. Update: F_k = F_{k-1} + η·h_k\n5. Repeat until K trees done'},
 ];
 
 // ===================== STATE =====================
@@ -3474,7 +4674,7 @@ function nav(page) {
   document.getElementById('main').scrollTop = 0;
   const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
   if (navEl) navEl.classList.add('active');
-  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc'].includes(page)) {
+  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4'].includes(page)) {
     markVisited(page);
     renderInlineQuiz(page);
   }
@@ -3492,9 +4692,9 @@ function markVisited(w) {
 }
 
 function updateGlobalProgress() {
-  const pct = Math.round((visited.length / 18) * 100);
+  const pct = Math.round((visited.length / 22) * 100);
   document.getElementById('global-progress-bar').style.width = pct + '%';
-  document.getElementById('global-progress-label').textContent = `${visited.length} of 18 lessons visited`;
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 22 lessons visited`;
 }
 
 // ===================== INLINE QUIZ =====================
