@@ -249,6 +249,9 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
   <div class="nav-item nav-item-chapter" onclick="toggleChapter('prageval')"><span class="icon">📚</span> Pragmatic Model Evaluation<span class="chapter-arrow" id="arrow-prageval">▾</span></div>
   <div class="nav-chapter-items" id="chapter-prageval">
     <div class="nav-item nav-item-sub" onclick="nav('pe1')" id="nav-pe1"><span class="icon">🏗️</span> L1: Hierarchical Validation<span class="check" id="check-pe1"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('pe2')" id="nav-pe2"><span class="icon">🔧</span> L2: Pipelines & Preprocessing<span class="check" id="check-pe2"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('pe3')" id="nav-pe3"><span class="icon">🎯</span> L3: Feature Selection<span class="check" id="check-pe3"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('pe4')" id="nav-pe4"><span class="icon">⚙️</span> L4: Model Optimisation<span class="check" id="check-pe4"></span></div>
   </div>
 
   <div class="sidebar-section" style="margin-top:10px">Practice</div>
@@ -1256,6 +1259,9 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
         <div class="chip-chapter-label">📚 Pragmatic Model Evaluation</div>
         <div class="topic-chips">
           <div class="topic-chip" id="chip-pe1" onclick="toggleChip('pe1')">L1: Hierarchical Validation</div>
+          <div class="topic-chip" id="chip-pe2" onclick="toggleChip('pe2')">L2: Pipelines</div>
+          <div class="topic-chip" id="chip-pe3" onclick="toggleChip('pe3')">L3: Feature Selection</div>
+          <div class="topic-chip" id="chip-pe4" onclick="toggleChip('pe4')">L4: Model Optimisation</div>
         </div>
       </div>
     </div>
@@ -1353,6 +1359,9 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
       <div class="chip-chapter-label">📚 Pragmatic Model Evaluation</div>
       <div class="topic-chips">
         <div class="topic-chip" id="fc-chip-pe1" onclick="fcFilter('pe1')">L1: Hierarchical Validation</div>
+        <div class="topic-chip" id="fc-chip-pe2" onclick="fcFilter('pe2')">L2: Pipelines</div>
+        <div class="topic-chip" id="fc-chip-pe3" onclick="fcFilter('pe3')">L3: Feature Selection</div>
+        <div class="topic-chip" id="fc-chip-pe4" onclick="fcFilter('pe4')">L4: Model Optimisation</div>
       </div>
     </div>
   </div>
@@ -4434,6 +4443,727 @@ y_pred_cv = rs.<span class="fn">predict</span>(X_holdout)      <span class="cm">
   <div class="btn-row">
     <button class="btn btn-primary" onclick="startTopicQuiz('pe1')">📝 Full Topic Quiz</button>
     <button class="btn btn-outline" onclick="nav('quiz')">Practice All Topics</button>
+    <button class="btn btn-outline" onclick="nav('pe2')">Pipelines →</button>
+  </div>
+</div>
+
+<!-- PRAGMATIC MODEL EVALUATION — LESSON 2 -->
+<div class="page" id="page-pe2">
+  <h2>🔧 Pipelines & Modular Preprocessing</h2>
+  <p class="subtitle">Build proper, leak-free, reusable ML pipelines using scikit-learn's modular toolkit — from single transformers to full end-to-end objects you can tune and save.</p>
+
+  <div class="alert alert-info">💡 The key rule of every pipeline: <strong>.fit() only ever sees training data.</strong> Everything else follows from that.</div>
+
+  <h3>Why Modularity?</h3>
+  <p>A real ML project has many steps. Without structure they become one tangled script — hard to test, easy to leak data accidentally.</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Without modularity</div><p>Preprocess all data, then split. The scaler has already seen the test set. Metrics are optimistic. You can't easily swap components or search over preprocessing params.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">With modularity</div><p>Each step is an independent object. The pipeline fits preprocessing only on training folds. You can swap components, tune preprocessing params in grid search, and save the whole thing as one object.</p></div></div>
+  </div>
+
+  <p>The practical uses the <strong>Taiwan Credit Default dataset</strong> — predict whether a customer will default on their credit card next month.</p>
+  <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">from</span> sklearn.compose <span class="kw">import</span> ColumnTransformer, make_column_transformer
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> OneHotEncoder, MinMaxScaler, FunctionTransformer, PolynomialFeatures
+<span class="kw">from</span> sklearn.pipeline <span class="kw">import</span> Pipeline, FeatureUnion, make_pipeline
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split, GridSearchCV, ShuffleSplit, cross_val_score
+<span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA
+<span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier
+<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier
+<span class="kw">from</span> sklearn.base <span class="kw">import</span> TransformerMixin, BaseEstimator
+
+data = pd.<span class="fn">read_excel</span>(<span class="st">"data/default.xls"</span>, skiprows=<span class="nu">1</span>)
+X = data.<span class="fn">drop</span>([<span class="st">"default payment next month"</span>, <span class="st">"ID"</span>], axis=<span class="nu">1</span>)
+y = data[<span class="st">"default payment next month"</span>]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="nu">0.2</span>, random_state=<span class="nu">42</span>, stratify=y)
+split = <span class="fn">ShuffleSplit</span>(n_splits=<span class="nu">1</span>)</pre></div>
+  <div class="card"><div class="key-concept"><div class="label">stratify=y</div><p>Ensures the same proportion of defaults (22%) appears in both train and test splits. Without it, a random split might put most defaults in one set, making evaluation misleading.</p></div></div>
+
+  <h3>Stage 1 — The Simplest Pipeline</h3>
+  <p><code>make_pipeline</code> is a shortcut for <code>Pipeline([...])</code> that auto-names steps. Here it wraps just one model, but the value is that <code>cross_val_score</code> now handles the fit/predict loop correctly on each fold.</p>
+  <div class="code-block"><pre><span class="cm"># make_pipeline auto-names steps instead of requiring ("name", step) tuples</span>
+pipeline = <span class="fn">make_pipeline</span>(<span class="fn">DecisionTreeClassifier</span>())
+cross_val_score(pipeline, X, y, cv=split)</pre></div>
+
+  <h3>Stage 2 — ColumnTransformer: Different Columns, Different Treatment</h3>
+  <p>The dataset has 3 categorical columns (<code>SEX</code>, <code>EDUCATION</code>, <code>MARRIAGE</code>) and many numerical ones. <code>make_column_transformer</code> applies different transformers to different columns and joins the outputs.</p>
+  <div class="code-block"><pre>cat_cols = [<span class="st">"SEX"</span>, <span class="st">"EDUCATION"</span>, <span class="st">"MARRIAGE"</span>]
+
+one_hot_processor = <span class="fn">make_column_transformer</span>(
+    (<span class="fn">OneHotEncoder</span>(sparse_output=<span class="kw">False</span>, handle_unknown=<span class="st">'ignore'</span>), cat_cols),
+    remainder=<span class="st">'passthrough'</span>   <span class="cm"># ← keep all other columns unchanged</span>
+)
+
+pipeline = <span class="fn">make_pipeline</span>(one_hot_processor, <span class="fn">DecisionTreeClassifier</span>())
+<span class="fn">cross_val_score</span>(pipeline, X, y, cv=split)</pre></div>
+
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">handle_unknown='ignore'</div><p>If the test set contains a category never seen during training (e.g. a new education level), encode it as all zeros instead of crashing. Essential for production robustness.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">remainder='passthrough'</div><p>Without this, every column NOT listed in the transformer is silently dropped. With it, unlisted columns pass through unchanged. Forgetting this is a very common bug.</p></div></div>
+  </div>
+
+  <h3>Stage 3 — Pipeline (Sequential): Scale → PCA</h3>
+  <p>The payment-related columns (<code>PAY_...</code>, <code>BILL_AMT...</code>, <code>PAY_AMT...</code>) are highly correlated. Scale them first, then reduce with PCA. <code>Pipeline</code> chains these steps in sequence.</p>
+  <div class="code-block"><pre><span class="cm"># Pipeline = sequential: output of step 1 becomes input of step 2</span>
+payment_transformer = <span class="fn">Pipeline</span>([
+    (<span class="st">"scaler"</span>, <span class="fn">MinMaxScaler</span>()),           <span class="cm"># step 1: scale to [0, 1]</span>
+    (<span class="st">"pca"</span>,    <span class="fn">PCA</span>(n_components=<span class="nu">0.8</span>))     <span class="cm"># step 2: keep 80% of variance</span>
+])
+
+<span class="cm"># n_components as a float → keep enough components to explain that fraction of variance</span>
+<span class="cm"># n_components=0.8 might keep 5 components instead of the original 15+</span></pre></div>
+  <div class="card"><div class="key-concept"><div class="label">n_components as a float</div><p>When you pass a float (0.0–1.0) to PCA, it automatically selects the minimum number of components needed to explain that proportion of variance. More principled than picking an arbitrary integer.</p></div></div>
+
+  <h3>Stage 4 — FeatureUnion: Create New Features in Parallel</h3>
+  <p>For <code>AGE</code> and <code>LIMIT_BAL</code>, create additional features by running two transformers on the same columns simultaneously and joining the outputs.</p>
+  <div class="code-block"><pre><span class="cm"># FeatureUnion = parallel: both transformers see the same input, outputs are joined</span>
+numerical_transformer = <span class="fn">FeatureUnion</span>([
+    (<span class="st">'log'</span>,        <span class="fn">FunctionTransformer</span>(np.log)),           <span class="cm"># log(AGE), log(LIMIT_BAL)</span>
+    (<span class="st">'polynomial'</span>, <span class="fn">PolynomialFeatures</span>(<span class="nu">2</span>,
+                       include_bias=<span class="kw">False</span>,
+                       interaction_only=<span class="kw">True</span>))              <span class="cm"># AGE, LIMIT_BAL, AGE×LIMIT_BAL</span>
+])
+
+numerical_transformer.<span class="fn">fit_transform</span>(X_train[[<span class="st">"AGE"</span>, <span class="st">"LIMIT_BAL"</span>]]).<span class="fn">shape</span>
+<span class="cm"># Output: (N, 5) — 2 log + 3 polynomial (a, b, a*b)</span></pre></div>
+
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">FunctionTransformer</div><p>Wraps any Python function as a transformer. Here np.log — gives the log of each feature. Useful when you know a transformation that linearises your data.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">PolynomialFeatures(interaction_only=True)</div><p>With 2 features a and b: produces a, b, a×b (not a², b²). The interaction term captures how the two features work together. include_bias=False omits the constant column.</p></div></div>
+  </div>
+
+  <h3>Stage 5 — Custom Transformer: Business Logic as a Transformer</h3>
+  <p>No built-in transformer can compute "is this user's unpaid bill above the average across all training users?" — so we build one. The rule: inherit from both <code>TransformerMixin</code> and <code>BaseEstimator</code>.</p>
+  <div class="code-block"><pre><span class="kw">class</span> <span class="fn">UnpaidTransformer</span>(TransformerMixin, BaseEstimator):
+
+    <span class="kw">def</span> <span class="fn">fit</span>(self, X, y=<span class="kw">None</span>):
+        <span class="cm"># Learn the average unpaid amount FROM training data only</span>
+        self.avg_unpaid_6 = (X[<span class="st">"BILL_AMT6"</span>] - X[<span class="st">"PAY_AMT6"</span>]).<span class="fn">mean</span>()
+        self.avg_unpaid_5 = (X[<span class="st">"BILL_AMT5"</span>] - X[<span class="st">"PAY_AMT5"</span>]).<span class="fn">mean</span>()
+        self.avg_unpaid_4 = (X[<span class="st">"BILL_AMT4"</span>] - X[<span class="st">"PAY_AMT4"</span>]).<span class="fn">mean</span>()
+        <span class="kw">return</span> self   <span class="cm"># ← always return self</span>
+
+    <span class="kw">def</span> <span class="fn">transform</span>(self, X, y=<span class="kw">None</span>):
+        <span class="cm"># Apply: is THIS user above or below the average learned in fit()?</span>
+        X_6 = (X[<span class="st">"BILL_AMT6"</span>] - X[<span class="st">"PAY_AMT6"</span>]) > self.avg_unpaid_6
+        X_5 = (X[<span class="st">"BILL_AMT5"</span>] - X[<span class="st">"PAY_AMT5"</span>]) > self.avg_unpaid_5
+        X_4 = (X[<span class="st">"BILL_AMT4"</span>] - X[<span class="st">"PAY_AMT4"</span>]) > self.avg_unpaid_4
+        <span class="kw">return</span> pd.<span class="fn">DataFrame</span>({
+            <span class="st">"Unpaid_ratio_6"</span>: X_6,
+            <span class="st">"Unpaid_ratio_5"</span>: X_5,
+            <span class="st">"Unpaid_ratio_4"</span>: X_4
+        })</pre></div>
+
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">TransformerMixin</div><p>Gives you .fit_transform() for free — it just calls .fit() then .transform(). You never need to implement it yourself.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">BaseEstimator</div><p>Gives you .get_params() and .set_params() for free. These are required by GridSearchCV to inspect and modify hyperparameters during search.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">The leakage rule</div><p>.fit() stores the training average as self.avg_unpaid_6. .transform() uses only that stored value — it never recomputes from the new data. Test data never influences the threshold.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Always return self from fit()</div><p>This enables method chaining: transformer.fit(X).transform(X). Without it, make_pipeline and cross_val_score will break silently.</p></div></div>
+  </div>
+
+  <h3>Stage 6 — Full ColumnTransformer: Everything in One Preprocessor</h3>
+  <p>Define which columns go to which transformer, then collect them all into a single <code>ColumnTransformer</code>.</p>
+  <div class="code-block"><pre>payment_cols = [col <span class="kw">for</span> col <span class="kw">in</span> X_train.columns
+                <span class="kw">if</span> col.<span class="fn">startswith</span>(<span class="st">"PAY_"</span>) <span class="kw">or</span> col.<span class="fn">startswith</span>(<span class="st">"BILL_"</span>)]
+num_cols     = [<span class="st">"AGE"</span>, <span class="st">"LIMIT_BAL"</span>]
+unpaid_cols  = [<span class="st">"PAY_AMT4"</span>, <span class="st">"PAY_AMT5"</span>, <span class="st">"PAY_AMT6"</span>,
+                <span class="st">"BILL_AMT4"</span>, <span class="st">"BILL_AMT5"</span>, <span class="st">"BILL_AMT6"</span>]
+cat_cols     = [<span class="st">"SEX"</span>, <span class="st">"EDUCATION"</span>, <span class="st">"MARRIAGE"</span>]
+
+preprocessor = <span class="fn">ColumnTransformer</span>([
+    (<span class="st">"payments"</span>,    payment_transformer,          payment_cols),  <span class="cm"># MinMaxScaler → PCA</span>
+    (<span class="st">"numerical"</span>,   numerical_transformer,         num_cols),      <span class="cm"># log + polynomial</span>
+    (<span class="st">"unpaid"</span>,      <span class="fn">UnpaidTransformer</span>(),            unpaid_cols),   <span class="cm"># custom transformer</span>
+    (<span class="st">"categorical"</span>, <span class="fn">OneHotEncoder</span>(),               cat_cols),      <span class="cm"># one-hot encode</span>
+])</pre></div>
+
+  <h3>Stage 7 — Reuse the Same Preprocessor with Different Models</h3>
+  <p>Because <code>preprocessor</code> is one object, you can plug it into any model pipeline. Compare Decision Tree vs Random Forest with identical preprocessing in a few lines:</p>
+  <div class="code-block"><pre>dtc = <span class="fn">make_pipeline</span>(preprocessor, <span class="fn">DecisionTreeClassifier</span>())
+rfc = <span class="fn">make_pipeline</span>(preprocessor, <span class="fn">RandomForestClassifier</span>())
+
+<span class="fn">print</span>(<span class="fn">cross_val_score</span>(dtc, X, y, cv=split))   <span class="cm"># e.g. [0.78]</span>
+<span class="fn">print</span>(<span class="fn">cross_val_score</span>(rfc, X, y, cv=split))   <span class="cm"># e.g. [0.82]</span></pre></div>
+  <div class="card"><div class="key-concept"><div class="label">Why this is powerful</div><p>The preprocessor is fitted independently on each fold's training data inside cross_val_score. Both models get a fair, leak-free evaluation with identical preprocessing — a like-for-like comparison.</p></div></div>
+
+  <h3>Stage 8 — GridSearch Over Preprocessing + Model Parameters Together</h3>
+  <p>Because the pipeline is one object, <code>GridSearchCV</code> can tune preprocessing hyperparameters (e.g. how many PCA components) at the same time as model hyperparameters. The naming uses <strong>double underscores</strong> to navigate nested steps.</p>
+  <div class="code-block"><pre><span class="cm"># Inspect what's inside the pipeline to get step names right</span>
+rfc.<span class="fn">named_steps</span>
+<span class="cm"># → {'columntransformer': ..., 'randomforestclassifier': ...}</span>
+<span class="cm"># PCA is at: columntransformer → payments (the inner Pipeline) → pca</span>
+
+params = {
+    <span class="cm"># Preprocessing param — how much variance to keep in PCA</span>
+    <span class="st">'columntransformer__payments__pca__n_components'</span>: [<span class="nu">0.5</span>, <span class="nu">0.98</span>],
+
+    <span class="cm"># Model params — depth and split threshold of the Random Forest</span>
+    <span class="st">'randomforestclassifier__max_depth'</span>:        [<span class="nu">5</span>, <span class="nu">30</span>],
+    <span class="st">'randomforestclassifier__min_samples_split'</span>: [<span class="nu">2</span>, <span class="nu">5</span>],
+}
+
+gcv = <span class="fn">GridSearchCV</span>(rfc, param_grid=params, n_jobs=<span class="nu">-1</span>, cv=split)
+gcv.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="fn">print</span>(gcv.best_params_)    <span class="cm"># best combination found</span>
+<span class="fn">print</span>(gcv.best_score_)     <span class="cm"># its CV accuracy</span>
+
+<span class="cm"># Apply best params back to the pipeline and refit on full training data</span>
+rfc.<span class="fn">set_params</span>(**gcv.best_params_)
+rfc.<span class="fn">fit</span>(X_train, y_train)</pre></div>
+
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <h4 style="margin-top:0; color:var(--accent)">The double-underscore naming rule</h4>
+    <p>To reference a param inside a pipeline: <code>stepname__paramname</code>. For nested pipelines, chain them: <code>outer_step__inner_step__param</code>. Use <code>pipeline.named_steps</code> or <code>pipeline.get_params()</code> to discover the exact names at any depth.</p>
+  </div>
+
+  <h3>Stage 9 — Save & Load with Pickle</h3>
+  <div class="code-block"><pre><span class="kw">import</span> pickle
+
+<span class="cm"># Save entire fitted pipeline — preprocessing params + model weights — all in one file</span>
+<span class="kw">with</span> <span class="fn">open</span>(<span class="st">"data/rf_model.pickle"</span>, <span class="st">"wb"</span>) <span class="kw">as</span> f:
+    pickle.<span class="fn">dump</span>(rfc, f)
+
+<span class="cm"># Load later — no need to refit, just predict</span>
+<span class="kw">with</span> <span class="fn">open</span>(<span class="st">"data/rf_model.pickle"</span>, <span class="st">"rb"</span>) <span class="kw">as</span> f:
+    rfc_loaded = pickle.<span class="fn">load</span>(f)
+
+<span class="fn">cross_val_score</span>(rfc_loaded, X, y, cv=split)   <span class="cm"># same score as before</span></pre></div>
+  <div class="alert alert-warn">⚠️ Pickle stores data, not library code. Load your model with a different version of sklearn or numpy and you may get errors — or silently wrong results. Always record library versions alongside saved models (requirements.txt or conda env export).</div>
+
+  <h3>Stage 10 — Reproducibility</h3>
+  <p>On small datasets, your CV score can change dramatically between runs depending on which rows land in train vs. test. A fixed random seed makes your results reproducible:</p>
+  <div class="code-block"><pre><span class="cm"># Without a fixed seed — different result every run</span>
+np.<span class="fn">random.seed</span>(); <span class="fn">print</span>(<span class="fn">cross_val_score</span>(rfc, X, y, cv=split))   <span class="cm"># e.g. [0.71]</span>
+np.<span class="fn">random.seed</span>(); <span class="fn">print</span>(<span class="fn">cross_val_score</span>(rfc, X, y, cv=split))   <span class="cm"># e.g. [0.45]</span>
+
+<span class="cm"># With a fixed seed — same result every run</span>
+np.<span class="fn">random.seed</span>(<span class="nu">1234</span>); <span class="fn">print</span>(<span class="fn">cross_val_score</span>(rfc, X, y, cv=split))  <span class="cm"># [0.63]</span>
+np.<span class="fn">random.seed</span>(<span class="nu">1234</span>); <span class="fn">print</span>(<span class="fn">cross_val_score</span>(rfc, X, y, cv=split))  <span class="cm"># [0.63] same</span></pre></div>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Use fixed seed when</div><p>Sharing results with others, writing a report, comparing two models — any time the exact number matters and needs to be reproducible.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Skip the seed when</div><p>Deliberately measuring how stable your model is. Run it 10 times without a seed and look at the spread. A large variance means your model is sensitive to which data it sees.</p></div></div>
+  </div>
+
+  <h3>The Full Picture</h3>
+  <table>
+    <tr><th>Tool</th><th>Role</th><th>Direction</th></tr>
+    <tr><td><code>Pipeline</code> / <code>make_pipeline</code></td><td>Chain steps in sequence</td><td>Sequential ↓</td></tr>
+    <tr><td><code>ColumnTransformer</code> / <code>make_column_transformer</code></td><td>Different transformers for different columns</td><td>Parallel →</td></tr>
+    <tr><td><code>FeatureUnion</code></td><td>Multiple transformers on the same data</td><td>Parallel →</td></tr>
+    <tr><td>Custom Transformer</td><td>Any logic not in sklearn — inherit TransformerMixin + BaseEstimator</td><td>Any</td></tr>
+    <tr><td><code>GridSearchCV</code> on Pipeline</td><td>Tune preprocessing + model params together with <code>step__param</code> notation</td><td>—</td></tr>
+    <tr><td><code>pickle</code></td><td>Persist entire fitted pipeline to disk</td><td>—</td></tr>
+  </table>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-pe2"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('pe2')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('pe1')">← Hierarchical Validation</button>
+    <button class="btn btn-outline" onclick="nav('pe3')">Feature Selection →</button>
+  </div>
+</div>
+
+<!-- PRAGMATIC MODEL EVALUATION — LESSON 3 -->
+<div class="page" id="page-pe3">
+  <h2>🎯 Feature Selection & Engineering</h2>
+  <p class="subtitle">Garbage in, garbage out. Learn three systematic approaches — correlation filtering, PCA, and Mutual Information — to identify features that actually help your model generalise.</p>
+
+  <div class="alert alert-info">💡 Feature selection and engineering are iterative. Train a model → analyse errors → improve features → retrain. Repeat.</div>
+
+  <h3>Why Feature Selection Matters</h3>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Too many features → problems</div><p>Noisy/irrelevant features add variance without reducing bias. Linear models are especially sensitive — correlated features cause multicollinearity, inflating coefficient estimates and making the model unstable.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Parsimonious models</div><p>The best model is the simplest one that achieves low error. Fewer features = faster training, easier interpretation, better generalisation. If a feature doesn't help predict y, it shouldn't be there.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Feature engineering</div><p>Creating new features from existing ones: log transforms, polynomial interactions, ratios, PCA components. Unlocks patterns that raw features can't express.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">The iterative loop</div><p>Get features → build model → optimise → analyse errors → improve features → rebuild. Feature work doesn't end after the first model.</p></div></div>
+  </div>
+
+  <h3>The Dataset: Boston Housing</h3>
+  <p>Predict <code>MEDV</code> — median house value in $1000s — from 13 neighbourhood features including crime rate, room count, distance to employment centres, air quality, and socioeconomic status.</p>
+  <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> seaborn <span class="kw">as</span> sns
+<span class="kw">from</span> scipy.stats <span class="kw">import</span> pearsonr
+
+df = pd.<span class="fn">read_csv</span>(<span class="st">"data/boston_housing.csv"</span>)
+<span class="cm"># Columns: CRIM, ZN, INDUS, CHAS, NOX, RM, AGE, DIS, RAD, TAX, PTRATIO, B, LSTAT, MEDV</span></pre></div>
+
+  <h3>Part 1 — Correlation Analysis</h3>
+
+  <h4>Step 1: Visual Inspection — Pairplot</h4>
+  <p>Before computing any numbers, look at the data. A pairplot shows scatter plots for every pair of features — instantly reveals linear trends, non-linear patterns, and outliers.</p>
+  <div class="code-block"><pre>sns.<span class="fn">pairplot</span>(df)
+<span class="cm"># Look for: diagonal linear trends (good for linear models)</span>
+<span class="cm"># Flat scatter clouds = no relationship with MEDV → candidate for removal</span></pre></div>
+
+  <h4>Step 2: Pearson Correlation</h4>
+  <p>Measures the strength and direction of a <strong>linear</strong> relationship. Ranges from −1 (perfect negative) to +1 (perfect positive). 0 = no linear relationship.</p>
+  <div class="code-block"><pre><span class="cm"># AGE vs house price</span>
+corAGE, p = <span class="fn">pearsonr</span>(df[<span class="st">"AGE"</span>], df[<span class="st">"MEDV"</span>])
+<span class="cm"># Result: ~-0.38 → weak negative — older neighbourhoods slightly cheaper</span>
+
+<span class="cm"># RM (rooms) vs house price</span>
+corRM, p = <span class="fn">pearsonr</span>(df[<span class="st">"RM"</span>], df[<span class="st">"MEDV"</span>])
+<span class="cm"># Result: ~+0.70 → strong positive — more rooms = higher price</span></pre></div>
+  <div class="card"><div class="key-concept"><div class="label">The p-value</div><p>The second return value tells you whether the correlation is statistically significant. p &lt; 0.05 means the relationship is unlikely to be random noise. A weak correlation with p &lt; 0.05 is real but small. A strong correlation with p &gt; 0.05 is suspicious — may be driven by a few outliers in a small sample.</p></div></div>
+
+  <h4>Step 3: Kendall Tau — More Robust Correlation</h4>
+  <p>Pearson assumes linearity and is sensitive to outliers. <strong>Kendall Tau</strong> is rank-based — it measures whether two variables tend to move in the same direction, without assuming the relationship is linear. Preferred for skewed or messy real-world data.</p>
+  <div class="code-block"><pre><span class="cm"># Compute full Kendall Tau correlation matrix</span>
+cor = df.<span class="fn">corr</span>(method=<span class="st">'kendall'</span>)
+
+<span class="cm"># Extract correlations with the target, take absolute values</span>
+cor_target = <span class="fn">abs</span>(cor[<span class="st">"MEDV"</span>])
+
+<span class="cm"># Keep only features with Kendall Tau > 0.45 with MEDV</span>
+relevant_features = cor_target[cor_target > <span class="nu">0.45</span>]
+<span class="fn">print</span>(relevant_features)
+<span class="cm"># Typically: LSTAT, RM, PTRATIO, INDUS, TAX, NOX</span></pre></div>
+
+  <h3>Part 2 — Programmatic Feature Filtering</h3>
+
+  <h4>keep_predictors — Drop Features Weakly Correlated with the Target</h4>
+  <p>Any feature with near-zero correlation to <code>MEDV</code> is noise. This function removes them automatically:</p>
+  <div class="code-block"><pre><span class="kw">from</span> copy <span class="kw">import</span> deepcopy
+
+<span class="kw">def</span> <span class="fn">keep_predictors</span>(df, targ, cor_thresh):
+    df_redu = <span class="fn">deepcopy</span>(df)    <span class="cm"># never modify the original DataFrame</span>
+
+    <span class="kw">for</span> col <span class="kw">in</span> df_redu.columns.<span class="fn">values</span>:
+        cor_r, _ = <span class="fn">pearsonr</span>(df_redu[col], targ)
+        <span class="kw">if</span> <span class="fn">abs</span>(cor_r) < <span class="fn">abs</span>(cor_thresh):
+            df_redu.<span class="fn">drop</span>([col], axis=<span class="nu">1</span>, inplace=<span class="kw">True</span>)
+
+    <span class="kw">return</span> df_redu
+
+targ = df[<span class="st">"MEDV"</span>]
+df_redu = <span class="fn">keep_predictors</span>(df, targ, cor_thresh=<span class="nu">0.03</span>)
+<span class="cm"># Any feature with |r| < 0.03 is dropped</span></pre></div>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Why abs()?</div><p>A strong negative correlation (−0.7) is just as predictive as a strong positive one (+0.7). We care about magnitude, not direction — abs() ensures both are kept.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Why deepcopy?</div><p>Python passes DataFrames by reference. Without deepcopy, dropping columns inside the function modifies your original df — a subtle, hard-to-debug bug.</p></div></div>
+  </div>
+
+  <h4>remove_correlated — Drop Redundant Inter-Correlated Features</h4>
+  <p>If two features are highly correlated with <em>each other</em> (e.g. <code>TAX</code> and <code>RAD</code> at r=0.91), they carry the same information. One is redundant. Keeping both hurts linear models through multicollinearity.</p>
+  <div class="code-block"><pre><span class="kw">def</span> <span class="fn">remove_correlated</span>(df, cor_thresh1):
+    df_minimal = <span class="fn">deepcopy</span>(df)
+
+    <span class="kw">for</span> i <span class="kw">in</span> df.columns.<span class="fn">values</span>:
+        <span class="kw">if</span> i <span class="kw">not in</span> df_minimal.columns:
+            <span class="kw">continue</span>    <span class="cm"># already dropped in a previous iteration</span>
+
+        i1 = <span class="fn">list</span>(df_minimal.columns).<span class="fn">index</span>(i)
+
+        <span class="kw">for</span> j <span class="kw">in</span> df_minimal.columns.<span class="fn">values</span>:
+            j1 = <span class="fn">list</span>(df_minimal.columns).<span class="fn">index</span>(j)
+
+            <span class="kw">if</span> j1 > i1:    <span class="cm"># upper triangle only — avoid checking each pair twice</span>
+                cor_r, _ = <span class="fn">pearsonr</span>(df_minimal.<span class="fn">iloc</span>[:, i1], df_minimal.<span class="fn">iloc</span>[:, j1])
+                <span class="kw">if</span> <span class="fn">abs</span>(cor_r) > <span class="fn">abs</span>(cor_thresh1):
+                    df_minimal.<span class="fn">drop</span>(columns=[j], inplace=<span class="kw">True</span>)
+
+    <span class="kw">return</span> df_minimal
+
+boston_minimal = <span class="fn">remove_correlated</span>(df, cor_thresh1=<span class="nu">0.8</span>)
+<span class="cm"># Drops one from every pair where |r| > 0.8</span></pre></div>
+  <div class="card"><div class="key-concept"><div class="label">The upper-triangle trick</div><p>Only check pairs where j1 &gt; i1. This avoids comparing each pair twice and comparing a feature with itself. Iterating the full matrix would double-drop or crash.</p></div></div>
+
+  <h3>Part 3 — PCA for Dimensionality Reduction</h3>
+
+  <h4>Why Normalise Before PCA?</h4>
+  <p>PCA finds directions of maximum <em>variance</em>. If <code>TAX</code> ranges in the hundreds and <code>CHAS</code> is binary (0/1), PCA is dominated by <code>TAX</code> simply because of its larger scale — not because it's more informative. Always standardise first.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+<span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA
+
+<span class="cm"># Drop target — we're reducing input features only</span>
+boston_x = df.<span class="fn">drop</span>(columns=[<span class="st">"MEDV"</span>])
+
+<span class="cm"># Standardise: each feature → mean=0, std=1</span>
+boston_scaled = <span class="fn">StandardScaler</span>().<span class="fn">fit_transform</span>(boston_x)
+
+<span class="cm"># Reduce to 5 principal components</span>
+pca = <span class="fn">PCA</span>(n_components=<span class="nu">5</span>)
+PCs = pca.<span class="fn">fit_transform</span>(boston_scaled)
+
+<span class="fn">print</span>(pca.explained_variance_ratio_)
+<span class="cm"># e.g. [0.47, 0.16, 0.11, 0.07, 0.05]</span>
+
+<span class="fn">print</span>(<span class="fn">sum</span>(pca.explained_variance_ratio_))
+<span class="cm"># e.g. 0.86 → 5 components capture 86% of total variance</span></pre></div>
+
+  <h4>Scree Plot — How Many Components Do You Need?</h4>
+  <p>Plot variance explained per component. Look for the <strong>elbow</strong> — the point where adding more components stops being worth it.</p>
+  <div class="code-block"><pre>PC_values = np.<span class="fn">arange</span>(pca.n_components_) + <span class="nu">1</span>
+
+plt.<span class="fn">plot</span>(PC_values, pca.explained_variance_ratio_, <span class="st">'ro-'</span>, linewidth=<span class="nu">2</span>)
+plt.<span class="fn">xlabel</span>(<span class="st">'Principal Component'</span>)
+plt.<span class="fn">ylabel</span>(<span class="st">'Proportion of Variance Explained'</span>)
+plt.<span class="fn">title</span>(<span class="st">'Scree Plot'</span>)
+<span class="cm"># PC1 explains ~47%, drops steeply → elbow around PC2–PC3</span></pre></div>
+  <div class="card"><div class="key-concept"><div class="label">The Pareto Principle in PCA</div><p>In most datasets, the first 20% of principal components explain 80%+ of the variance. You capture most of the signal with far fewer dimensions — this is the practical value of PCA.</p></div></div>
+
+  <h4>Bonus: Which Original Feature Dominates Each PC?</h4>
+  <div class="code-block"><pre>model = <span class="fn">PCA</span>(n_components=<span class="nu">5</span>).<span class="fn">fit</span>(boston_scaled)
+
+<span class="cm"># For each PC, find the original feature with the largest absolute loading</span>
+most_important = [np.<span class="fn">abs</span>(model.components_[i]).<span class="fn">argmax</span>() <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nu">5</span>)]
+most_important_names = [boston_x.columns[idx] <span class="kw">for</span> idx <span class="kw">in</span> most_important]
+
+dic = {<span class="fn">f</span><span class="st">'PC{i+1}'</span>: most_important_names[i] <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nu">5</span>)}
+<span class="fn">print</span>(pd.<span class="fn">DataFrame</span>(<span class="fn">sorted</span>(dic.<span class="fn">items</span>())))
+<span class="cm"># PC1: LSTAT  — socioeconomic status dominates the first direction of variance</span>
+<span class="cm"># PC2: CRIM   — crime rate is the next independent direction</span></pre></div>
+  <div class="alert alert-warn">⚠️ Recovering the most important original feature per PC is useful for interpretation, but it's not the point of PCA. The PCs are a new rotated basis — not a feature ranking. Use Mutual Information for that.</div>
+
+  <h3>Part 4 — Mutual Information</h3>
+  <h4>The Problem with Correlation</h4>
+  <p>Pearson and Kendall only detect <strong>monotonic</strong> relationships (as X goes up, Y tends to go up or down). A U-shaped, cyclic, or any other non-linear relationship gets a near-zero correlation score — even if it's a strong, real pattern.</p>
+  <p><strong>Mutual Information (MI)</strong> detects <em>any</em> statistical dependency — linear or not.</p>
+
+  <h4>The Concept</h4>
+  <p>MI measures: <em>how much does knowing X reduce uncertainty about Y?</em></p>
+  <div class="card">
+    <div class="code-block" style="margin:0"><pre>I(X;Y) = H(Y) − H(Y|X)
+
+H(Y)    = entropy of Y alone       → total uncertainty about Y
+H(Y|X)  = entropy of Y given X     → remaining uncertainty after knowing X
+MI      = reduction in uncertainty = how much X tells us about Y</pre></div>
+  </div>
+  <div class="card-grid" style="margin-top:14px">
+    <div class="card"><div class="key-concept"><div class="label">MI = 0</div><p>X tells you nothing about Y. They are statistically independent.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">MI &gt; 0</div><p>Knowing X reduces uncertainty about Y. The higher the value, the stronger the dependency — regardless of its shape.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Entropy</div><p>Average "surprise" in a variable. A coin flip (50/50) has high entropy. A coin that always lands heads has zero entropy — no surprise, no information.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">MI range</div><p>0 to ∞. Unlike correlation, there's no upper bound. Compare MI scores relatively — rank features by their MI with the target.</p></div></div>
+  </div>
+
+  <h4>Computing MI in sklearn</h4>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn.metrics <span class="kw">import</span> mutual_info_score
+<span class="kw">from</span> sklearn.feature_selection <span class="kw">import</span> mutual_info_regression
+
+<span class="cm"># Pairwise MI between two features</span>
+mi = <span class="fn">mutual_info_score</span>(df[<span class="st">"RM"</span>], df[<span class="st">"CRIM"</span>])
+<span class="cm"># mutual_info_score treats values as discrete categories</span>
+
+<span class="cm"># MI of all features against a continuous target</span>
+<span class="kw">def</span> <span class="fn">make_mi_scores</span>(X, y):
+    mi_scores = <span class="fn">mutual_info_regression</span>(X, y)   <span class="cm"># uses k-NN density estimation</span>
+    mi_scores = pd.<span class="fn">Series</span>(mi_scores, name=<span class="st">"MI Scores"</span>, index=X.columns)
+    <span class="kw">return</span> mi_scores.<span class="fn">sort_values</span>(ascending=<span class="kw">False</span>)
+
+mi_scores = <span class="fn">make_mi_scores</span>(df.<span class="fn">iloc</span>[:, :<span class="nu">-1</span>], df[<span class="st">"MEDV"</span>])
+<span class="fn">print</span>(mi_scores[:<span class="nu">5</span>])
+<span class="cm"># LSTAT      0.52  ← strongest dependency with house price</span>
+<span class="cm"># RM         0.43</span>
+<span class="cm"># NOX        0.32</span>
+<span class="cm"># INDUS      0.28</span>
+<span class="cm"># PTRATIO    0.24</span></pre></div>
+
+  <table>
+    <tr><th>Function</th><th>Use when</th><th>How it works</th></tr>
+    <tr><td><code>mutual_info_score</code></td><td>Both variables are discrete/categorical</td><td>Counts joint and marginal frequencies directly</td></tr>
+    <tr><td><code>mutual_info_regression</code></td><td>Target is continuous</td><td>Uses k-nearest neighbours to estimate probability densities</td></tr>
+    <tr><td><code>mutual_info_classif</code></td><td>Target is categorical (classification)</td><td>Same as regression variant but for class labels</td></tr>
+  </table>
+
+  <h3>The Three Methods Compared</h3>
+  <table>
+    <tr><th>Method</th><th>Detects</th><th>Outlier Sensitive</th><th>Best for</th></tr>
+    <tr><td><strong>Pearson r</strong></td><td>Linear relationships only</td><td>Yes</td><td>Normally distributed continuous data</td></tr>
+    <tr><td><strong>Kendall Tau</strong></td><td>Monotonic (rank-based)</td><td>No</td><td>Ordinal, skewed, or noisy data</td></tr>
+    <tr><td><strong>Mutual Information</strong></td><td>Any statistical dependency</td><td>No</td><td>Non-linear relationships, any data type</td></tr>
+  </table>
+
+  <h3>The Full Selection Workflow</h3>
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <p style="margin:0; font-size:0.88rem; line-height:1.9; color:var(--text-muted)">
+      <strong style="color:var(--accent)">Step 1</strong> — Visualise with pairplot → understand the data<br>
+      <strong style="color:var(--accent)">Step 2</strong> — Filter by target correlation (Pearson/Kendall) → drop features unrelated to y<br>
+      <strong style="color:var(--accent)">Step 3</strong> — Remove inter-correlated features → drop redundant pairs<br>
+      <strong style="color:var(--accent)">Step 4</strong> — Apply PCA (after scaling) → remove remaining linear dependencies<br>
+      <strong style="color:var(--accent)">Step 5</strong> — Rank remaining features by Mutual Information → catch non-linear signals<br>
+      <strong style="color:var(--accent)">Step 6</strong> — Train model → analyse errors → engineer new features → repeat
+    </p>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-pe3"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('pe3')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('pe2')">← Pipelines</button>
+    <button class="btn btn-outline" onclick="nav('pe4')">Model Optimisation →</button>
+  </div>
+</div>
+
+<div class="page" id="page-pe4">
+  <div class="lesson-header">
+    <div class="breadcrumb">Pragmatic Model Evaluation · L4</div>
+    <h1>⚙️ Model Optimisation</h1>
+    <p class="subtitle">Grid Search, Random Search, and Bayesian Optimisation — finding the best hyperparameters without exhaustive guessing</p>
+  </div>
+
+  <h2>What are Hyperparameters?</h2>
+  <p>Every machine learning model has two kinds of parameters:</p>
+  <ul>
+    <li><strong>Model parameters</strong> — learned automatically from data during training (e.g. the weights in a neural network, the split thresholds in a decision tree)</li>
+    <li><strong>Hyperparameters</strong> — set by <em>you</em> before training begins. The model never updates them. They control how the model learns, not what it learns.</li>
+  </ul>
+
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <p style="margin:0 0 8px"><strong>Common hyperparameter examples:</strong></p>
+    <table style="width:100%; font-size:0.85rem; border-collapse:collapse">
+      <tr style="border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:6px 10px; color:var(--text-muted)">Model</th>
+        <th style="text-align:left; padding:6px 10px; color:var(--text-muted)">Hyperparameter</th>
+        <th style="text-align:left; padding:6px 10px; color:var(--text-muted)">What it controls</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:6px 10px">Random Forest</td>
+        <td style="padding:6px 10px"><code>n_estimators</code></td>
+        <td style="padding:6px 10px">Number of trees to grow</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:6px 10px">Random Forest</td>
+        <td style="padding:6px 10px"><code>max_depth</code></td>
+        <td style="padding:6px 10px">Maximum depth each tree can grow to</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:6px 10px">Logistic Regression</td>
+        <td style="padding:6px 10px"><code>C</code></td>
+        <td style="padding:6px 10px">Regularisation strength (smaller = more regularisation)</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 10px">ExtraTrees</td>
+        <td style="padding:6px 10px"><code>min_samples_split</code></td>
+        <td style="padding:6px 10px">Min samples needed before a node can split again</td>
+      </tr>
+    </table>
+  </div>
+
+  <h3>Model Selection vs Model Optimisation</h3>
+  <p>These terms are often confused:</p>
+  <ul>
+    <li><strong>Model selection</strong> — choosing <em>which type of algorithm to use</em>. Should we use a Random Forest or Logistic Regression?</li>
+    <li><strong>Model optimisation</strong> — once you've picked an algorithm, finding the <em>best hyperparameter values</em> for it.</li>
+  </ul>
+  <p>Think of it as: selection = picking a car model, optimisation = tuning the engine settings for your specific driving conditions.</p>
+
+  <h2>Cross-Validation Recap</h2>
+  <p>Before we can optimise, we need a reliable way to <em>score</em> a model. That's where cross-validation comes in.</p>
+  <p>With <code>cv=5</code>, sklearn splits the data into 5 folds, trains on 4, tests on 1, and repeats 5 times. Each sample gets tested exactly once.</p>
+
+  <div class="code-block"><pre><code>from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import cross_val_score
+
+clf = RandomForestClassifier(n_estimators=100, max_depth=5)
+
+# Default scoring (accuracy for classifiers)
+scores = cross_val_score(clf, X, y, cv=5)
+print(f"{scores.mean():.3f} accuracy ± {scores.std():.3f}")
+
+# Custom scoring
+scores = cross_val_score(clf, X, y, cv=5, scoring='f1_macro')</code></pre></div>
+
+  <div class="callout callout-info">
+    <strong>Why report mean ± std?</strong> The mean tells you average performance. The std tells you how <em>stable</em> that performance is across folds. High std = the model behaves very differently depending on which samples it trains on — a warning sign.
+  </div>
+
+  <h2>Grid Search</h2>
+  <p>Grid Search is the simplest strategy: try <strong>every possible combination</strong> of the hyperparameter values you specify. It's exhaustive — it guarantees finding the best combination within your grid, but it's slow when the grid is large.</p>
+
+  <div class="code-block"><pre><code>from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
+
+# param_grid is a LIST of dicts — each dict is a separate search space
+# This lets different combinations have different sets of parameters
+param_grid = [
+    {'n_estimators': [10, 50, 100, 200], 'criterion': ['gini', 'entropy']},
+    {'n_estimators': [10, 50, 100, 200], 'max_depth': [3, 5, 7], 'criterion': ['gini']},
+]
+
+clf = GridSearchCV(RandomForestClassifier(), param_grid)
+clf.fit(X_train, y_train)
+
+print(clf.best_params_)                        # {'criterion': 'entropy', 'n_estimators': 100}
+print(clf.best_estimator_.score(X_test, y_test))  # score on held-out test set</code></pre></div>
+
+  <div class="card" style="border-left:3px solid #f59e0b">
+    <p style="margin:0 0 6px"><strong>⚠️ Why a list of dicts, not one dict?</strong></p>
+    <p style="margin:0; font-size:0.88rem; line-height:1.7; color:var(--text-muted)">When you specify <code>param_grid</code> as a <strong>list</strong>, each dict is evaluated independently. This prevents invalid combinations — for example, the second dict searches over <code>max_depth</code> only when <code>criterion='gini'</code>, because those parameters interact differently. A single flat dict would create all combinations including nonsensical ones.</p>
+  </div>
+
+  <h3>What Grid Search actually does:</h3>
+  <ul>
+    <li>Takes every combination of values from your grid</li>
+    <li>Trains a model on each combination using cross-validation</li>
+    <li>Stores the mean CV score for each combination in <code>clf.cv_results_</code></li>
+    <li>Exposes the winner as <code>clf.best_params_</code> and <code>clf.best_estimator_</code></li>
+  </ul>
+
+  <div class="callout callout-warning">
+    <strong>The curse of combinatorics:</strong> With 4 values for n_estimators × 2 criteria × 3 max_depths = 24 combinations. With 5-fold CV, that's 120 model fits. Add one more hyperparameter with 5 values → 600 fits. Grid Search scales badly with the number of hyperparameters.
+  </div>
+
+  <h2>Random Search</h2>
+  <p>Instead of exhaustively trying every combination, Random Search <strong>samples randomly</strong> from the hyperparameter distributions you define. You control the budget with <code>n_iter</code>.</p>
+
+  <div class="code-block"><pre><code>from sklearn.model_selection import RandomizedSearchCV
+from sklearn.linear_model import LogisticRegression
+import scipy.stats as st
+
+logistic = LogisticRegression(solver='saga', tol=1e-2, max_iter=200, random_state=0)
+
+# Mix of distributions and fixed lists
+distributions = dict(
+    C=st.loguniform(0.001, 100),     # Sample C on a log scale (0.001 → 100)
+    penalty=['l2', 'l1'],             # Discrete: pick from this list
+    fit_intercept=[True, False]       # Discrete: pick from this list
+)
+
+clf = RandomizedSearchCV(logistic, distributions, random_state=0, n_iter=500)
+clf.fit(X_train, y_train)
+print(clf.best_params_)</code></pre></div>
+
+  <h3>Investigating what values were actually sampled</h3>
+  <p>One of Random Search's advantages is you can inspect <em>which values it actually tried</em> — this reveals the shape of the search and can expose if a good region was found early:</p>
+
+  <div class="code-block"><pre><code">import pandas as pd
+import seaborn as sns
+
+# How often was each penalty type sampled?
+pd.Series([p['penalty'] for p in clf.cv_results_['params']]).value_counts()
+
+# Where in the C range did the search concentrate?
+sns.ecdfplot([p['C'] for p in clf.cv_results_['params']])</code></pre></div>
+
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <p style="margin:0 0 6px"><strong>Why loguniform for C?</strong></p>
+    <p style="margin:0; font-size:0.88rem; line-height:1.7; color:var(--text-muted)">The parameter C spans multiple orders of magnitude (0.001 to 100 is a 100,000× range). If you sample uniformly, almost all samples land in the upper end (near 100), ignoring the range 0.001–1 entirely. Log-uniform sampling ensures equal probability for each order of magnitude — e.g. 0.01–0.1, 0.1–1, 1–10 each get the same share of samples.</p>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>When Random beats Grid:</strong> Empirical research (Bergstra & Bengio, 2012) showed that for the same compute budget, Random Search finds better hyperparameters than Grid Search. Why? Because not all hyperparameters matter equally. Grid wastes budget on irrelevant combinations; random coverage of the important dimensions is denser.
+  </div>
+
+  <h2>Bayesian Optimisation</h2>
+  <p>Both Grid and Random Search are <strong>uninformed</strong> — each evaluation is independent. Bayesian Optimisation is <strong>smarter</strong>: it learns from every evaluation and uses that knowledge to decide <em>where to look next</em>.</p>
+
+  <h3>The key idea: Surrogate model</h3>
+  <p>Bayesian Optimisation maintains a <strong>surrogate model</strong> (usually a Gaussian Process) that approximates the true relationship between hyperparameter values and model performance. This surrogate is cheap to evaluate, unlike actually training a model.</p>
+
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <p style="margin:0 0 8px"><strong>How it works, step by step:</strong></p>
+    <ol style="margin:0; font-size:0.88rem; line-height:1.9; color:var(--text-muted); padding-left:20px">
+      <li><strong>Exploration phase</strong> (<code>init_points</code>) — Try <em>n</em> random points to bootstrap the surrogate with initial observations</li>
+      <li><strong>Fit surrogate</strong> — Gaussian Process is fitted to the observed (hyperparameters → score) pairs</li>
+      <li><strong>Acquisition function</strong> — Use the surrogate to decide the most promising next point to try (balancing exploration vs. exploitation)</li>
+      <li><strong>Evaluate</strong> — Actually train the model with those hyperparameters and record the score</li>
+      <li><strong>Update surrogate</strong> — Add the new observation and refit. Repeat from step 3 for <code>n_iter</code> more steps</li>
+    </ol>
+  </div>
+
+  <h3>Implementing Bayesian Optimisation with bayes_opt</h3>
+  <p>The <code>bayesian-optimization</code> library requires your objective function to take hyperparameter values as arguments and return a score to <strong>maximise</strong>:</p>
+
+  <div class="code-block"><pre><code>from bayes_opt import BayesianOptimization
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.model_selection import cross_val_score
+
+# Step 1: Wrap the model in a scoring function
+# - Takes hyperparameter values as keyword arguments
+# - Returns the score to MAXIMISE (higher = better)
+def etrees_crossval(n_estimators, max_features, min_samples_split, min_samples_leaf, max_samples):
+    etrees = ExtraTreesClassifier(
+        n_estimators=int(n_estimators),      # Must cast — bayes_opt passes floats
+        max_features=int(max_features),
+        min_samples_split=int(min_samples_split),
+        min_samples_leaf=int(min_samples_leaf),
+        max_samples=float(max_samples),
+        bootstrap=True,
+        n_jobs=-1
+    )
+    return cross_val_score(etrees, X_train, y_train, cv=5, n_jobs=-1).mean()
+
+
+# Step 2: Define the search space (continuous bounds for each parameter)
+optimizer = BayesianOptimization(
+    f=etrees_crossval,
+    pbounds={
+        'n_estimators':     (25, 500),
+        'max_features':     (1, 4),
+        'min_samples_split':(2, 30),
+        'min_samples_leaf': (1, 14),
+        'max_samples':      (0.6, 0.99)
+    },
+    random_state=1234,
+    verbose=2       # Prints each evaluation: iteration, params, score
+)
+
+# Step 3: Run optimisation
+optimizer.maximize(
+    init_points=5,  # Random exploration phase — builds initial surrogate
+    n_iter=3        # Guided phase — uses surrogate to find best next points
+)
+
+# Step 4: Retrieve the best result
+print('Best result:', optimizer.max)
+# {'target': 0.967, 'params': {'max_features': 3.1, 'min_samples_leaf': 1.0, ...}}</code></pre></div>
+
+  <div class="callout callout-info">
+    <strong>Why cast to int?</strong> <code>bayes_opt</code> treats all parameters as continuous floats internally (Gaussian Processes work in continuous space). If your model needs an integer (like <code>n_estimators=100</code>, not <code>100.7</code>), you must cast with <code>int()</code> inside the wrapper function.
+  </div>
+
+  <h3>Exploration vs Exploitation</h3>
+  <p>The acquisition function faces a trade-off:</p>
+  <ul>
+    <li><strong>Exploitation</strong> — go straight to the region the surrogate thinks is best. Efficient, but can get stuck in a local optimum.</li>
+    <li><strong>Exploration</strong> — try regions with high uncertainty, even if the surrogate doesn't predict they're great. Helps find global optima.</li>
+  </ul>
+  <p>The acquisition function automatically balances both. With more <code>init_points</code>, you give the surrogate more initial coverage of the space before the guided phase begins.</p>
+
+  <h2>Comparison: All Three Methods</h2>
+
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.83rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:10px 12px; color:var(--text-muted)">Method</th>
+        <th style="text-align:left; padding:10px 12px; color:var(--text-muted)">Strategy</th>
+        <th style="text-align:left; padding:10px 12px; color:var(--text-muted)">Best when</th>
+        <th style="text-align:left; padding:10px 12px; color:var(--text-muted)">Downside</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:10px 12px"><strong>Grid Search</strong></td>
+        <td style="padding:10px 12px">Try all combinations</td>
+        <td style="padding:10px 12px">Small grid, few params, compute is cheap</td>
+        <td style="padding:10px 12px">Exponential scaling — unusable with many params</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:10px 12px"><strong>Random Search</strong></td>
+        <td style="padding:10px 12px">Sample randomly from distributions</td>
+        <td style="padding:10px 12px">Many params, limited budget — better coverage per eval</td>
+        <td style="padding:10px 12px">Doesn't learn from previous evals — each trial is independent</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 12px"><strong>Bayesian</strong></td>
+        <td style="padding:10px 12px">Guided search using surrogate model</td>
+        <td style="padding:10px 12px">Expensive evaluations, continuous params, limited budget</td>
+        <td style="padding:10px 12px">More complex setup, surrogate overhead, needs good init_points</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Test set discipline:</strong> When using any of these methods, you must <em>not</em> evaluate the final model on your test set during the search — that's exactly what CV is for. The test set is used once, at the very end, to estimate real-world performance of the winner.
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-pe4"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('pe4')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('pe3')">← Feature Selection</button>
+    <button class="btn btn-outline" onclick="nav('quiz')">Practice All Topics</button>
   </div>
 </div>
 
@@ -4465,7 +5195,10 @@ const TOPICS = {
   en2: 'Ensemble L2: Boosting & AdaBoost',
   en3: 'Ensemble L3: Stacking',
   en4: 'Ensemble L4: Gradient Boosting',
-  pe1: 'PME L1: Hierarchical Validation'
+  pe1: 'PME L1: Hierarchical Validation',
+  pe2: 'PME L2: Pipelines & Preprocessing',
+  pe3: 'PME L3: Feature Selection',
+  pe4: 'PME L4: Model Optimisation'
 };
 
 const ALL_QUESTIONS = [
@@ -4679,6 +5412,32 @@ const ALL_QUESTIONS = [
   {t:'pe1', q:'Why must GroupKFold be used inside hyperparameter search (e.g. RandomizedSearchCV) when working with hierarchical data?', opts:['To speed up training by reducing the number of folds','Without group-aware CV, the same group can appear in both the train-fold and validation-fold of each iteration — making every hyperparameter evaluation optimistically biased','To reduce memory usage during grid search','To allow parallel processing across folds'], ans:1, exp:'Even inside the hyperparameter search loop, plain K-Fold splits at the row level. In hierarchical data, a group\'s rows can leak across folds — the validation fold sees patterns from groups that trained the model in the same fold. GroupKFold guarantees each fold contains entirely different groups.'},
   {t:'pe1', q:'When a model is trained on hierarchical data with a leaky (random) split, what type of features does it tend to over-rely on?', opts:['Features that are unique to individual rows, like timestamps','Group-level features — because the same groups appear in both train and test, the model memorises group identity through these features instead of learning genuinely predictive patterns','Only continuous numerical features','Features with the highest Pearson correlation to the target'], ans:1, exp:'Group-level features (e.g. features that are constant across all rows in the same group) allow the model to effectively memorise which group a row belongs to. If that group is also in the test set, the model exploits this shortcut. A properly grouped split removes this opportunity, forcing the model to learn features that generalise across groups.'},
   {t:'pe1', q:'What is log loss and why is it a stricter evaluation metric than accuracy?', opts:['It measures the number of wrong predictions only','It is the same as accuracy but bounded differently','It penalises confident wrong predictions heavily — a 90% confident wrong answer is punished far more than a 51% confident wrong answer','It only works for binary classification'], ans:2, exp:'Log loss = −[y·log(p) + (1−y)·log(1−p)]. Accuracy only checks if the label is correct. Log loss checks the probability: a model that says 90% and is wrong gets a penalty of −log(0.1) ≈ 2.3, while one that says 51% and is wrong gets −log(0.49) ≈ 0.71. Rewards calibrated, honest probabilities.'},
+
+  // PME L2 — Pipelines & Preprocessing
+  {t:'pe2', q:'What is the critical benefit of wrapping preprocessing inside a sklearn Pipeline when using cross_val_score?', opts:['It makes the code run faster','Preprocessing is fitted only on each fold\'s training data — test folds never influence the transformer\'s parameters, preventing data leakage','It automatically selects the best preprocessing steps','It allows you to skip the train_test_split step'], ans:1, exp:'When preprocessing is inside a Pipeline, cross_val_score calls pipeline.fit() on each training fold only. The scaler, encoder, and any other transformer learn their parameters from training data alone. The test fold is transformed using those parameters but never contributes to learning them.'},
+  {t:'pe2', q:'What does remainder="passthrough" do in ColumnTransformer?', opts:['It removes all columns not explicitly listed','It raises an error for unlisted columns','It passes all columns not explicitly listed through unchanged, so they are not dropped','It applies StandardScaler to the remaining columns automatically'], ans:2, exp:'By default, ColumnTransformer drops any column not listed in a transformer tuple. remainder="passthrough" overrides this — unlisted columns are kept as-is and joined with the transformed columns. Forgetting this silently drops all your numerical features.'},
+  {t:'pe2', q:'What is the difference between Pipeline and FeatureUnion?', opts:['Pipeline is for classification, FeatureUnion is for regression','Pipeline chains steps sequentially (output of step 1 → input of step 2); FeatureUnion applies steps in parallel to the same data and joins the outputs horizontally','Pipeline handles numerical data, FeatureUnion handles categorical','They are identical — just different names for the same thing'], ans:1, exp:'Pipeline = sequential. Each transformer sees the output of the previous one. FeatureUnion = parallel. Every transformer sees the same input, and their outputs are concatenated. Use Pipeline when steps depend on each other (scale then PCA); use FeatureUnion when you want to create multiple feature sets from the same data.'},
+  {t:'pe2', q:'How do you reference a hyperparameter nested inside a Pipeline inside a ColumnTransformer in GridSearchCV?', opts:['Use a list index: params[0][1]["n_components"]','Use dot notation: columntransformer.payments.pca.n_components','Use double-underscore chaining: columntransformer__payments__pca__n_components','Use get_params() to extract it first, then pass it directly'], ans:2, exp:'GridSearchCV uses double-underscore notation to navigate nested pipeline steps. The pattern is: outer_step__inner_step__parameter. Use pipeline.named_steps or pipeline.get_params() to discover the exact step names at each level before constructing the param grid.'},
+  {t:'pe2', q:'What are the two rules for a valid custom sklearn Transformer?', opts:['It must inherit from Model and Predictor','It must implement .predict() and .score()','It must inherit from TransformerMixin and BaseEstimator, implement .fit() that returns self, and implement .transform()','It must be registered with sklearn before use'], ans:2, exp:'TransformerMixin gives you .fit_transform() for free. BaseEstimator gives you .get_params() and .set_params() — required by GridSearchCV. .fit() must store learned parameters as instance attributes and return self. .transform() uses only those stored attributes — never the new data\'s statistics.'},
+  {t:'pe2', q:'What is the main risk of saving a sklearn pipeline with pickle?', opts:['The file size is always too large','Pickle does not save library code — loading the model with a different version of sklearn or numpy may cause errors or silently wrong results','Pickle compresses the model and loses precision','The model can only be loaded on the same machine it was saved on'], ans:1, exp:'Pickle serialises the Python object but assumes the same library code exists at load time. A different sklearn version may have changed internal class attributes, causing an error or loading a partially correct model. Always record library versions (requirements.txt, conda env export) alongside saved pickle files.'},
+  {t:'pe2', q:'When does passing n_components as a float (e.g. 0.8) to PCA differ from passing an integer?', opts:['A float sets the random seed for PCA','A float (0.0–1.0) tells PCA to automatically select the minimum number of components needed to explain that proportion of variance; an integer fixes the exact number of components','A float applies PCA iteratively; an integer applies it once','There is no difference — sklearn converts the float to an integer internally'], ans:1, exp:'PCA(n_components=0.8) selects however many components are needed to explain 80% of the variance — this adapts to the data. PCA(n_components=3) always keeps exactly 3 components regardless of how much variance they explain. The float form is more principled for exploratory pipelines.'},
+
+  // PME L3 — Feature Selection
+  {t:'pe3', q:'Why must data be standardised before applying PCA?', opts:['PCA requires integer inputs','PCA finds directions of maximum variance — features with larger numeric scales dominate simply due to magnitude, not information content. Standardising puts all features on equal footing.','StandardScaler is always required before any sklearn operation','PCA cannot handle negative values without scaling first'], ans:1, exp:'PCA maximises variance. A feature with values in the hundreds naturally has more variance than a binary feature — not because it\'s more informative, but because of scale. StandardScaler transforms each feature to mean=0 and std=1, so PCA responds to information, not magnitude.'},
+  {t:'pe3', q:'What is the key difference between Pearson correlation and Mutual Information for feature selection?', opts:['Pearson is faster to compute; MI is more accurate','Pearson measures only linear relationships — it misses non-linear patterns. Mutual Information detects any statistical dependency regardless of the relationship\'s shape.','Pearson works on continuous data; MI only works on categorical data','They are mathematically equivalent — just different implementations'], ans:1, exp:'Pearson r = 0 means no linear relationship, but strong non-linear relationships (U-shaped, cyclic) can also give r ≈ 0. MI = 0 means genuine independence. A feature with high MI but low Pearson correlation has a real non-linear relationship with the target — Pearson alone would miss it.'},
+  {t:'pe3', q:'What does the scree plot help you decide in PCA?', opts:['Which original features are most important','The optimal number of principal components to retain — you look for the elbow where adding more components gives diminishing returns in explained variance','Whether to use PCA or another dimensionality reduction method','How to set the StandardScaler parameters'], ans:1, exp:'The scree plot shows explained variance per component. The elbow is the inflection point — before it, each component adds meaningful variance; after it, components add noise. Choosing k at the elbow balances dimensionality reduction with preserving information.'},
+  {t:'pe3', q:'Why should you use abs() when filtering features by correlation with a target?', opts:['To avoid Python errors when computing correlations','A strong negative correlation (−0.7) is just as predictive as a strong positive one (+0.7). Without abs(), you would keep useless positive-correlated features and drop useful negative-correlated ones.','abs() is required by the pearsonr function','To handle missing values in the correlation calculation'], ans:1, exp:'Predictive power comes from the magnitude of the correlation, not its sign. A feature that decreases as the target increases (negative correlation) is just as informative as one that increases together with it. abs() ensures both are evaluated equally.'},
+  {t:'pe3', q:'When would you prefer Kendall Tau over Pearson correlation?', opts:['When you have more than 100 features','When data has outliers or non-normal distributions — Kendall is rank-based and robust to both, while Pearson assumes normally distributed, outlier-free data','When working with categorical variables only','Kendall is always preferred — Pearson is outdated'], ans:1, exp:'Pearson correlation is sensitive to outliers (one extreme point can dominate the coefficient) and assumes the relationship is approximately linear and data is normally distributed. Kendall Tau only uses the rank order of values, making it robust to outliers and suitable for skewed or ordinal data.'},
+  {t:'pe3', q:'What is the purpose of the remove_correlated function when preparing features for a linear model?', opts:['It removes features that are correlated with the target','It drops one feature from each pair of highly inter-correlated features — keeping both provides no extra information but adds multicollinearity, which destabilises linear model coefficients','It applies PCA to correlated feature groups','It removes outliers from the dataset'], ans:1, exp:'When two features are highly correlated with each other (not with the target), they carry the same information. In linear models, this causes multicollinearity — the model can\'t determine which feature to credit, leading to unstable, high-variance coefficients. Removing one from each redundant pair resolves this.'},
+  {t:'pe3', q:'Which sklearn function should you use to rank features by their relationship with a continuous target, including non-linear dependencies?', opts:['pearsonr from scipy.stats','df.corr(method="kendall")','mutual_info_regression from sklearn.feature_selection — it estimates MI using k-nearest neighbours and works with continuous targets','mutual_info_score from sklearn.metrics'], ans:2, exp:'mutual_info_regression is designed for continuous targets. It estimates mutual information using k-nearest neighbours to approximate the probability density — no linearity assumption. mutual_info_score treats values as discrete categories, which is wrong for continuous data. pearsonr and df.corr only detect monotonic/linear relationships.'},
+  // PME L4 — Model Optimisation
+  {t:'pe4', q:'What is the fundamental difference between a model parameter and a hyperparameter?', opts:['Parameters are more important than hyperparameters','Model parameters are learned automatically from data during training; hyperparameters are set by the practitioner before training begins and are never updated by the learning algorithm','Hyperparameters are only used in neural networks','Parameters apply to the training set; hyperparameters apply to the test set'], ans:1, exp:'Model parameters (e.g. tree split thresholds, logistic regression weights) are adjusted by the training algorithm to minimise loss. Hyperparameters (e.g. max_depth, C, n_estimators) sit outside the learning process — they control how learning happens, but the algorithm never changes them. You must set them externally.'},
+  {t:'pe4', q:'Why does reporting cross-validation score as mean ± standard deviation give more information than the mean alone?', opts:['Standard deviation lets you compute confidence intervals, which are required by sklearn','The standard deviation measures variance across folds — high std warns that the model performs very differently depending on which samples it trains on, signalling instability or high variance','The standard deviation is required to compare models — you cannot compare means directly','Standard deviation is used to normalise the scores so they are comparable across datasets'], ans:1, exp:'The mean estimates average performance. The standard deviation across folds tells you how stable that performance is. A model with mean=0.90, std=0.01 is reliable. A model with mean=0.90, std=0.12 is erratic — it gets lucky on some folds and fails on others. Stability is as important as raw accuracy.'},
+  {t:'pe4', q:'Grid Search uses a list of dicts for param_grid rather than a single dict. What advantage does this provide?', opts:['A list is faster to process than a dict','Each dict in the list defines an independent search space — this prevents invalid hyperparameter combinations and lets different parameter sets apply to different model configurations','A single dict would crash GridSearchCV','Lists allow GridSearchCV to run in parallel; dicts run sequentially'], ans:1, exp:'A single flat dict creates the Cartesian product of all values — including combinations that are irrelevant or contradictory. A list of dicts lets you define separate grids that are searched independently. For example, you can explore max_depth only in combination with criterion=\'gini\', not with entropy, because those parameters interact differently.'},
+  {t:'pe4', q:'Why does Random Search often outperform Grid Search for the same compute budget?', opts:['Random Search is inherently more accurate than Grid Search','Not all hyperparameters have equal impact on performance. Random Search provides denser coverage of the important dimensions rather than wasting evaluations on a rigid grid that may miss the best regions','Grid Search has a bug in older sklearn versions','Random Search uses GPU acceleration which Grid Search does not'], ans:1, exp:'In high-dimensional hyperparameter spaces, most performance variation comes from a small subset of parameters. Grid Search allocates equal budget across all dimensions, wasting evaluations on unimportant ones. Random Search, by sampling independently per parameter, achieves better coverage of the dimensions that actually matter. Bergstra & Bengio (2012) showed this formally.'},
+  {t:'pe4', q:'Why should you use a log-uniform distribution (loguniform) rather than a uniform distribution when searching over regularisation parameters like C?', opts:['Log-uniform is required by RandomizedSearchCV — uniform distributions are not accepted','Regularisation parameters span multiple orders of magnitude (e.g. 0.001 to 100). Uniform sampling concentrates almost all evaluations at the high end, ignoring the small-value range. Log-uniform gives equal probability to each order of magnitude.','Log-uniform produces integer values; uniform produces floats','Uniform distributions always produce values outside the valid range'], ans:1, exp:'The range 0.001 to 100 spans 5 orders of magnitude. If you sample uniformly, ~99% of samples land above 1, and the 0.001–1 range (often where strong regularisation effects occur) is almost never explored. Log-uniform sampling on (a, b) means equal probability for a–10a, 10a–100a, etc. Each decade of the range gets proportional representation.'},
+  {t:'pe4', q:'What role does the surrogate model play in Bayesian Optimisation?', opts:['It replaces cross-validation to make evaluation faster','A Gaussian Process (or similar model) is fitted to all previous (hyperparameters → score) observations. Because it is cheap to evaluate, the acquisition function uses it to predict which untried region is most promising — guiding the next evaluation without training the actual model there first.','It randomly selects the next set of hyperparameters to try','It is an ensemble of all models trained so far, used as the final predictor'], ans:1, exp:'Training a machine learning model is expensive. Bayesian Optimisation builds a surrogate (typically a Gaussian Process) that approximates the hyperparameter landscape cheaply. The acquisition function evaluates thousands of candidates on the surrogate in milliseconds to pick the most promising next point. Only the winner is then evaluated by actually training the real model.'},
+  {t:'pe4', q:'In a Bayesian Optimisation wrapper function, why must you cast float parameters to int before passing them to the model?', opts:['Python will raise a TypeError if you pass floats to sklearn','Bayesian Optimisation internally treats all parameters as continuous real numbers (Gaussian Processes work in continuous space). Integer parameters like n_estimators must be cast inside the wrapper — the optimiser never produces exact integers even within integer-valued bounds.','The int() cast improves the cross-validation score','Casting to int disables bootstrapping, which is needed for ExtraTrees'], ans:1, exp:'Gaussian Processes operate in continuous space — they produce floats like 47.3 or 102.8 even for parameters you intend to be integers. If you pass n_estimators=47.3 to sklearn, it raises an error. The wrapper function is the correct place to cast: int(n_estimators) converts 47.3 → 47 before the model sees it. This is a standard pattern in bayes_opt usage.'}
 ];
 
 const FLASHCARDS = [
@@ -4875,6 +5634,41 @@ const FLASHCARDS = [
   {t:'pe1', front:'What is log loss and why was it used as the refit metric?', back:'Log loss = −[y·log(p) + (1−y)·log(1−p)]. It penalises confident wrong predictions heavily. Used as refit metric because it rewards calibrated probabilities — not just correct labels — and exposes overconfident leaky models.'},
   {t:'pe1', front:'What is the correct way to create a holdout set from hierarchical data?', back:'Split by group ID, not by row. Use rng.choice() on the unique group IDs to select holdout groups, then filter df by those IDs. This ensures entire groups are invisible — simulating deployment on new, unseen entities.'},
   {t:'pe1', front:'Name three real-world domains where hierarchical data validation applies.', back:'1. Medical: multiple measurements per patient\n2. Finance: multiple transactions per customer\n3. NLP: multiple sentences per document or author\n4. Time series: multiple timestamps per entity\nIn all cases, split by the group, not the row.'},
+
+  // PME L2 — Pipelines & Preprocessing
+  {t:'pe2', front:'Why put preprocessing inside a Pipeline rather than doing it before splitting?', back:'When preprocessing is inside a Pipeline, cross_val_score fits the transformer only on each fold\'s training data. The test fold is transformed using those parameters but never influences them — preventing data leakage.'},
+  {t:'pe2', front:'What does ColumnTransformer do?', back:'Applies different transformers to different columns in parallel, then joins all outputs into one matrix. Use it when some columns need scaling and others need one-hot encoding.'},
+  {t:'pe2', front:'What does remainder="passthrough" do in ColumnTransformer?', back:'Keeps all columns not explicitly listed unchanged. Without it, unlisted columns are silently dropped — a very common and hard-to-spot bug.'},
+  {t:'pe2', front:'Pipeline vs FeatureUnion — key difference?', back:'Pipeline = sequential (step 1 output → step 2 input).\nFeatureUnion = parallel (all transformers see the same input, outputs joined horizontally).\nUse Pipeline when steps depend on each other; FeatureUnion to create multiple feature sets from the same data.'},
+  {t:'pe2', front:'What two classes must a custom sklearn transformer inherit from?', back:'TransformerMixin — gives .fit_transform() for free.\nBaseEstimator — gives .get_params() and .set_params() for free (required by GridSearchCV).'},
+  {t:'pe2', front:'Two rules for implementing .fit() in a custom transformer?', back:'1. Store everything learned as instance attributes (self.mean_, self.threshold_, etc.)\n2. Always return self — enables method chaining and is required by sklearn internals.'},
+  {t:'pe2', front:'How do you reference a nested pipeline parameter in GridSearchCV?', back:'Use double-underscore chaining: outer_step__inner_step__param\nExample: columntransformer__payments__pca__n_components\nUse pipeline.named_steps or pipeline.get_params() to discover exact names.'},
+  {t:'pe2', front:'What is the main risk of saving a model with pickle?', back:'Pickle stores data but not library code. Loading with a different sklearn/numpy version may cause errors or silently wrong results. Always record library versions (requirements.txt) alongside saved models.'},
+  {t:'pe2', front:'What does PCA(n_components=0.8) do vs PCA(n_components=3)?', back:'Float: automatically selects the minimum components needed to explain 80% of variance — adapts to the data.\nInteger: always keeps exactly 3 components regardless of explained variance.'},
+  {t:'pe2', front:'What does handle_unknown="ignore" do in OneHotEncoder?', back:'If a category appears in test data that was not seen during training, encode it as all zeros instead of raising an error. Essential for production robustness where new categories can appear.'},
+
+  // PME L3 — Feature Selection
+  {t:'pe3', front:'Why standardise before PCA?', back:'PCA maximises variance. Features with larger numeric scales dominate simply due to magnitude, not information. StandardScaler (mean=0, std=1) puts all features on equal footing so PCA responds to signal, not scale.'},
+  {t:'pe3', front:'Pearson vs Kendall Tau — key difference?', back:'Pearson: measures linear relationships, sensitive to outliers, assumes normality.\nKendall Tau: rank-based, detects monotonic relationships, robust to outliers and skewed data. Prefer Kendall when data is noisy or non-normal.'},
+  {t:'pe3', front:'What does Mutual Information measure?', back:'How much knowing X reduces uncertainty about Y. MI = H(Y) − H(Y|X). MI=0 means independence. MI>0 means a dependency exists — linear or non-linear. No upper bound — use it to rank features relatively.'},
+  {t:'pe3', front:'Pearson vs Mutual Information for feature selection?', back:'Pearson only detects linear/monotonic relationships — misses non-linear patterns (U-shaped, cyclic). Mutual Information detects any statistical dependency. A feature with r≈0 but high MI has a real non-linear relationship with the target.'},
+  {t:'pe3', front:'What is the scree plot and what does it tell you?', back:'A plot of explained variance ratio vs principal component number. Look for the elbow — the inflection point where adding more PCs gives diminishing returns. Choose k components at or just before the elbow.'},
+  {t:'pe3', front:'Why use abs() when filtering features by target correlation?', back:'Predictive power comes from magnitude, not direction. A feature with r=−0.7 is just as useful as r=+0.7. Without abs(), you keep useless near-zero positive correlations and drop useful negative ones.'},
+  {t:'pe3', front:'What is multicollinearity and why does it matter?', back:'When two input features are highly correlated with each other (not with target). In linear models, this causes unstable coefficient estimates — the model can\'t determine which feature to credit. Fix: remove one from each highly correlated pair.'},
+  {t:'pe3', front:'mutual_info_score vs mutual_info_regression — when to use each?', back:'mutual_info_score: both variables are discrete/categorical — counts joint frequencies directly.\nmutual_info_regression: target is continuous — uses k-NN density estimation. Using score on continuous data gives wrong results.'},
+  {t:'pe3', front:'Why use deepcopy when writing feature selection functions?', back:'Python passes DataFrames by reference. Without deepcopy, dropping columns inside a function modifies the original df permanently — a silent, hard-to-debug bug. deepcopy creates a fully independent copy.'},
+  {t:'pe3', front:'What is the upper-triangle trick in remove_correlated?', back:'Only check pairs where column j comes after column i (j1 > i1). This avoids checking each pair twice and comparing a feature with itself — both would cause incorrect drops or crashes.'},
+  // PME L4 — Model Optimisation
+  {t:'pe4', front:'Model parameters vs hyperparameters — key difference?', back:'Model parameters: learned automatically from data during training (e.g. decision tree split thresholds, logistic regression weights).\nHyperparameters: set by you before training. The algorithm never changes them. They control HOW the model learns, not WHAT it learns.'},
+  {t:'pe4', front:'What does cv=5 do in cross_val_score?', back:'Splits data into 5 folds. Trains on 4 folds, tests on 1. Repeats 5 times so every sample is tested exactly once. Returns an array of 5 scores — report mean ± std for a full picture of performance and stability.'},
+  {t:'pe4', front:'Why report cv score as mean ± std, not just mean?', back:'Mean = average performance. Std = stability across folds. High std means the model performs very differently depending on which samples it trains on — a sign of high variance or sensitivity to training data composition.'},
+  {t:'pe4', front:'Grid Search — what does best_estimator_ give you?', back:'The actual trained model fitted with the best hyperparameters found. You can call .score() or .predict() on it directly. best_params_ gives you just the dict of winning parameters if you want to retrain yourself.'},
+  {t:'pe4', front:'Why use a list of dicts for param_grid in GridSearchCV?', back:'Each dict in the list is an independent search space, explored separately. Prevents invalid combinations — e.g. you can specify max_depth only when criterion=\'gini\' if those interact. A single flat dict creates all combinations indiscriminately.'},
+  {t:'pe4', front:'Why does Random Search outperform Grid Search at same budget?', back:'Not all hyperparameters matter equally. Grid Search wastes evaluations distributing budget evenly across all dimensions including unimportant ones. Random Search achieves denser coverage of the dimensions that actually drive performance variation (Bergstra & Bengio, 2012).'},
+  {t:'pe4', front:'Why use loguniform instead of uniform for regularisation parameters?', back:'Regularisation params like C span orders of magnitude (0.001–100). Uniform sampling puts ~99% of evaluations above 1, ignoring the small-C region. Log-uniform gives equal probability to each order of magnitude: 0.001–0.01, 0.01–0.1, 0.1–1, 1–10, 10–100.'},
+  {t:'pe4', front:'Bayesian Optimisation — what is the surrogate model?', back:'A Gaussian Process (or similar) fitted to all previous (hyperparameters → score) observations. It is cheap to evaluate and predicts the score at any untried point. The acquisition function uses it to decide where to look next — without actually training the real model there.'},
+  {t:'pe4', front:'Bayesian Optimisation — init_points vs n_iter?', back:'init_points: random exploration to bootstrap the surrogate with initial observations before guided search begins.\nn_iter: guided steps where the acquisition function uses the surrogate to select the most promising next point. More init_points = better initial coverage; more n_iter = finer refinement.'},
+  {t:'pe4', front:'Why must you cast params to int in a bayes_opt wrapper function?', back:'Gaussian Processes are continuous — they produce floats like 47.3 even for integer-bounded params. Passing n_estimators=47.3 to sklearn raises an error. Cast with int() inside the wrapper before passing to the model. This is required for any integer hyperparameter.'},
 ];
 
 // ===================== STATE =====================
@@ -4902,7 +5696,7 @@ function nav(page) {
   document.getElementById('main').scrollTop = 0;
   const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
   if (navEl) navEl.classList.add('active');
-  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1'].includes(page)) {
+  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1','pe2','pe3','pe4'].includes(page)) {
     markVisited(page);
     renderInlineQuiz(page);
   }
@@ -4920,9 +5714,9 @@ function markVisited(w) {
 }
 
 function updateGlobalProgress() {
-  const pct = Math.round((visited.length / 23) * 100);
+  const pct = Math.round((visited.length / 25) * 100);
   document.getElementById('global-progress-bar').style.width = pct + '%';
-  document.getElementById('global-progress-label').textContent = `${visited.length} of 23 lessons visited`;
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 26 lessons visited`;
 }
 
 // ===================== INLINE QUIZ =====================
