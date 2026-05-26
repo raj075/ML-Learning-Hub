@@ -252,6 +252,12 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
     <div class="nav-item nav-item-sub" onclick="nav('pe2')" id="nav-pe2"><span class="icon">🔧</span> L2: Pipelines & Preprocessing<span class="check" id="check-pe2"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('pe3')" id="nav-pe3"><span class="icon">🎯</span> L3: Feature Selection<span class="check" id="check-pe3"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('pe4')" id="nav-pe4"><span class="icon">⚙️</span> L4: Model Optimisation<span class="check" id="check-pe4"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('pe5')" id="nav-pe5"><span class="icon">🧭</span> L5: Model Selection<span class="check" id="check-pe5"></span></div>
+  </div>
+
+  <div class="nav-item nav-item-chapter" onclick="toggleChapter('unsupervised')"><span class="icon">🔍</span> Unsupervised Learning<span class="chapter-arrow" id="arrow-unsupervised">▾</span></div>
+  <div class="nav-chapter-items" id="chapter-unsupervised">
+    <div class="nav-item nav-item-sub" onclick="nav('ul1')" id="nav-ul1"><span class="icon">🌐</span> L1: Fundamentals<span class="check" id="check-ul1"></span></div>
   </div>
 
   <div class="sidebar-section" style="margin-top:10px">Practice</div>
@@ -1262,6 +1268,13 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
           <div class="topic-chip" id="chip-pe2" onclick="toggleChip('pe2')">L2: Pipelines</div>
           <div class="topic-chip" id="chip-pe3" onclick="toggleChip('pe3')">L3: Feature Selection</div>
           <div class="topic-chip" id="chip-pe4" onclick="toggleChip('pe4')">L4: Model Optimisation</div>
+          <div class="topic-chip" id="chip-pe5" onclick="toggleChip('pe5')">L5: Model Selection</div>
+        </div>
+      </div>
+      <div class="chip-chapter">
+        <div class="chip-chapter-label">🔍 Unsupervised Learning</div>
+        <div class="topic-chips">
+          <div class="topic-chip" id="chip-ul1" onclick="toggleChip('ul1')">L1: Fundamentals</div>
         </div>
       </div>
     </div>
@@ -1362,6 +1375,13 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
         <div class="topic-chip" id="fc-chip-pe2" onclick="fcFilter('pe2')">L2: Pipelines</div>
         <div class="topic-chip" id="fc-chip-pe3" onclick="fcFilter('pe3')">L3: Feature Selection</div>
         <div class="topic-chip" id="fc-chip-pe4" onclick="fcFilter('pe4')">L4: Model Optimisation</div>
+        <div class="topic-chip" id="fc-chip-pe5" onclick="fcFilter('pe5')">L5: Model Selection</div>
+      </div>
+    </div>
+    <div class="chip-chapter">
+      <div class="chip-chapter-label">🔍 Unsupervised Learning</div>
+      <div class="topic-chips">
+        <div class="topic-chip" id="fc-chip-ul1" onclick="fcFilter('ul1')">L1: Fundamentals</div>
       </div>
     </div>
   </div>
@@ -5163,6 +5183,446 @@ print('Best result:', optimizer.max)
   <div class="btn-row">
     <button class="btn btn-primary" onclick="startTopicQuiz('pe4')">📝 Full Topic Quiz</button>
     <button class="btn btn-outline" onclick="nav('pe3')">← Feature Selection</button>
+    <button class="btn btn-outline" onclick="nav('pe5')">Model Selection →</button>
+  </div>
+</div>
+
+<div class="page" id="page-pe5">
+  <div class="lesson-header">
+    <div class="breadcrumb">Pragmatic Model Evaluation · L5</div>
+    <h1>🧭 Model Selection</h1>
+    <p class="subtitle">Choosing between Linear Models, Tree-based Ensembles, and Neural Networks — and how AIC/BIC help you select without a test set</p>
+  </div>
+
+  <h2>What is Model Selection?</h2>
+  <p>Model selection is the problem of picking <em>which type of algorithm to use</em> for a given problem. This is distinct from model optimisation (tuning hyperparameters of a chosen model). Think of it as: selection = choosing a car model, optimisation = tuning the engine settings.</p>
+  <p>Three model families cover the vast majority of supervised learning problems:</p>
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <ol style="margin:0; font-size:0.88rem; line-height:2; color:var(--text-muted); padding-left:20px">
+      <li><strong>Linear Models</strong> — interpretable, strong guarantees, require linear relationships</li>
+      <li><strong>Tree-based Ensembles</strong> — flexible, high accuracy on tabular data, black box</li>
+      <li><strong>Neural Networks</strong> — handle unstructured data (images, text), need large amounts of data</li>
+    </ol>
+  </div>
+
+  <h2>Step 0: Identify the Problem Type via EDA</h2>
+  <p>Before picking a model, visualise your data. The key question is: <strong>is the relationship between features and target linear?</strong></p>
+
+  <div class="code-block"><pre><code>import seaborn as sns
+sns.pairplot(df, height=1.35)  # scatter matrix of all feature pairs</code></pre></div>
+
+  <p>You're looking at whether the scatterplots show roughly straight-line patterns. But there's an important trap:</p>
+
+  <div class="callout callout-warning">
+    <strong>Correlation doesn't tell the full story.</strong> Petal width vs sepal width in Iris data shows Pearson r = −0.36, suggesting weak linearity. But the actual scatter reveals <em>two separate linear clusters</em> — a linear mixture model. Correlation misses this because it treats all points as one group. Always look at the plot, not just the number.
+  </div>
+
+  <h2>1. Linear Models</h2>
+  <p>The general form of a linear model:</p>
+  <div class="card" style="background:var(--surface); text-align:center; padding:16px 20px; font-size:1rem">
+    y = α₀ + α₁x₁ + α₂x₂ + ... + αₘxₘ
+  </div>
+
+  <p style="margin-top:12px">The coefficients $\vec{\alpha}$ are learned from data. Depending on the regularisation penalty, you get different algorithms:</p>
+
+  <div class="card" style="padding:0; overflow:hidden; margin-top:8px">
+    <table style="width:100%; font-size:0.85rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Regularisation</th>
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Algorithm</th>
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Effect</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px">None</td>
+        <td style="padding:8px 12px">Linear Regression (OLS)</td>
+        <td style="padding:8px 12px">Minimises MSE, can overfit with many features</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px">L2 penalty ‖α‖₂</td>
+        <td style="padding:8px 12px">Ridge</td>
+        <td style="padding:8px 12px">Shrinks all coefficients toward zero — handles multicollinearity</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px">L1 penalty ‖α‖₁</td>
+        <td style="padding:8px 12px">Lasso</td>
+        <td style="padding:8px 12px">Drives some coefficients to exactly zero — automatic feature selection</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="code-block"><pre><code>from sklearn.linear_model import LinearRegression, Ridge, Lasso
+
+lm    = LinearRegression().fit(X_train, y_train)
+ridge = Ridge(alpha=1.0).fit(X_train, y_train)
+lasso = Lasso(alpha=0.1).fit(X_train, y_train)</code></pre></div>
+
+  <h3>Strengths and limitations</h3>
+  <ul>
+    <li><strong>✅ Interpretable</strong> — each coefficient directly tells you the contribution of that feature</li>
+    <li><strong>✅ Strong theoretical guarantees</strong> when the linearity assumption holds</li>
+    <li><strong>❌ Linearity is restrictive</strong> — real-world relationships are often non-linear</li>
+    <li><strong>❌ Not well-defined</strong> for structured data like images, text, or graphs</li>
+  </ul>
+
+  <h2>2. AIC and BIC — Selecting Models Without a Test Set</h2>
+  <p>For linear models, you can choose the best model using only training data, by balancing <strong>predictive fit</strong> against <strong>model complexity</strong>. The two most used information criteria are:</p>
+
+  <div class="card" style="background:var(--surface); padding:16px 20px">
+    <p style="margin:0 0 8px; font-size:0.95rem; text-align:center"><strong>AIC = 2k − 2ℓ</strong></p>
+    <p style="margin:0; font-size:0.95rem; text-align:center"><strong>BIC = k·ln(N) − 2ℓ</strong></p>
+    <p style="margin:12px 0 0; font-size:0.82rem; color:var(--text-muted); text-align:center">k = number of parameters · N = training samples · ℓ = log-likelihood (fit quality) · <strong>lower = better</strong></p>
+  </div>
+
+  <p style="margin-top:12px">The <strong>−2ℓ</strong> term rewards good fit (lower is better). The <strong>2k</strong> or <strong>k·ln(N)</strong> term penalises complexity — more parameters must earn their place by substantially improving fit.</p>
+
+  <p>For linear regression, since we minimise MSE, the log-likelihood simplifies to −(N/2)·ln(MSE), giving:</p>
+  <div class="card" style="background:var(--surface); padding:12px 20px; text-align:center; font-size:0.9rem">
+    AIC = 2k + N·ln(MSE) &nbsp;&nbsp;|&nbsp;&nbsp; BIC = k·ln(N) + N·ln(MSE)
+  </div>
+
+  <div class="code-block"><pre><code>import numpy as np
+from sklearn.metrics import mean_squared_error
+
+def AIC(X, y, model):
+    N = X.shape[0]
+    ll = -(N/2) * np.log(mean_squared_error(model.predict(X), y))
+    k = len(model.coef_)
+    return 2*k - 2*ll
+
+def BIC(X, y, model):
+    N = X.shape[0]
+    ll = -(N/2) * np.log(mean_squared_error(model.predict(X), y))
+    k = len(model.coef_)
+    return k*np.log(N) - 2*ll
+
+# Always computed on TRAINING data only
+print(AIC(X_train, y_train, model))
+print(BIC(X_train, y_train, model))</code></pre></div>
+
+  <div class="callout callout-info">
+    <strong>AIC vs BIC — when to use which?</strong><br>
+    Use <strong>AIC</strong> when you believe the true data-generating process is complex and no candidate model fully captures it — AIC tolerates more parameters.<br>
+    Use <strong>BIC</strong> when you believe one of your candidate models is close to the true model — BIC penalises complexity more harshly (penalty grows with N), pushing toward simpler models.
+  </div>
+
+  <h3>Randomised Feature Selection with AIC/BIC</h3>
+  <p>AIC/BIC let you score any feature subset using only training data. Randomised selection works by sampling random subsets of features, scoring each, and keeping the best:</p>
+
+  <div class="code-block"><pre><code>def sample_candidates(num_samples, p):
+    """Generate random binary masks over p features."""
+    all_subsets = []
+    for i in range(1, 2**p):   # every non-empty subset encoded as binary
+        all_subsets.append(np.array(list(np.binary_repr(i, width=p)), dtype=int))
+
+    chosen = np.random.choice(len(all_subsets), size=num_samples)
+    return np.array([all_subsets[i] for i in chosen]).astype(bool)
+
+def score_candidate(X_train, y_train, candidate, metric='aic'):
+    """Score a feature subset (boolean mask) on training data."""
+    lm = LinearRegression().fit(X_train[:, candidate], y_train)
+    if metric == 'aic':
+        return AIC(X_train[:, candidate], y_train, lm)
+    elif metric == 'bic':
+        return BIC(X_train[:, candidate], y_train, lm)
+
+# Sample 50 random subsets and find the one with lowest AIC
+candidates = sample_candidates(50, p=X_train.shape[1])
+scores = [score_candidate(X_train, y_train, c) for c in candidates]
+best_mask = candidates[np.argmin(scores)]</code></pre></div>
+
+  <p>The three strategies — <strong>forward</strong> (add features one at a time), <strong>backward</strong> (remove one at a time), <strong>randomised</strong> (sample subsets) — all use the same AIC/BIC scoring. Randomised is cheapest for high-dimensional problems.</p>
+
+  <h2>3. Tree-based Ensemble Methods</h2>
+  <p>When relationships aren't linear, ensembles are the default choice for tabular data. The core idea: combine multiple weak learners (decision trees) and average their predictions. Randomness is introduced so each tree is different — diverse models average out their individual errors.</p>
+
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.83rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Method</th>
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">How randomness is introduced</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px"><strong>Bagging</strong></td>
+        <td style="padding:8px 12px">Each tree trains on a bootstrapped (resampled) copy of the data</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px"><strong>Random Forest</strong></td>
+        <td style="padding:8px 12px">Bagging + at each split, only a random subset of features is considered (√p by default)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px"><strong>ExtraTrees</strong></td>
+        <td style="padding:8px 12px">No bagging, but the split threshold itself is chosen randomly (not just which feature)</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px"><strong>GBM</strong></td>
+        <td style="padding:8px 12px">Sequential: each tree fits the residual error of all previous trees (boosting, not averaging)</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="code-block"><pre><code>from sklearn.ensemble import (BaggingRegressor, RandomForestRegressor,
+                               ExtraTreesRegressor, GradientBoostingRegressor)
+from sklearn.metrics import mean_squared_error
+
+bagging = BaggingRegressor().fit(X_train, y_train)
+rf      = RandomForestRegressor().fit(X_train, y_train)
+gbm     = GradientBoostingRegressor().fit(X_train, y_train)
+
+print("Bagging MSE:", mean_squared_error(bagging.predict(X_test), y_test))
+print("RF MSE:     ", mean_squared_error(rf.predict(X_test), y_test))
+print("GBM MSE:    ", mean_squared_error(gbm.predict(X_test), y_test))</code></pre></div>
+
+  <ul>
+    <li><strong>✅ Flexible</strong> — handles non-linearity naturally, high accuracy on tabular data</li>
+    <li><strong>❌ Black box</strong> — hard to interpret, no clear per-feature story</li>
+    <li><strong>❌ Tuning is complex</strong> — each ensemble component may need its own hyperparameter search</li>
+  </ul>
+  <p><strong>Practical default:</strong> GBM usually wins out of the box. For further performance, look into ensemble stacking.</p>
+
+  <h2>4. Neural Networks with PyTorch</h2>
+  <p>Neural networks are the choice for <strong>unstructured data</strong> (images, text, audio, graphs) or when relationships are extremely complex and you have large amounts of data.</p>
+  <p>Three things you configure when building a neural network:</p>
+
+  <h3>1 — Architecture</h3>
+  <p><code>torch.nn.Sequential</code> stacks layers in order. Data flows through each layer from top to bottom:</p>
+  <div class="code-block"><pre><code>import torch
+
+model = torch.nn.Sequential(
+    torch.nn.Linear(10, 20),  # 10 input features → 20 hidden neurons
+    torch.nn.ReLU(),          # activation: introduces non-linearity
+    torch.nn.Linear(20, 50), # 20 → 50 neurons
+    torch.nn.ReLU(),
+    torch.nn.Linear(50, 1)   # 50 → 1 output
+)</code></pre></div>
+
+  <h3>2 — Loss function</h3>
+  <div class="code-block"><pre><code>loss_fn = torch.nn.MSELoss()           # regression
+loss_fn = torch.nn.BCELoss()           # binary classification (needs Sigmoid output)
+loss_fn = torch.nn.CrossEntropyLoss() # multi-class (applies Softmax internally)</code></pre></div>
+
+  <h3>3 — Optimiser</h3>
+  <p>Controls how weights are updated using gradients. All are variants of gradient descent: <code>θ = θ − lr · ∂L/∂θ</code></p>
+  <div class="code-block"><pre><code>opt = torch.optim.Adam(model.parameters(), lr=0.001)  # adaptive — good default
+opt = torch.optim.SGD(model.parameters(), lr=1e-3)    # simpler, sometimes better</code></pre></div>
+
+  <h3>The training loop</h3>
+  <div class="code-block"><pre><code>inputs  = torch.from_numpy(X_train).float()
+targets = torch.from_numpy(y_train).float()
+
+for epoch in range(1500):
+    pred = model(inputs)           # 1. Forward pass: compute predictions
+    loss = loss_fn(pred, targets)  # 2. Compute loss
+
+    loss.backward()                # 3. Backpropagation: compute gradients
+    opt.step()                     # 4. Update all weights
+    opt.zero_grad()                # 5. ⚠️ Reset gradients — PyTorch accumulates by default</code></pre></div>
+
+  <div class="callout callout-warning">
+    <strong>Why zero_grad()?</strong> PyTorch accumulates gradients every time you call <code>loss.backward()</code>. If you don't reset them, the next iteration's gradients add on top of the previous ones — the weights update using combined gradients from multiple steps, which is almost always wrong.
+  </div>
+
+  <h3>Regression vs classification — what changes</h3>
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.83rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Task</th>
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Output layer</th>
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Loss function</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px">Regression</td>
+        <td style="padding:8px 12px"><code>Linear(h, 1)</code></td>
+        <td style="padding:8px 12px"><code>MSELoss()</code></td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px">Binary classification</td>
+        <td style="padding:8px 12px"><code>Linear(h,1) → Sigmoid()</code></td>
+        <td style="padding:8px 12px"><code>BCELoss()</code></td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px">Multi-class</td>
+        <td style="padding:8px 12px"><code>Linear(h, num_classes)</code></td>
+        <td style="padding:8px 12px"><code>CrossEntropyLoss()</code> (Softmax built in)</td>
+      </tr>
+    </table>
+  </div>
+
+  <ul style="margin-top:12px">
+    <li><strong>✅ Handles unstructured data</strong> — images, text, graphs, audio</li>
+    <li><strong>✅ Extremely flexible</strong> architecture for any problem shape</li>
+    <li><strong>❌ Needs large amounts of data</strong> to outperform ensembles on tabular data</li>
+    <li><strong>❌ Hard to tune</strong> — architecture, learning rate, batch size, epochs all interact</li>
+  </ul>
+
+  <h2>Decision Guide: Which Model to Use?</h2>
+
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.83rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Situation</th>
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Use</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px">Data looks linear, interpretability matters</td>
+        <td style="padding:8px 12px">Linear model (Ridge / Lasso)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px">Selecting features for a linear model, no test set available</td>
+        <td style="padding:8px 12px">AIC / BIC + forward / backward / randomised selection</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px">Tabular data, non-linear relationships</td>
+        <td style="padding:8px 12px">GBM first; Random Forest if robustness matters more than raw accuracy</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px">Images, text, audio, graphs</td>
+        <td style="padding:8px 12px">Neural Network</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px">Small dataset, complex model family</td>
+        <td style="padding:8px 12px">Ensembles beat Neural Networks — NNs need data to generalise</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px">Must explain model to stakeholders</td>
+        <td style="padding:8px 12px">Linear model; or shallow decision tree (sacrifices accuracy for clarity)</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-pe5"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('pe5')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('pe4')">← Model Optimisation</button>
+    <button class="btn btn-outline" onclick="nav('ul1')">Unsupervised Learning →</button>
+  </div>
+</div>
+
+<div class="page" id="page-ul1">
+  <div class="lesson-header">
+    <div class="breadcrumb">Unsupervised Learning · L1</div>
+    <h1>🌐 Fundamentals of Unsupervised Learning</h1>
+    <p class="subtitle">Learning patterns from unlabelled data — clustering, dimensionality reduction, anomaly detection, and generative modelling</p>
+  </div>
+
+  <h2>What is Unsupervised Learning?</h2>
+  <p>In supervised learning, every training example has a <strong>label</strong> — a correct answer the model learns to predict. In unsupervised learning there are <strong>no labels</strong>. There is only the input data X.</p>
+  <p>The model's job is to find hidden structure: patterns, groupings, compact representations — without being told what to look for.</p>
+
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <p style="margin:0 0 6px"><strong>Key consequence:</strong> all variables are treated symmetrically. There is no special "target" column. The model tries to understand how all variables relate to each other.</p>
+  </div>
+
+  <h3>Why do we need it?</h3>
+  <ul>
+    <li><strong>Labels are expensive or unavailable</strong> — labelling millions of transactions requires expert time. Raw data is cheap; labels are not.</li>
+    <li><strong>You don't know what you're looking for</strong> — you want to discover structure, not test a pre-formed hypothesis.</li>
+    <li><strong>Data is too high-dimensional to understand directly</strong> — a 4D dataset can't be plotted. A 1000-feature dataset is incomprehensible without tools to compress it.</li>
+  </ul>
+
+  <h2>Unsupervised Learning Tasks</h2>
+
+  <h3>As a standalone tool</h3>
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.84rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Task</th>
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">What it does</th>
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Example algorithms</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px"><strong>Clustering</strong></td>
+        <td style="padding:8px 12px">Find natural groupings in data</td>
+        <td style="padding:8px 12px">K-Means, DBSCAN, Hierarchical</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px"><strong>Dimensionality reduction</strong></td>
+        <td style="padding:8px 12px">Compress high-dimensional data while preserving structure</td>
+        <td style="padding:8px 12px">PCA, t-SNE, UMAP, Autoencoders</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px"><strong>Outlier / anomaly detection</strong></td>
+        <td style="padding:8px 12px">Identify points that don't fit the learned structure</td>
+        <td style="padding:8px 12px">Isolation Forest, One-Class SVM</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px"><strong>Generative modelling</strong></td>
+        <td style="padding:8px 12px">Learn distribution P(X) to synthesise new realistic examples</td>
+        <td style="padding:8px 12px">VAE, GANs, Diffusion models</td>
+      </tr>
+    </table>
+  </div>
+
+  <h3>As part of a supervised pipeline</h3>
+  <p>Unsupervised learning doesn't have to stand alone — it's frequently used as a preprocessing or analysis step before supervised modelling:</p>
+  <ul>
+    <li><strong>Exploratory Data Analysis (EDA)</strong> — understand what's in your data before modelling. Reveals unexpected clusters, unusual relationships, or natural groupings that inform which supervised algorithms to try.</li>
+    <li><strong>Feature engineering</strong> — transform raw features into better representations. PCA is the classic example: it's technically an unsupervised algorithm used as a preprocessing step.</li>
+    <li><strong>Data processing</strong> — outlier detection as a cleaning step. Remove anomalous points before supervised training to prevent them distorting the model.</li>
+  </ul>
+
+  <div class="callout callout-info">
+    <strong>Why unsupervised EDA matters:</strong> A dataset with 4 or 5 features already exceeds our ability to visualise directly. At 100+ features, manually exploring all possible relationships is a combinatorial explosion. Unsupervised learning gives you tools to quickly surface the most important structure — which clusters exist, which features co-vary, what the outliers look like — before you commit to a supervised approach.
+  </div>
+
+  <h2>Generative Models</h2>
+  <p>A generative model learns the full data distribution P(X), then uses that knowledge to <strong>synthesise new examples</strong>. This has exploded with deep learning — image generators, large language models, and music generators are all generative models.</p>
+
+  <div class="callout callout-warning">
+    <strong>Not all generative models are unsupervised.</strong> Naive Bayes learns the joint distribution P(X, Y) — including labels — so it is supervised. The defining question is whether labels are used during training, not whether the model can generate data.
+  </div>
+
+  <h2>The Supervised / Unsupervised Line is Blurry</h2>
+  <p>The same task can often be approached either way. Take <strong>image denoising</strong> as an example:</p>
+
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.84rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Approach</th>
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">Training data</th>
+        <th style="text-align:left; padding:8px 12px; color:var(--text-muted)">How it learns</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 12px"><strong>Supervised</strong></td>
+        <td style="padding:8px 12px">Pairs: (noisy image, clean image)</td>
+        <td style="padding:8px 12px">Learns the mapping noisy → clean using the label</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px"><strong>Unsupervised (autoencoder)</strong></td>
+        <td style="padding:8px 12px">Only clean images</td>
+        <td style="padding:8px 12px">Learns a compressed representation; noise is discarded as irrelevant</td>
+      </tr>
+    </table>
+  </div>
+
+  <p style="margin-top:12px">Complex models can also <strong>combine both</strong>. GANs (Generative Adversarial Networks) are the classic example:</p>
+  <ul>
+    <li>The <strong>generator</strong> is unsupervised — takes random noise and creates synthetic data</li>
+    <li>The <strong>discriminator</strong> is supervised — classifies inputs as real or fake (a binary label)</li>
+    <li>They train together, competing against each other — the generator gets better at fooling the discriminator, and the discriminator gets better at detecting fakes</li>
+  </ul>
+
+  <h2>Real Example: Wikipedia Article Embedding</h2>
+  <p>Take thousands of Wikipedia articles — each described by a high-dimensional vector (word frequencies, topic weights). An unsupervised model compresses each article into a 2D coordinate, placing similar articles near each other.</p>
+  <p>When you plot the result, distinct clusters emerge naturally. When you overlay the actual Wikipedia categories — which were <strong>never given to the model</strong> — they match the clusters closely. This validates that the unsupervised model captured real structure in the data.</p>
+  <p>This pattern is common: use unsupervised learning to discover structure, then check against available labels to validate. If they align, the model has found something meaningful.</p>
+
+  <h2>Evaluating Unsupervised Models</h2>
+  <p>For supervised learning, evaluation is straightforward: compare predictions to correct answers. Unsupervised learning has no correct answers, so evaluation is harder.</p>
+
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <p style="margin:0 0 8px"><strong>Two main approaches:</strong></p>
+    <ol style="margin:0; font-size:0.88rem; line-height:1.9; color:var(--text-muted); padding-left:20px">
+      <li><strong>Extrinsic evaluation</strong> — if you happen to have labels (like Wikipedia categories), check whether the discovered structure aligns with them. Validates the model but isn't always available.</li>
+      <li><strong>Utility evaluation</strong> — ask: does the output make the downstream task better or more useful? Do the customer clusters differ in purchasing behaviour? Does PCA improve the downstream classifier? Does the anomaly detector flag things experts agree are unusual?</li>
+    </ol>
+  </div>
+
+  <p>There is no single universal metric like accuracy for unsupervised models. Evaluation is inherently more qualitative and task-dependent than supervised learning.</p>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-ul1"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('ul1')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('pe5')">← Model Selection</button>
     <button class="btn btn-outline" onclick="nav('quiz')">Practice All Topics</button>
   </div>
 </div>
@@ -5198,7 +5658,9 @@ const TOPICS = {
   pe1: 'PME L1: Hierarchical Validation',
   pe2: 'PME L2: Pipelines & Preprocessing',
   pe3: 'PME L3: Feature Selection',
-  pe4: 'PME L4: Model Optimisation'
+  pe4: 'PME L4: Model Optimisation',
+  pe5: 'PME L5: Model Selection',
+  ul1: 'UL L1: Fundamentals'
 };
 
 const ALL_QUESTIONS = [
@@ -5437,7 +5899,26 @@ const ALL_QUESTIONS = [
   {t:'pe4', q:'Why does Random Search often outperform Grid Search for the same compute budget?', opts:['Random Search is inherently more accurate than Grid Search','Not all hyperparameters have equal impact on performance. Random Search provides denser coverage of the important dimensions rather than wasting evaluations on a rigid grid that may miss the best regions','Grid Search has a bug in older sklearn versions','Random Search uses GPU acceleration which Grid Search does not'], ans:1, exp:'In high-dimensional hyperparameter spaces, most performance variation comes from a small subset of parameters. Grid Search allocates equal budget across all dimensions, wasting evaluations on unimportant ones. Random Search, by sampling independently per parameter, achieves better coverage of the dimensions that actually matter. Bergstra & Bengio (2012) showed this formally.'},
   {t:'pe4', q:'Why should you use a log-uniform distribution (loguniform) rather than a uniform distribution when searching over regularisation parameters like C?', opts:['Log-uniform is required by RandomizedSearchCV — uniform distributions are not accepted','Regularisation parameters span multiple orders of magnitude (e.g. 0.001 to 100). Uniform sampling concentrates almost all evaluations at the high end, ignoring the small-value range. Log-uniform gives equal probability to each order of magnitude.','Log-uniform produces integer values; uniform produces floats','Uniform distributions always produce values outside the valid range'], ans:1, exp:'The range 0.001 to 100 spans 5 orders of magnitude. If you sample uniformly, ~99% of samples land above 1, and the 0.001–1 range (often where strong regularisation effects occur) is almost never explored. Log-uniform sampling on (a, b) means equal probability for a–10a, 10a–100a, etc. Each decade of the range gets proportional representation.'},
   {t:'pe4', q:'What role does the surrogate model play in Bayesian Optimisation?', opts:['It replaces cross-validation to make evaluation faster','A Gaussian Process (or similar model) is fitted to all previous (hyperparameters → score) observations. Because it is cheap to evaluate, the acquisition function uses it to predict which untried region is most promising — guiding the next evaluation without training the actual model there first.','It randomly selects the next set of hyperparameters to try','It is an ensemble of all models trained so far, used as the final predictor'], ans:1, exp:'Training a machine learning model is expensive. Bayesian Optimisation builds a surrogate (typically a Gaussian Process) that approximates the hyperparameter landscape cheaply. The acquisition function evaluates thousands of candidates on the surrogate in milliseconds to pick the most promising next point. Only the winner is then evaluated by actually training the real model.'},
-  {t:'pe4', q:'In a Bayesian Optimisation wrapper function, why must you cast float parameters to int before passing them to the model?', opts:['Python will raise a TypeError if you pass floats to sklearn','Bayesian Optimisation internally treats all parameters as continuous real numbers (Gaussian Processes work in continuous space). Integer parameters like n_estimators must be cast inside the wrapper — the optimiser never produces exact integers even within integer-valued bounds.','The int() cast improves the cross-validation score','Casting to int disables bootstrapping, which is needed for ExtraTrees'], ans:1, exp:'Gaussian Processes operate in continuous space — they produce floats like 47.3 or 102.8 even for parameters you intend to be integers. If you pass n_estimators=47.3 to sklearn, it raises an error. The wrapper function is the correct place to cast: int(n_estimators) converts 47.3 → 47 before the model sees it. This is a standard pattern in bayes_opt usage.'}
+  {t:'pe4', q:'In a Bayesian Optimisation wrapper function, why must you cast float parameters to int before passing them to the model?', opts:['Python will raise a TypeError if you pass floats to sklearn','Bayesian Optimisation internally treats all parameters as continuous real numbers (Gaussian Processes work in continuous space). Integer parameters like n_estimators must be cast inside the wrapper — the optimiser never produces exact integers even within integer-valued bounds.','The int() cast improves the cross-validation score','Casting to int disables bootstrapping, which is needed for ExtraTrees'], ans:1, exp:'Gaussian Processes operate in continuous space — they produce floats like 47.3 or 102.8 even for parameters you intend to be integers. If you pass n_estimators=47.3 to sklearn, it raises an error. The wrapper function is the correct place to cast: int(n_estimators) converts 47.3 → 47 before the model sees it. This is a standard pattern in bayes_opt usage.'},
+  // PME L5 — Model Selection
+  {t:'pe5', q:'What is the difference between model selection and model optimisation?', opts:['They are the same — both refer to finding the best hyperparameters','Model selection is choosing which type of algorithm to use; model optimisation is tuning the hyperparameters of the chosen algorithm','Model selection applies to linear models; model optimisation applies to neural networks','Model optimisation happens before model selection in the workflow'], ans:1, exp:'Model selection answers: should I use a Random Forest or Logistic Regression? Model optimisation answers: what is the best max_depth for my Random Forest? Selection picks the algorithm family; optimisation then finds the best configuration within that family.'},
+  {t:'pe5', q:'Why can Pearson correlation be misleading when assessing whether a linear model is appropriate?', opts:['Pearson correlation is too slow to compute for large datasets','Pearson correlation only measures linear relationships in the whole dataset — it misses structure within subgroups, such as a linear mixture where two distinct linear trends cancel each other out','Pearson correlation requires normally distributed data to be valid','Pearson correlation is only valid for binary features'], ans:1, exp:'A classic case: two separate linear clusters with opposite slopes can produce an overall Pearson r close to zero — suggesting no relationship — when in reality the data comes from a linear mixture model. Always visualise with a pairplot rather than relying on correlation numbers alone.'},
+  {t:'pe5', q:'What do AIC and BIC penalise, and why?', opts:['They penalise large training sets — more data makes models overconfident','They penalise model complexity (number of parameters) — a model with more parameters must achieve substantially better fit to justify the added complexity','They penalise non-linear relationships — linear models always score lower','They penalise high variance in cross-validation scores'], ans:1, exp:'Both criteria balance fit quality (log-likelihood) against complexity (number of parameters k). The penalty term — 2k for AIC, k·ln(N) for BIC — means adding a parameter always costs something. A more complex model only wins if its improvement in fit more than compensates. Lower AIC or BIC = better model.'},
+  {t:'pe5', q:'AIC and BIC are computed on training data only. Why is this considered an advantage?', opts:['Training data computation is faster than test data computation','It allows model and feature selection without spending the test set — preserving it for a single final evaluation of the chosen model','AIC/BIC are mathematically invalid when applied to test data','Training data gives more accurate estimates than test data'], ans:1, exp:'The test set should be used once, at the very end, to estimate real-world performance. Using it repeatedly for model selection causes information leakage — you effectively tune toward the test set. AIC/BIC estimate out-of-sample performance analytically from training data alone, letting you compare many candidate models without touching the test set.'},
+  {t:'pe5', q:'What mechanism makes Random Forest more diverse than simple Bagging?', opts:['Random Forest uses a different loss function for each tree','Random Forest adds feature randomness — at each split, only a random subset of features is considered, preventing dominant features from appearing in every tree and forcing greater diversity','Random Forest trains each tree on a completely different dataset','Random Forest removes the worst-performing trees after training'], ans:1, exp:'Bagging already introduces diversity through bootstrapped data copies. Random Forest adds a second source of randomness: at every node split, instead of searching all p features for the best split, only √p features are randomly selected. This prevents any single strong feature from dominating every tree, increasing diversity and reducing correlation between trees.'},
+  {t:'pe5', q:'What is the key architectural difference between Gradient Boosting and Bagging/Random Forest?', opts:['Gradient Boosting uses deeper trees than Random Forest','Gradient Boosting trains trees sequentially — each tree fits the residual errors of all previous trees. Bagging trains trees independently in parallel and averages them.','Gradient Boosting uses a different split criterion','Gradient Boosting does not use decision trees as base learners'], ans:1, exp:'Bagging and Random Forest are parallel ensembles — trees are independent and the final prediction is their average. Gradient Boosting is sequential: tree 1 makes predictions, tree 2 corrects tree 1\'s errors, tree 3 corrects the combined errors, and so on. This makes GBM more powerful but also more prone to overfitting if not regularised.'},
+  {t:'pe5', q:'In a PyTorch training loop, why must you call opt.zero_grad() at each iteration?', opts:['It resets the model weights to their initial values','PyTorch accumulates gradients by default — without resetting them, each backward() call adds onto the previous iteration\'s gradients, causing weights to update based on combined gradients from multiple steps','zero_grad() clears the training data cache to free memory','It is only needed for SGD, not for Adam'], ans:1, exp:'PyTorch\'s design accumulates gradients in .grad tensors every time loss.backward() is called — this is useful for some advanced techniques but harmful in standard training. Without zero_grad(), iteration 2\'s gradient update uses gradients from both iteration 1 and 2 combined, which corrupts learning. Always call zero_grad() before or after opt.step() each iteration.'},
+  // UL L1 — Fundamentals of Unsupervised Learning
+  {t:'ul1', q:'Which type of data does unsupervised learning utilise?', opts:['Discriminator networks','Supervised algorithms','Labelled data','Unlabelled data'], ans:3, exp:'Unsupervised learning works with unlabelled data — there is no target variable Y. The algorithm finds structure (clusters, representations, anomalies) in the input data X alone. This is what distinguishes it from supervised learning, which requires labelled examples to learn a mapping from X to Y.'},
+  {t:'ul1', q:'Which of the following is NOT a task typically performed by unsupervised learning?', opts:['Identifying outliers','Predicting future trends','Identifying latent groupings','Learning new data representations'], ans:1, exp:'Predicting future trends is a supervised (or time-series) task — it requires labelled historical data with known outcomes to train a predictive model. Identifying outliers, finding latent groupings (clustering), and learning new data representations (dimensionality reduction) are all core unsupervised learning tasks.'},
+  {t:'ul1', q:'What fundamentally distinguishes unsupervised learning from supervised learning?', opts:['Unsupervised learning relies on labelled data, while supervised learning does not','Unsupervised learning finds patterns in data without pre-existing labels','Unsupervised learning requires explicit interaction between variables, unlike supervised learning','Unsupervised learning focuses on predicting outcomes, while supervised learning focuses on data exploration'], ans:1, exp:'In supervised learning, every training example has a label — the model learns to map inputs to those labels. In unsupervised learning, there are no labels. All variables are treated symmetrically and the algorithm finds hidden structure (patterns, groupings, representations) without being told what to look for.'},
+  {t:'ul1', q:'Unsupervised learning can be useful for which aspect of a supervised modelling pipeline?', opts:['Classifying data','Validating labels','Calculating error rates','Exploratory Data Analysis (EDA)'], ans:3, exp:'Unsupervised learning is frequently used as a preprocessing or analysis step within a supervised pipeline. EDA is the primary use case — clustering, dimensionality reduction, and anomaly detection all help you understand data structure before committing to a supervised approach. Feature engineering (e.g. PCA) and outlier removal are other common supervised-pipeline uses.'},
+  {t:'ul1', q:'What is Principal Component Analysis (PCA) primarily used for in the context of unsupervised learning?', opts:['Classifying complex datasets','Supervised learning','Predicting outcomes','Feature engineering — transforming data into a lower-dimensional representation'], ans:3, exp:'PCA is an unsupervised algorithm that finds directions of maximum variance in the data (principal components) and projects data onto them. It is most commonly used for feature engineering: reducing dimensionality, removing correlated features, and creating compact representations that make downstream supervised models easier to train.'},
+  {t:'ul1', q:'Which type of model is NOT always unsupervised, even though it can generate data?', opts:['Clustering algorithms','Dimensionality reduction models','Naive Bayes classifier','All generative models are always unsupervised'], ans:2, exp:'Naive Bayes is a generative model — it learns the joint distribution P(X, Y) so it can generate new data points. However, it is supervised because it uses class labels Y during training. The defining question is whether labels are used in training, not whether the model can generate data. GANs and VAEs trained without labels are unsupervised; Naive Bayes is not.'},
+  {t:'ul1', q:'What is a major application of generative models in unsupervised learning?', opts:['Detecting errors in data','Supervising other models','Improving data labels','Generating synthetic data by learning the data distribution P(X)'], ans:3, exp:'Generative models learn the full data distribution P(X) and use it to synthesise new realistic examples. Applications include image generation, text generation, data augmentation for rare classes, and privacy-preserving synthetic datasets. The explosion of image generators and large language models is driven by deep generative models.'},
+  {t:'ul1', q:'How is the performance of an unsupervised learning algorithm typically assessed?', opts:['By the accuracy of predictions against correct labels','By standard supervised learning metrics like precision and recall','By evaluating how useful the discovered information is for a downstream task or process','By matching predictions with held-out test data'], ans:2, exp:'Unsupervised models have no labels to compare predictions against. Evaluation is done either extrinsically (checking if discovered clusters align with available labels when they exist) or through utility assessment (do the customer clusters differ in behaviour? does dimensionality reduction improve the classifier?). There is no single universal metric — evaluation is inherently more qualitative.'},
+  {t:'ul1', q:'Which task is an example of something that could be approached with BOTH supervised and unsupervised learning?', opts:['Predicting stock market trends','Labelling email as spam','Calculating interest rates','Noise removal from images'], ans:3, exp:'Image denoising can be done supervised (train on pairs of noisy/clean images) or unsupervised (train an autoencoder on clean images only — the model learns a compressed representation that discards noise). This illustrates that the supervised/unsupervised boundary is task-framing, not an inherent property of the problem.'},
+  {t:'ul1', q:'What does unsupervised learning help uncover in complex high-dimensional datasets?', opts:['Supervised patterns requiring labels','Accurate predictions of future outcomes','Insights buried within data — structure, groupings, and relationships not visible through direct inspection','Labelled structures confirmed by experts'], ans:2, exp:'With even 4–5 dimensions, manual visualisation becomes impractical. Unsupervised learning provides tools to surface structure — which clusters exist, which features co-vary, what the outliers look like — that would otherwise be buried in a combinatorial explosion of possible charts. It makes complex data comprehensible without requiring labels.'}
 ];
 
 const FLASHCARDS = [
@@ -5669,6 +6150,26 @@ const FLASHCARDS = [
   {t:'pe4', front:'Bayesian Optimisation — what is the surrogate model?', back:'A Gaussian Process (or similar) fitted to all previous (hyperparameters → score) observations. It is cheap to evaluate and predicts the score at any untried point. The acquisition function uses it to decide where to look next — without actually training the real model there.'},
   {t:'pe4', front:'Bayesian Optimisation — init_points vs n_iter?', back:'init_points: random exploration to bootstrap the surrogate with initial observations before guided search begins.\nn_iter: guided steps where the acquisition function uses the surrogate to select the most promising next point. More init_points = better initial coverage; more n_iter = finer refinement.'},
   {t:'pe4', front:'Why must you cast params to int in a bayes_opt wrapper function?', back:'Gaussian Processes are continuous — they produce floats like 47.3 even for integer-bounded params. Passing n_estimators=47.3 to sklearn raises an error. Cast with int() inside the wrapper before passing to the model. This is required for any integer hyperparameter.'},
+  // PME L5 — Model Selection
+  {t:'pe5', front:'Model selection vs model optimisation?', back:'Selection: choosing WHICH algorithm family to use (Linear? Ensemble? Neural Network?).\nOptimisation: finding the best hyperparameters WITHIN the chosen algorithm.\nSelection comes first, optimisation follows.'},
+  {t:'pe5', front:'Why can Pearson correlation mislead you about linearity?', back:'Correlation measures the overall linear trend across all data. Two separate linear clusters with opposing slopes can produce r ≈ 0 — suggesting no relationship — when a linear mixture model exists. Always visualise with pairplot, not just the number.'},
+  {t:'pe5', front:'AIC and BIC — what do they balance?', back:'Fit quality (log-likelihood ℓ) vs complexity (number of parameters k).\nAIC = 2k − 2ℓ\nBIC = k·ln(N) − 2ℓ\nLower = better. More parameters must earn their place by substantially improving fit.'},
+  {t:'pe5', front:'AIC vs BIC — which penalises complexity more?', back:'BIC. Its penalty per parameter is k·ln(N), which grows with sample size N. For N > 7, ln(N) > 2, so BIC penalises harder than AIC\'s fixed 2k. On large datasets, BIC pushes toward simpler models.'},
+  {t:'pe5', front:'When to use AIC vs BIC?', back:'AIC: true data-generating process is complex — no candidate model fully captures it. Tolerate more parameters.\nBIC: one of your candidate models is close to the true model. Push toward simplicity.\nBIG dataset + complex problem → BIC may underfit.'},
+  {t:'pe5', front:'Random Forest vs Bagging — what extra randomness does RF add?', back:'Bagging: diversity from bootstrapped data copies.\nRandom Forest adds: at each split, only √p randomly chosen features are considered (not all p). This prevents any single dominant feature from appearing in every tree, making trees more diverse and less correlated.'},
+  {t:'pe5', front:'Bagging/RF vs Gradient Boosting — key structural difference?', back:'Bagging/RF: trees trained independently in parallel, predictions averaged.\nGBM: trees trained sequentially — each tree corrects the residual errors of all previous trees. GBM is more powerful but more prone to overfitting.'},
+  {t:'pe5', front:'PyTorch training loop — 5 steps in order?', back:'1. pred = model(inputs)        # forward pass\n2. loss = loss_fn(pred, targets) # compute loss\n3. loss.backward()               # backpropagation\n4. opt.step()                    # update weights\n5. opt.zero_grad()               # reset gradients'},
+  {t:'pe5', front:'Why call opt.zero_grad() every iteration in PyTorch?', back:'PyTorch accumulates gradients — each backward() adds onto .grad tensors. Without resetting, iteration 2 updates weights using gradients from iterations 1+2 combined. This corrupts learning. zero_grad() clears them so each step uses only the current batch\'s gradients.'},
+  {t:'pe5', front:'Neural Network output layer + loss for each task type?', back:'Regression: Linear(h,1) + MSELoss()\nBinary classification: Linear(h,1) → Sigmoid() + BCELoss()\nMulti-class: Linear(h,num_classes) + CrossEntropyLoss() (Softmax built in)'},
+  // UL L1 — Fundamentals of Unsupervised Learning
+  {t:'ul1', front:'Supervised vs unsupervised learning — core difference?', back:'Supervised: labelled data, learns mapping X → Y.\nUnsupervised: no labels, only X. All variables treated symmetrically. The model finds hidden structure — patterns, groupings, representations — without being told what to look for.'},
+  {t:'ul1', front:'What are the four main unsupervised learning tasks?', back:'1. Clustering — find natural groupings (K-Means, DBSCAN)\n2. Dimensionality reduction — compress data while preserving structure (PCA, t-SNE)\n3. Anomaly/outlier detection — find points that don\'t fit (Isolation Forest)\n4. Generative modelling — learn P(X) to synthesise new examples (VAE, GANs)'},
+  {t:'ul1', front:'How is unsupervised learning used inside a supervised pipeline?', back:'EDA: understand data structure before modelling\nFeature engineering: PCA creates compact representations\nData cleaning: outlier detection removes anomalous training points\nAll three happen before supervised training begins.'},
+  {t:'ul1', front:'Is every generative model unsupervised?', back:'No. Naive Bayes is a generative model (learns P(X,Y)) but is supervised — it uses labels during training. The defining question is whether labels are used in training, not whether the model can generate data.'},
+  {t:'ul1', front:'Can the same task be supervised OR unsupervised?', back:'Yes. Image denoising example:\nSupervised: train on (noisy, clean) pairs — learns the mapping directly.\nUnsupervised (autoencoder): train on clean images only — learns a compressed representation; noise is discarded as irrelevant structure.'},
+  {t:'ul1', front:'What is a GAN and why does it blur the supervised/unsupervised line?', back:'GAN = Generative Adversarial Network.\nGenerator: unsupervised — creates synthetic data from random noise.\nDiscriminator: supervised — classifies real vs fake (binary label).\nThey compete: generator tries to fool the discriminator; discriminator tries to detect fakes.'},
+  {t:'ul1', front:'Why is evaluating unsupervised models harder than supervised?', back:'No labels to compare against. Two approaches:\n1. Extrinsic: check if discovered structure aligns with available labels (e.g. Wikipedia clusters vs categories)\n2. Utility: does the output help a downstream task? Do clusters show different behaviour? Does PCA improve accuracy?'},
+  {t:'ul1', front:'Why does high dimensionality make unsupervised learning essential?', back:'At 4–5 features, manual visualisation is already impractical. At 100+ features, the number of possible relationships is a combinatorial explosion. Unsupervised learning surfaces structure — clusters, co-varying features, outliers — that would otherwise be completely hidden.'},
 ];
 
 // ===================== STATE =====================
@@ -5696,7 +6197,7 @@ function nav(page) {
   document.getElementById('main').scrollTop = 0;
   const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
   if (navEl) navEl.classList.add('active');
-  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1','pe2','pe3','pe4'].includes(page)) {
+  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1','pe2','pe3','pe4','pe5','ul1'].includes(page)) {
     markVisited(page);
     renderInlineQuiz(page);
   }
@@ -5716,7 +6217,7 @@ function markVisited(w) {
 function updateGlobalProgress() {
   const pct = Math.round((visited.length / 25) * 100);
   document.getElementById('global-progress-bar').style.width = pct + '%';
-  document.getElementById('global-progress-label').textContent = `${visited.length} of 26 lessons visited`;
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 28 lessons visited`;
 }
 
 // ===================== INLINE QUIZ =====================
