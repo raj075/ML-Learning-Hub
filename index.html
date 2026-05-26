@@ -246,6 +246,11 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
     <div class="nav-item nav-item-sub" onclick="nav('en4')" id="nav-en4"><span class="icon">📉</span> L4: Gradient Boosting<span class="check" id="check-en4"></span></div>
   </div>
 
+  <div class="nav-item nav-item-chapter" onclick="toggleChapter('prageval')"><span class="icon">📚</span> Pragmatic Model Evaluation<span class="chapter-arrow" id="arrow-prageval">▾</span></div>
+  <div class="nav-chapter-items" id="chapter-prageval">
+    <div class="nav-item nav-item-sub" onclick="nav('pe1')" id="nav-pe1"><span class="icon">🏗️</span> L1: Hierarchical Validation<span class="check" id="check-pe1"></span></div>
+  </div>
+
   <div class="sidebar-section" style="margin-top:10px">Practice</div>
   <div class="nav-item" onclick="nav('quiz')"><span class="icon">📝</span> Quiz</div>
   <div class="nav-item" onclick="nav('flashcards')"><span class="icon">🃏</span> Flashcards</div>
@@ -1238,6 +1243,21 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
           <div class="topic-chip" id="chip-mc"  onclick="toggleChip('mc')">L17: Multiclass</div>
         </div>
       </div>
+      <div class="chip-chapter">
+        <div class="chip-chapter-label">📚 Ensemble Methods</div>
+        <div class="topic-chips">
+          <div class="topic-chip" id="chip-en1" onclick="toggleChip('en1')">L1: Intro</div>
+          <div class="topic-chip" id="chip-en2" onclick="toggleChip('en2')">L2: Boosting</div>
+          <div class="topic-chip" id="chip-en3" onclick="toggleChip('en3')">L3: Stacking</div>
+          <div class="topic-chip" id="chip-en4" onclick="toggleChip('en4')">L4: Gradient Boosting</div>
+        </div>
+      </div>
+      <div class="chip-chapter">
+        <div class="chip-chapter-label">📚 Pragmatic Model Evaluation</div>
+        <div class="topic-chips">
+          <div class="topic-chip" id="chip-pe1" onclick="toggleChip('pe1')">L1: Hierarchical Validation</div>
+        </div>
+      </div>
     </div>
     <div class="card" style="max-width:400px">
       <p style="margin:0 0 6px; font-size:0.82rem; color:var(--text-muted)">Number of questions</p>
@@ -1318,6 +1338,21 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
         <div class="topic-chip" id="fc-chip-w15" onclick="fcFilter('w15')">L15: SVM</div>
         <div class="topic-chip" id="fc-chip-w16" onclick="fcFilter('w16')">L16: Pipeline</div>
         <div class="topic-chip" id="fc-chip-mc"  onclick="fcFilter('mc')">L17: Multiclass</div>
+      </div>
+    </div>
+    <div class="chip-chapter">
+      <div class="chip-chapter-label">📚 Ensemble Methods</div>
+      <div class="topic-chips">
+        <div class="topic-chip" id="fc-chip-en1" onclick="fcFilter('en1')">L1: Intro</div>
+        <div class="topic-chip" id="fc-chip-en2" onclick="fcFilter('en2')">L2: Boosting</div>
+        <div class="topic-chip" id="fc-chip-en3" onclick="fcFilter('en3')">L3: Stacking</div>
+        <div class="topic-chip" id="fc-chip-en4" onclick="fcFilter('en4')">L4: Gradient Boosting</div>
+      </div>
+    </div>
+    <div class="chip-chapter">
+      <div class="chip-chapter-label">📚 Pragmatic Model Evaluation</div>
+      <div class="topic-chips">
+        <div class="topic-chip" id="fc-chip-pe1" onclick="fcFilter('pe1')">L1: Hierarchical Validation</div>
       </div>
     </div>
   </div>
@@ -4231,6 +4266,177 @@ tuning.<span class="fn">fit</span>(X_train, y_train)
   </div>
 </div>
 
+<!-- PRAGMATIC MODEL EVALUATION — LESSON 1 -->
+<div class="page" id="page-pe1">
+  <h2>🏗️ Validation on Hierarchical Data</h2>
+  <p class="subtitle">When your rows aren't independent — trips, patients, transactions — standard train/test splits leak information and inflate your metrics. Here's how to do it right.</p>
+
+  <div class="alert alert-warn">⚠️ The most common silent mistake in ML: shuffling and splitting data whose rows share a hidden group. Your metrics look great but your model fails in production.</div>
+
+  <h3>The Core Problem</h3>
+  <p>Standard ML assumes every row is an independent observation. That's almost never true in the real world. Data is often <strong>hierarchical</strong> — rows are nested inside groups.</p>
+
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">The travel survey dataset</div><p>Each row is one <strong>trip</strong>. Multiple trips belong to the same <strong>person</strong>. Multiple people belong to the same <strong>household</strong>. The target is the transport mode chosen: walk, car, bus, bike.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Why this breaks random splits</div><p>Household 3460: a 24-year-old woman made 4 trips — all walks, nearly identical features. If Trip 1 is in train and Trip 3 is in test, the model has already "seen" this household. That's leakage.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">The median household</div><p>Has 4 trips recorded. In a random 70/30 split it is almost guaranteed that trips from the same household land in both train and test — systematically inflating all your metrics.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Real-world examples</div><p>Medical: multiple measurements per patient. Finance: multiple transactions per customer. NLP: multiple sentences per document. Time series: multiple timestamps per entity.</p></div></div>
+  </div>
+
+  <h3>Three-Level Data Structure</h3>
+  <div class="card">
+    <div class="code-block"><pre><span class="cm"># Features exist at three levels of the hierarchy</span>
+<span class="cm"># Trip-level:       distance, travel time, temperature, precipitation, wind</span>
+<span class="cm"># Individual-level: age, gender, education, income, licence, ethnicity</span>
+<span class="cm"># Household-level:  household_id, n_cars, n_bikes, green_space</span>
+
+<span class="cm"># The target</span>
+<span class="cm"># mode_main: walk | car | public_transport | bike</span></pre></div>
+  </div>
+
+  <h3>Step 1 — Create a Holdout Set by Household</h3>
+  <p>Before any model development, set aside 20% of <strong>households</strong> (not rows) as a final test set. All trips from those households are completely invisible until the very end.</p>
+  <div class="code-block"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+unique_household_ids = df_full.household_id.<span class="fn">unique</span>()
+n_holdout = <span class="fn">int</span>(<span class="fn">len</span>(unique_household_ids) * <span class="nu">0.2</span>)
+
+rng = np.random.<span class="fn">default_rng</span>(seed=<span class="nu">42</span>)
+holdout_ids = rng.<span class="fn">choice</span>(unique_household_ids, size=n_holdout, replace=<span class="kw">False</span>)
+
+<span class="cm"># All trips from holdout households → final test set (invisible until end)</span>
+df_holdout = df_full[df_full.household_id.<span class="fn">isin</span>(holdout_ids)]
+df         = df_full[~df_full.household_id.<span class="fn">isin</span>(holdout_ids)]</pre></div>
+  <div class="card"><div class="key-concept"><div class="label">Why by household, not by row?</div><p>Splitting by row lets the same household appear in both holdout and development data. The model can then "recognise" households it was developed on. Splitting by household guarantees the holdout contains genuinely new households — exactly what deployment looks like.</p></div></div>
+
+  <h3>Step 2 — The Wrong Way: Random Row-Level Split</h3>
+  <p>First, do the naïve thing to establish a baseline — and to see how badly it misleads you.</p>
+  <div class="code-block"><pre><span class="kw">from</span> sklearn <span class="kw">import</span> model_selection
+<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier
+
+X_train_r, X_test_r, y_train_r, y_test_r = model_selection.<span class="fn">train_test_split</span>(
+    X, y, test_size=<span class="nu">0.3</span>, random_state=<span class="nu">42</span>
+)
+
+<span class="cm"># max_depth=None → tree grows until every leaf is pure — deliberately prone to memorisation</span>
+clf_r = <span class="fn">RandomForestClassifier</span>(max_depth=<span class="kw">None</span>, n_jobs=<span class="nu">-1</span>)
+clf_r.<span class="fn">fit</span>(X_train_r, y_train_r)</pre></div>
+  <div class="card" style="border-left:3px solid var(--red)">
+    <h4 style="margin-top:0; color:var(--red)">Why max_depth=None?</h4>
+    <p>The notebook uses an unconstrained tree deliberately — it can memorise individual households. This makes the leakage <em>visible</em> in the numbers. With a shallow tree the effect is smaller but still present.</p>
+  </div>
+
+  <h3>Step 3 — The Right Way: GroupShuffleSplit</h3>
+  <p><code>GroupShuffleSplit</code> keeps all trips from the same household together — they go entirely to train or entirely to test. The <code>groups</code> argument is the household ID column.</p>
+  <div class="code-block"><pre>gss = model_selection.<span class="fn">GroupShuffleSplit</span>(n_splits=<span class="nu">1</span>, test_size=<span class="nu">0.3</span>, random_state=<span class="nu">42</span>)
+
+<span class="cm"># groups=household_id → the splitter treats all rows sharing an ID as one unit</span>
+train_idx, test_idx = <span class="fn">next</span>(gss.<span class="fn">split</span>(X, y, groups=household_id))
+
+X_train_g = X.<span class="fn">iloc</span>[train_idx]
+X_test_g  = X.<span class="fn">iloc</span>[test_idx]
+y_train_g = y.<span class="fn">iloc</span>[train_idx]
+y_test_g  = y.<span class="fn">iloc</span>[test_idx]
+
+<span class="cm"># Also keep track of which household IDs are in train (needed for GroupKFold later)</span>
+household_id_train_g = household_id.<span class="fn">iloc</span>[train_idx]
+
+clf_g = <span class="fn">RandomForestClassifier</span>(max_depth=<span class="kw">None</span>, n_jobs=<span class="nu">-1</span>)
+clf_g.<span class="fn">fit</span>(X_train_g, y_train_g)</pre></div>
+
+  <h3>The Results: Leakage Revealed</h3>
+  <table>
+    <tr><th>Metric</th><th>Random Split (leaky)</th><th>Grouped Split (honest)</th></tr>
+    <tr><td>Accuracy</td><td style="color:var(--red)">~82%</td><td style="color:var(--green)">~68%</td></tr>
+    <tr><td>Precision</td><td style="color:var(--red)">~86%</td><td style="color:var(--green)">~70%</td></tr>
+    <tr><td>Recall</td><td style="color:var(--red)">~82%</td><td style="color:var(--green)">~68%</td></tr>
+    <tr><td>F1-Score</td><td style="color:var(--red)">~83%</td><td style="color:var(--green)">~68%</td></tr>
+    <tr><td>Average Precision</td><td style="color:var(--red)">~88%</td><td style="color:var(--green)">~72%</td></tr>
+  </table>
+  <div class="card" style="border-left:3px solid var(--accent); margin-top:4px">
+    <div class="key-concept"><div class="label">The ~14% accuracy gap is pure leakage</div><p>The random model wasn't better — it was cheating. Trips from the same household appeared in both train and test. The model memorised household-specific patterns that had nothing to do with learning <em>which features predict transport choice</em>.</p></div>
+  </div>
+
+  <h3>Step 4 — Group-Aware Cross-Validation + Hyperparameter Tuning</h3>
+  <p>Even inside the hyperparameter search loop, plain K-Fold would leak. <code>GroupKFold</code> ensures no household spans multiple folds. Combine it with <code>RandomizedSearchCV</code>:</p>
+  <div class="code-block"><pre><span class="kw">from</span> scipy.stats <span class="kw">import</span> randint
+
+params = {
+    <span class="st">"max_depth"</span>:    <span class="fn">randint</span>(<span class="nu">3</span>, <span class="nu">10</span>),
+    <span class="st">"max_features"</span>: <span class="fn">randint</span>(<span class="nu">3</span>, <span class="nu">10</span>),
+    <span class="st">"n_estimators"</span>: <span class="fn">randint</span>(<span class="nu">20</span>, <span class="nu">200</span>),
+}
+
+<span class="cm"># GroupKFold: 3 folds, each fold contains entirely different households</span>
+gcv = model_selection.<span class="fn">GroupKFold</span>(n_splits=<span class="nu">3</span>).<span class="fn">split</span>(
+    X_train_g, y_train_g, groups=household_id_train_g
+)
+
+rs = model_selection.<span class="fn">RandomizedSearchCV</span>(
+    <span class="fn">RandomForestClassifier</span>(n_jobs=<span class="nu">-1</span>),
+    param_distributions=params,
+    n_iter=<span class="nu">5</span>,
+    scoring=[<span class="st">"accuracy"</span>, <span class="st">"neg_log_loss"</span>],
+    cv=gcv,
+    refit=<span class="st">"neg_log_loss"</span>,   <span class="cm"># pick best model by log loss — rewards calibrated probabilities</span>
+    random_state=<span class="nu">42</span>,
+)
+rs.<span class="fn">fit</span>(X_train_g, y_train_g)</pre></div>
+
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Why GroupKFold inside the CV loop?</div><p>Without it, fold assignment is random at the row level — the same household can appear in train-fold and validation-fold simultaneously. Every evaluation inside the search would be optimistically biased.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Why refit on neg_log_loss?</div><p>Log loss penalises confident wrong predictions. A model that says 90% confidence and is wrong gets punished far more than one that says 60%. It rewards honest, calibrated probabilities — not just correct labels.</p></div></div>
+  </div>
+
+  <h3>Step 5 — The Proof: Truly Held-Out Households</h3>
+  <p>Now run all 3 models on <code>df_holdout</code> — households no model has ever seen during any stage of development:</p>
+  <div class="code-block"><pre>y_holdout = df_holdout[<span class="st">"mode_main"</span>]
+X_holdout = df_holdout.<span class="fn">drop</span>([<span class="st">"mode_main"</span>, <span class="st">"household_id"</span>], axis=<span class="nu">1</span>)
+
+<span class="cm"># All three models predict on the same unseen households</span>
+y_pred_r  = clf_r.<span class="fn">predict</span>(X_holdout)   <span class="cm"># random-split model</span>
+y_pred_g  = clf_g.<span class="fn">predict</span>(X_holdout)   <span class="cm"># grouped model</span>
+y_pred_cv = rs.<span class="fn">predict</span>(X_holdout)      <span class="cm"># group-tuned model</span></pre></div>
+
+  <table>
+    <tr><th>Model</th><th>Dev Accuracy</th><th>Holdout Accuracy</th><th>Verdict</th></tr>
+    <tr><td>Random Split</td><td style="color:var(--red)">~82%</td><td>~68%</td><td style="color:var(--red)">Collapsed — was fake</td></tr>
+    <tr><td>Grouped Split</td><td>~68%</td><td>~68%</td><td style="color:var(--green)">Consistent — honest</td></tr>
+    <tr><td>Group KFold CV</td><td>~70%</td><td>~70%</td><td style="color:var(--green)">Consistent + slightly better</td></tr>
+  </table>
+  <div class="card" style="border-left:3px solid var(--green); margin-top:4px">
+    <div class="key-concept"><div class="label">The key insight</div><p>The random model dropped from 82% to 68% on holdout — all that extra "performance" was memorised household patterns, not learned signal. The grouped models stayed stable: what they promised during development, they delivered on new households.</p></div>
+  </div>
+
+  <h3>What the Model Actually Learned: Feature Importance</h3>
+  <p>The most revealing finding — proper validation changes <em>what the model learns</em>, not just the reported score:</p>
+  <div class="card-grid">
+    <div class="card"><div class="key-concept"><div class="label">Random-split model</div><p>Over-relies on <strong>green space</strong> — a household-level feature. Why? Because the same household appeared in both train and test. The model memorised which households had which green space level, not why people choose how to travel.</p></div></div>
+    <div class="card"><div class="key-concept"><div class="label">Grouped + CV model</div><p>Shifts towards <strong>number of cars</strong> and <strong>licence status</strong> — features that genuinely predict transport choice regardless of <em>which</em> household you're from. These generalise to new households.</p></div></div>
+  </div>
+  <div class="alert alert-info">💡 When you validate properly, you don't just get honest metrics — you train a model that actually learns the right things.</div>
+
+  <h3>The Three Splitters to Know</h3>
+  <table>
+    <tr><th>Tool</th><th>When to use</th><th>Key argument</th></tr>
+    <tr><td><code>train_test_split</code></td><td>Only when rows are truly independent</td><td><code>random_state</code></td></tr>
+    <tr><td><code>GroupShuffleSplit</code></td><td>Single grouped train/test split</td><td><code>groups=group_id</code></td></tr>
+    <tr><td><code>GroupKFold</code></td><td>Group-aware cross-validation (inside CV loops and hyperparameter search)</td><td><code>groups=group_id</code></td></tr>
+  </table>
+
+  <h3>The Mental Model</h3>
+  <div class="card">
+    <p>Your model's job is to generalise to <strong>groups it has never seen</strong>, not rows it has never seen. If your evaluation doesn't mirror that challenge — if test rows share a group with training rows — your evaluation is answering a different, easier question. The fix is always the same: <strong>identify the grouping structure in your data and make it the unit of your splits.</strong></p>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-pe1"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('pe1')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('quiz')">Practice All Topics</button>
+  </div>
+</div>
+
 </div><!-- end main -->
 
 <script>
@@ -4258,7 +4464,8 @@ const TOPICS = {
   en1: 'Ensemble L1: Intro to Ensembles',
   en2: 'Ensemble L2: Boosting & AdaBoost',
   en3: 'Ensemble L3: Stacking',
-  en4: 'Ensemble L4: Gradient Boosting'
+  en4: 'Ensemble L4: Gradient Boosting',
+  pe1: 'PME L1: Hierarchical Validation'
 };
 
 const ALL_QUESTIONS = [
@@ -4463,6 +4670,15 @@ const ALL_QUESTIONS = [
   {t:'en4', q:'What is the key difference between LightGBM\'s leaf-wise and XGBoost\'s level-wise tree growth?', opts:['LightGBM uses more trees','Leaf-wise always splits the highest-gain leaf regardless of depth — faster but can overfit; level-wise grows all nodes at the same depth first — safer but slower','LightGBM builds shallower trees','XGBoost uses random feature subsets at each split'], ans:1, exp:'Level-wise (XGBoost, sklearn): split all nodes at depth d before going to depth d+1. Balanced, safe. Leaf-wise (LightGBM): always split whichever leaf has the highest loss reduction. Asymmetric trees, fewer splits needed for the same error — much faster on large data, but can overfit on small datasets.'},
   {t:'en4', q:'Which LightGBM parameter is most effective at preventing overfitting on small datasets?', opts:['learning_rate','num_leaves — reducing it limits tree complexity and prevents excessive memorisation','n_estimators','boosting_type'], ans:1, exp:'num_leaves controls the maximum number of leaves in each tree. LightGBM\'s leaf-wise growth can create very deep, complex trees quickly. Reducing num_leaves (e.g. from 31 to 15) is the primary lever for regularisation in LightGBM. Also useful: min_data_in_leaf (minimum samples per leaf).'},
   {t:'en4', q:'What is the best strategy to find the optimal number of boosting rounds?', opts:['Always use 100 trees','Try 10, 100, and 1000 and pick the best','Use early stopping: monitor validation loss and stop when it hasn\'t improved for N consecutive rounds','Use cross-validation with n_estimators as a grid search parameter'], ans:2, exp:'Early stopping is the standard approach. You monitor validation loss at each round and stop training when it hasn\'t improved for a set number of consecutive rounds (patience). This avoids over-boosting (which causes overfitting) without the cost of trying many fixed n_estimators values.'},
+
+  // PME L1 — Hierarchical Validation
+  {t:'pe1', q:'What is the fundamental problem with using train_test_split on hierarchical data?', opts:['It is too slow for large datasets','Rows from the same group land in both train and test — the model memorises group-specific patterns that reappear at test time, inflating metrics','It cannot handle multi-class targets','It does not support stratification'], ans:1, exp:'train_test_split shuffles at the row level. In hierarchical data (trips per household, measurements per patient), multiple rows share the same underlying entity. Leaking those rows across the split makes the task artificially easy — the model "recognises" groups from training.'},
+  {t:'pe1', q:'Which sklearn splitter should you use for a single grouped train/test split?', opts:['StratifiedKFold','GroupKFold','GroupShuffleSplit','LeaveOneGroupOut'], ans:2, exp:'GroupShuffleSplit keeps all rows with the same group ID together, sending them entirely to train or entirely to test. Set n_splits=1 for a single split. Pass groups=group_id_series to the .split() call.'},
+  {t:'pe1', q:'When a model trained with random row-level splits is later evaluated on truly unseen groups, what typically happens to its performance?', opts:['It stays the same — random splits produce unbiased estimates','It improves — unseen data is fresher','It drops — the inflated development metrics were caused by memorised group-specific patterns, not genuine generalisation','It becomes completely random — the model has no signal for new groups'], ans:2, exp:'Random splits allow rows from the same group to appear in both train and test. The model learns to "recognise" those groups rather than learning transferable patterns. When you evaluate on genuinely new groups, the group-identity shortcut disappears and performance falls to its true level.'},
+  {t:'pe1', q:'What is the correct way to create a holdout set from hierarchical data?', opts:['Randomly sample 20% of rows','Randomly sample 20% of group IDs and exclude all rows from those groups entirely','Sort by date and take the last 20% of rows','Use stratified sampling on the target variable'], ans:1, exp:'You must split at the group level, not the row level. Selecting 20% of group IDs and removing every row belonging to those groups guarantees entire groups are invisible — simulating real deployment where the model encounters entirely new entities it has never seen.'},
+  {t:'pe1', q:'Why must GroupKFold be used inside hyperparameter search (e.g. RandomizedSearchCV) when working with hierarchical data?', opts:['To speed up training by reducing the number of folds','Without group-aware CV, the same group can appear in both the train-fold and validation-fold of each iteration — making every hyperparameter evaluation optimistically biased','To reduce memory usage during grid search','To allow parallel processing across folds'], ans:1, exp:'Even inside the hyperparameter search loop, plain K-Fold splits at the row level. In hierarchical data, a group\'s rows can leak across folds — the validation fold sees patterns from groups that trained the model in the same fold. GroupKFold guarantees each fold contains entirely different groups.'},
+  {t:'pe1', q:'When a model is trained on hierarchical data with a leaky (random) split, what type of features does it tend to over-rely on?', opts:['Features that are unique to individual rows, like timestamps','Group-level features — because the same groups appear in both train and test, the model memorises group identity through these features instead of learning genuinely predictive patterns','Only continuous numerical features','Features with the highest Pearson correlation to the target'], ans:1, exp:'Group-level features (e.g. features that are constant across all rows in the same group) allow the model to effectively memorise which group a row belongs to. If that group is also in the test set, the model exploits this shortcut. A properly grouped split removes this opportunity, forcing the model to learn features that generalise across groups.'},
+  {t:'pe1', q:'What is log loss and why is it a stricter evaluation metric than accuracy?', opts:['It measures the number of wrong predictions only','It is the same as accuracy but bounded differently','It penalises confident wrong predictions heavily — a 90% confident wrong answer is punished far more than a 51% confident wrong answer','It only works for binary classification'], ans:2, exp:'Log loss = −[y·log(p) + (1−y)·log(1−p)]. Accuracy only checks if the label is correct. Log loss checks the probability: a model that says 90% and is wrong gets a penalty of −log(0.1) ≈ 2.3, while one that says 51% and is wrong gets −log(0.49) ≈ 0.71. Rewards calibrated, honest probabilities.'},
 ];
 
 const FLASHCARDS = [
@@ -4647,6 +4863,18 @@ const FLASHCARDS = [
   {t:'en4', front:'What is staged_predict() used for?', back:'Returns predictions at each boosting round. Use it to plot train vs validation accuracy and identify the optimal n_estimators — the point where validation accuracy peaks — without retraining the model.'},
   {t:'en4', front:'XGBoost vs LightGBM vs CatBoost — one-liner each?', back:'XGBoost: general purpose, sparse data, column blocks for speed.\nLightGBM: fastest on large data, leaf-wise growth, native categoricals.\nCatBoost: best for heavy categorical features, no manual encoding needed.'},
   {t:'en4', front:'GB 5-step algorithm?', back:'1. F₀ = constant (mean/log-odds)\n2. Compute pseudo-residuals rᵢ = −∂L/∂F\n3. Fit tree h_k to {(xᵢ, rᵢ)}\n4. Update: F_k = F_{k-1} + η·h_k\n5. Repeat until K trees done'},
+
+  // PME L1 — Hierarchical Validation
+  {t:'pe1', front:'What is hierarchical (nested) data?', back:'Data where rows are not independent — they belong to groups. Example: trips nested inside households. Multiple rows share the same household, person, or entity, making them correlated with each other.'},
+  {t:'pe1', front:'Why does a random train/test split fail on hierarchical data?', back:'Rows from the same group land in both train and test. The model sees household-specific patterns during training that reappear in the test set — this is data leakage. Metrics are inflated and do not reflect real-world generalisation.'},
+  {t:'pe1', front:'What is GroupShuffleSplit and when do you use it?', back:'A sklearn splitter that treats all rows sharing a group ID as one indivisible unit. Use it when you need a single grouped train/test split. Key argument: groups=group_id_series.'},
+  {t:'pe1', front:'What is GroupKFold and when do you use it?', back:'Group-aware K-fold cross-validation. Ensures no group (e.g. household) spans multiple folds. Use it inside hyperparameter search (RandomizedSearchCV, GridSearchCV) to prevent leakage during tuning.'},
+  {t:'pe1', front:'In the travel survey experiment, what was the accuracy gap between random and grouped splits?', back:'~14 percentage points. Random split: ~82% accuracy. Grouped split: ~68% accuracy. The gap was entirely leakage — household-specific patterns that appeared in both train and test, not genuine signal.'},
+  {t:'pe1', front:'What happened to the random-split model on truly held-out households?', back:'Its accuracy collapsed from ~82% to ~68% — matching the grouped models. All the extra "performance" was fake: memorised household patterns, not learned generalisable signal.'},
+  {t:'pe1', front:'How does proper grouped validation change feature importance?', back:'Random-split models over-rely on household-level features (e.g. green space) because the same households appear in train and test. Grouped models shift to generalisable features (e.g. number of cars, licence status) that actually predict transport choice.'},
+  {t:'pe1', front:'What is log loss and why was it used as the refit metric?', back:'Log loss = −[y·log(p) + (1−y)·log(1−p)]. It penalises confident wrong predictions heavily. Used as refit metric because it rewards calibrated probabilities — not just correct labels — and exposes overconfident leaky models.'},
+  {t:'pe1', front:'What is the correct way to create a holdout set from hierarchical data?', back:'Split by group ID, not by row. Use rng.choice() on the unique group IDs to select holdout groups, then filter df by those IDs. This ensures entire groups are invisible — simulating deployment on new, unseen entities.'},
+  {t:'pe1', front:'Name three real-world domains where hierarchical data validation applies.', back:'1. Medical: multiple measurements per patient\n2. Finance: multiple transactions per customer\n3. NLP: multiple sentences per document or author\n4. Time series: multiple timestamps per entity\nIn all cases, split by the group, not the row.'},
 ];
 
 // ===================== STATE =====================
@@ -4674,7 +4902,7 @@ function nav(page) {
   document.getElementById('main').scrollTop = 0;
   const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
   if (navEl) navEl.classList.add('active');
-  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4'].includes(page)) {
+  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1'].includes(page)) {
     markVisited(page);
     renderInlineQuiz(page);
   }
@@ -4692,9 +4920,9 @@ function markVisited(w) {
 }
 
 function updateGlobalProgress() {
-  const pct = Math.round((visited.length / 22) * 100);
+  const pct = Math.round((visited.length / 23) * 100);
   document.getElementById('global-progress-bar').style.width = pct + '%';
-  document.getElementById('global-progress-label').textContent = `${visited.length} of 22 lessons visited`;
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 23 lessons visited`;
 }
 
 // ===================== INLINE QUIZ =====================
