@@ -261,6 +261,7 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
     <div class="nav-item nav-item-sub" onclick="nav('ul2')" id="nav-ul2"><span class="icon">🔵</span> L2: K-Means Clustering<span class="check" id="check-ul2"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('ul3')" id="nav-ul3"><span class="icon">🌳</span> L3: Hierarchical Clustering<span class="check" id="check-ul3"></span></div>
     <div class="nav-item nav-item-sub" onclick="nav('ul4')" id="nav-ul4"><span class="icon">🔴</span> L4: DBSCAN<span class="check" id="check-ul4"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('ul5')" id="nav-ul5"><span class="icon">🌀</span> L5: t-SNE<span class="check" id="check-ul5"></span></div>
   </div>
 
   <div class="sidebar-section" style="margin-top:10px">Practice</div>
@@ -1281,6 +1282,7 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
           <div class="topic-chip" id="chip-ul2" onclick="toggleChip('ul2')">L2: K-Means Clustering</div>
           <div class="topic-chip" id="chip-ul3" onclick="toggleChip('ul3')">L3: Hierarchical Clustering</div>
           <div class="topic-chip" id="chip-ul4" onclick="toggleChip('ul4')">L4: DBSCAN</div>
+          <div class="topic-chip" id="chip-ul5" onclick="toggleChip('ul5')">L5: t-SNE</div>
         </div>
       </div>
     </div>
@@ -1391,6 +1393,7 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
         <div class="topic-chip" id="fc-chip-ul2" onclick="fcFilter('ul2')">L2: K-Means Clustering</div>
         <div class="topic-chip" id="fc-chip-ul3" onclick="fcFilter('ul3')">L3: Hierarchical Clustering</div>
         <div class="topic-chip" id="fc-chip-ul4" onclick="fcFilter('ul4')">L4: DBSCAN</div>
+        <div class="topic-chip" id="fc-chip-ul5" onclick="fcFilter('ul5')">L5: t-SNE</div>
       </div>
     </div>
   </div>
@@ -6370,6 +6373,178 @@ plt.show()</pre></div>
   <div class="btn-row">
     <button class="btn btn-primary" onclick="startTopicQuiz('ul4')">📝 Full Topic Quiz</button>
     <button class="btn btn-outline" onclick="nav('ul3')">← Hierarchical Clustering</button>
+    <button class="btn btn-outline" onclick="nav('ul5')">t-SNE →</button>
+  </div>
+</div>
+
+<div class="page" id="page-ul5">
+  <div class="page-header">
+    <div class="chapter-badge">Unsupervised Learning</div>
+    <h1>L5: t-SNE</h1>
+    <p class="subtitle">t-Distributed Stochastic Neighbour Embedding — nonlinear dimensionality reduction for visualising high-dimensional data.</p>
+  </div>
+
+  <div class="card">
+    <h2>Why t-SNE?</h2>
+    <p>Real-world datasets often have hundreds or thousands of features. You cannot plot 500 dimensions — but you can ask: <em>what does this data look like if we compress it to 2D while keeping similar things close together?</em></p>
+    <p>PCA answers this linearly — it projects along the axes of maximum variance. But many datasets have <strong>nonlinear structure</strong> (curves, manifolds, clusters of irregular shapes) that PCA flattens and loses.</p>
+    <p>t-SNE is a <strong>nonlinear dimensionality reduction</strong> method that compresses high-dimensional data to 2 or 3 dimensions for <strong>visualisation</strong>, preserving the local neighbourhood structure of the original data.</p>
+    <div class="key-concept">
+      <div class="label">Core Idea</div>
+      <p>Convert distances between points into <strong>probabilities</strong>. Points that are close in high-D space have a high probability of being neighbours. Find a 2D layout where those same neighbourhood probabilities are reproduced as faithfully as possible.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>The 3-Step Algorithm</h2>
+
+    <h3>Step 1 — Probabilities in high-dimensional space</h3>
+    <p>For every pair of points, compute how "close" they are using a <strong>Gaussian (bell curve)</strong> centred on each point:</p>
+    <div class="code-block"><pre><span class="cm"># Conceptually: how likely is j to be a neighbour of i?</span>
+<span class="cm"># p(j|i) = exp(-distance(i,j)² / 2σ²) / sum of all neighbour distances from i</span>
+<span class="cm">#</span>
+<span class="cm"># Nearby points → high probability</span>
+<span class="cm"># Far-away points → near zero</span>
+<span class="cm">#</span>
+<span class="cm"># σ (width of bell curve) is set by the perplexity parameter</span>
+
+<span class="cm"># Then symmetrised:</span>
+<span class="cm"># p(i,j) = (p(j|i) + p(i|j)) / 2N</span></pre></div>
+
+    <h3>Step 2 — Probabilities in 2D space</h3>
+    <p>In the 2D output, t-SNE uses a <strong>Student t-distribution</strong> (not Gaussian) to model distances:</p>
+    <div class="code-block"><pre><span class="cm"># q(i,j) = (1 + ||y_i - y_j||²)⁻¹ / sum of all pairs</span></pre></div>
+    <div class="key-concept">
+      <div class="label">Why t-distribution instead of Gaussian?</div>
+      <p>The t-distribution has <strong>heavier tails</strong> than a Gaussian. When compressing from 500D to 2D, there is far less space — a Gaussian would crowd dissimilar points too close together (the <strong>crowding problem</strong>). The t-distribution's heavy tail allows dissimilar points to be placed much further apart, giving clusters room to breathe.</p>
+    </div>
+
+    <h3>Step 3 — Minimise the mismatch</h3>
+    <p>Measure the difference between the high-D probabilities (p) and the 2D probabilities (q) using <strong>KL divergence</strong>, then minimise with gradient descent:</p>
+    <div class="code-block"><pre><span class="cm"># KL(P‖Q) = Σ p(i,j) × log( p(i,j) / q(i,j) )</span>
+<span class="cm">#</span>
+<span class="cm"># Minimised iteratively — the 2D points are moved until the</span>
+<span class="cm"># neighbourhood structure matches the original as closely as possible</span></pre></div>
+    <p>The cost function is <strong>non-convex</strong> — gradient descent can converge to different solutions. This is why t-SNE is non-deterministic. Always set <code>random_state</code>.</p>
+  </div>
+
+  <div class="card">
+    <h2>Perplexity — The Key Parameter</h2>
+    <p>Perplexity controls how many neighbours each point considers as "local". It sets the σ width of the Gaussian in Step 1.</p>
+    <table class="styled-table">
+      <thead><tr><th>Perplexity</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>Too small (&lt; 5)</td><td>Only looks at nearest neighbours — finds spurious local clumps, structure appears that doesn't really exist</td></tr>
+        <tr><td><strong>Good range (5–50)</strong></td><td>Balances local and global structure — clusters meaningful</td></tr>
+        <tr><td>Too large (&gt; 100)</td><td>Considers too many neighbours — misses local structure, clusters blend</td></tr>
+        <tr><td><strong>Default: 30</strong></td><td>Good starting point for most datasets</td></tr>
+      </tbody>
+    </table>
+    <div class="key-concept">
+      <div class="label">Rule of thumb</div>
+      <p>Denser or larger datasets → higher perplexity. Always try <strong>multiple perplexity values</strong> and compare — if a pattern only appears at one specific perplexity, treat it with suspicion.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>sklearn Code</h2>
+    <div class="code-block"><pre><span class="kw">from</span> sklearn.manifold <span class="kw">import</span> TSNE
+<span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+<span class="cm"># 1. Scale the data</span>
+X_scaled = StandardScaler().fit_transform(X)
+
+<span class="cm"># 2. Optional but recommended: PCA to ~50 dims first</span>
+<span class="cm">#    t-SNE is slow on 500+ features — PCA makes it tractable</span>
+<span class="cm">#    50 PCA components typically retain 80%+ of variance</span>
+X_50 = PCA(n_components=<span class="num">50</span>).fit_transform(X_scaled)
+
+<span class="cm"># 3. Run t-SNE</span>
+tsne = TSNE(n_components=<span class="num">2</span>, perplexity=<span class="num">30</span>, random_state=<span class="num">42</span>)
+X_2d = tsne.fit_transform(X_50)
+
+<span class="cm"># 4. Plot — colour by known labels (if available) to validate</span>
+plt.figure(figsize=(<span class="num">8</span>, <span class="num">6</span>))
+plt.scatter(X_2d[:, <span class="num">0</span>], X_2d[:, <span class="num">1</span>], c=labels, cmap=<span class="st">'tab10'</span>, s=<span class="num">5</span>)
+plt.colorbar(label=<span class="st">'Class label'</span>)
+plt.title(<span class="st">'t-SNE visualisation'</span>)
+plt.axis(<span class="st">'off'</span>)  <span class="cm"># axes have no meaning in t-SNE</span>
+plt.show()</pre></div>
+
+    <h3>Try multiple perplexity values</h3>
+    <div class="code-block"><pre><span class="kw">fig</span>, axes = plt.subplots(<span class="num">1</span>, <span class="num">4</span>, figsize=(<span class="num">20</span>, <span class="num">5</span>))
+
+<span class="kw">for</span> ax, perp <span class="kw">in</span> zip(axes, [<span class="num">5</span>, <span class="num">30</span>, <span class="num">50</span>, <span class="num">100</span>]):
+    tsne = TSNE(n_components=<span class="num">2</span>, perplexity=perp, random_state=<span class="num">42</span>)
+    X_2d = tsne.fit_transform(X_50)
+    ax.scatter(X_2d[:, <span class="num">0</span>], X_2d[:, <span class="num">1</span>], c=labels, cmap=<span class="st">'tab10'</span>, s=<span class="num">5</span>)
+    ax.set_title(<span class="st">f'Perplexity = {perp}'</span>)
+    ax.axis(<span class="st">'off'</span>)
+
+plt.tight_layout()
+plt.show()</pre></div>
+  </div>
+
+  <div class="card">
+    <h2>t-SNE vs PCA</h2>
+    <table class="styled-table">
+      <thead><tr><th></th><th>PCA</th><th>t-SNE</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Type</strong></td><td>Linear</td><td>Nonlinear</td></tr>
+        <tr><td><strong>Preserves</strong></td><td>Global variance / spread</td><td>Local neighbourhood structure</td></tr>
+        <tr><td><strong>Best for</strong></td><td>Feature reduction, preprocessing, pipelines</td><td>Visualisation and exploration only</td></tr>
+        <tr><td><strong>Transform new data?</strong></td><td>Yes — <code>pca.transform(X_new)</code></td><td>No — must refit from scratch</td></tr>
+        <tr><td><strong>Speed</strong></td><td>Very fast</td><td>Slow — O(n²)</td></tr>
+        <tr><td><strong>Deterministic?</strong></td><td>Yes</td><td>No — different each run</td></tr>
+        <tr><td><strong>Axes interpretable?</strong></td><td>Yes (% variance explained)</td><td>No — axes mean nothing</td></tr>
+      </tbody>
+    </table>
+    <div class="key-concept">
+      <div class="label">Best practice: PCA then t-SNE</div>
+      <p>For high-dimensional data (images, genomics, NLP embeddings), always run PCA first to reduce to ~50 components, then run t-SNE on those 50. PCA is fast and removes noise; t-SNE then finds the fine-grained neighbourhood structure. The standard pipeline for things like MNIST (784 pixels → 50 PCA → 2D t-SNE).</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Is t-SNE Only for Visualisation?</h2>
+    <p>Primarily yes — but there are a few legitimate additional uses:</p>
+    <table class="styled-table">
+      <thead><tr><th>Use</th><th>How</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Cluster discovery</strong></td><td>Spot apparent groupings in the t-SNE plot, then validate with K-Means or DBSCAN on the <em>original</em> data. t-SNE suggests where to look — not confirms.</td></tr>
+        <tr><td><strong>Anomaly detection (visual)</strong></td><td>Isolated points far from all clusters are candidates for outliers. Not rigorous, but useful as a first pass.</td></tr>
+        <tr><td><strong>Evaluating model representations</strong></td><td>Extract learned embeddings from a neural network or autoencoder, then t-SNE them. Clean separated blobs = the model learned meaningful structure.</td></tr>
+      </tbody>
+    </table>
+    <div class="key-concept">
+      <div class="label">Why t-SNE cannot be used as a preprocessing step</div>
+      <p>Unlike PCA, there is no <code>tsne.transform(X_new)</code>. The algorithm optimises positions for the training points only — there is no formula to project a new point into the existing layout. Every call to <code>fit_transform</code> produces a potentially different layout. This makes t-SNE unsuitable as a feature reduction step before a classifier.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Critical Limitations — What t-SNE Does NOT Tell You</h2>
+    <table class="styled-table">
+      <thead><tr><th>What you see</th><th>What it actually means</th></tr></thead>
+      <tbody>
+        <tr><td>Axis positions (x=3.4, y=-1.2)</td><td>Nothing — axes have no interpretable meaning</td></tr>
+        <tr><td>Cluster sizes (one blob bigger than another)</td><td>Nothing about real density — t-SNE focuses on local topology, not global scale</td></tr>
+        <tr><td>Distances between clusters</td><td>Not reliable — the gap between two clusters in 2D does not represent their distance in the original space</td></tr>
+        <tr><td>Tiny sub-clusters within a blob</td><td>May be real or may be artefacts from low perplexity — always check with multiple perplexity values</td></tr>
+      </tbody>
+    </table>
+    <div class="key-concept">
+      <div class="label">UMAP — the modern alternative</div>
+      <p>UMAP (Uniform Manifold Approximation and Projection) is a newer algorithm with similar goals but <strong>faster</strong> (scales better to large data), <strong>can transform new points</strong>, and preserves more global structure. Available via <code>pip install umap-learn</code> → <code>from umap import UMAP</code>. Increasingly preferred over t-SNE in practice.</p>
+    </div>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-ul5"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('ul5')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('ul4')">← DBSCAN</button>
     <button class="btn btn-outline" onclick="nav('quiz')">Practice All Topics</button>
   </div>
 </div>
@@ -6410,7 +6585,8 @@ const TOPICS = {
   ul1: 'UL L1: Fundamentals',
   ul2: 'UL L2: K-Means Clustering',
   ul3: 'UL L3: Hierarchical Clustering',
-  ul4: 'UL L4: DBSCAN'
+  ul4: 'UL L4: DBSCAN',
+  ul5: 'UL L5: t-SNE'
 };
 
 const ALL_QUESTIONS = [
@@ -6692,7 +6868,15 @@ const ALL_QUESTIONS = [
   {t:'ul4', q:'What is the key advantage of DBSCAN over K-Means when data contains outliers?', opts:['DBSCAN runs faster when outliers are present','DBSCAN ignores all outliers during training and never assigns them','DBSCAN explicitly labels outliers as -1 instead of forcing them into a cluster — K-Means absorbs outliers into whichever cluster centroid is nearest, which distorts the centroid position','DBSCAN automatically removes outliers from the dataset'], ans:2, exp:'K-Means must assign every point to one of k clusters. An extreme outlier gets assigned to the nearest centroid and shifts it away from the true cluster centre. DBSCAN labels isolated points as noise (-1) — they are identified without distorting the discovered clusters. This makes DBSCAN much more robust for anomaly detection and noisy datasets.'},
   {t:'ul4', q:'What is the main limitation of DBSCAN when clusters have different densities?', opts:['DBSCAN cannot handle more than 2 clusters','A single global eps value cannot be optimal for all clusters simultaneously — a dense cluster needs a small eps while a sparse cluster needs a large eps. One eps will either split the dense cluster or merge the sparse ones.','DBSCAN requires the same number of points in each cluster','DBSCAN cannot run on datasets with more than 1000 points'], ans:1, exp:'DBSCAN uses one eps value for the entire dataset. If cluster A is very dense and cluster B is more spread out, no single eps works perfectly for both. Too small and cluster B gets fragmented or becomes noise; too large and clusters merge. HDBSCAN solves this by allowing eps to vary across the space.'},
   {t:'ul4', q:'What is the rule of thumb for choosing min_samples in DBSCAN?', opts:['Always use min_samples=5 regardless of data','min_samples = number of rows / 100','Start at 2 × number of features. Increase for noisier data.','min_samples = square root of the number of data points'], ans:2, exp:'The standard starting point is min_samples = 2 × D, where D is the number of features (dimensions). For a dataset with 8 features, start with min_samples=16. This ensures each core point is truly in a dense region and not just a pair. Increase the value if the data is noisy or you want more stringent cluster definitions.'},
-  {t:'ul4', q:'How do you use the nearest-neighbour distance histogram to choose eps?', opts:['Choose eps as the mean of all pairwise distances','Compute the distance from each point to its nearest neighbour, plot as a histogram, and pick eps at the right tail — where distances start to spread out. This represents where points transition from being in dense regions to being isolated.','Choose eps as the standard deviation of all pairwise distances','Choose eps as the distance between the two most similar points in the dataset'], ans:1, exp:'Most points in dense clusters have a very small nearest-neighbour distance — this shows up as a tall bar on the left of the histogram. Isolated points have larger distances — the right tail. Picking eps at the right tail means: dense-region points will find neighbours within eps (core points), while truly isolated points will not (noise). Starting slightly high and tuning down is the practical approach.'}
+  {t:'ul4', q:'How do you use the nearest-neighbour distance histogram to choose eps?', opts:['Choose eps as the mean of all pairwise distances','Compute the distance from each point to its nearest neighbour, plot as a histogram, and pick eps at the right tail — where distances start to spread out. This represents where points transition from being in dense regions to being isolated.','Choose eps as the standard deviation of all pairwise distances','Choose eps as the distance between the two most similar points in the dataset'], ans:1, exp:'Most points in dense clusters have a very small nearest-neighbour distance — this shows up as a tall bar on the left of the histogram. Isolated points have larger distances — the right tail. Picking eps at the right tail means: dense-region points will find neighbours within eps (core points), while truly isolated points will not (noise). Starting slightly high and tuning down is the practical approach.'},
+  // UL5
+  {t:'ul5', q:'What is the primary purpose of t-SNE?', opts:['To train a classifier on high-dimensional data','To reduce data to 2 or 3 dimensions for visualisation, preserving the local neighbourhood structure of the original high-dimensional space','To replace PCA in all dimensionality reduction pipelines','To cluster data without specifying k'], ans:1, exp:'t-SNE is designed specifically for visualisation. It compresses high-dimensional data to 2D or 3D by preserving local neighbourhood relationships — points that are close in the original space stay close in the 2D output. It is not a general-purpose preprocessing or feature reduction step, and cannot transform new data points.'},
+  {t:'ul5', q:'Why does t-SNE use a Student t-distribution in the low-dimensional space instead of a Gaussian?', opts:['The t-distribution is faster to compute than a Gaussian','The t-distribution has heavier tails, allowing dissimilar points to be placed much further apart — this prevents the crowding problem that occurs when compressing high-dimensional data into 2D','The t-distribution always produces more clusters than a Gaussian','sklearn only supports t-distributions for dimensionality reduction'], ans:1, exp:'When mapping from high-D to 2D, there is far less space available. A Gaussian would force dissimilar points too close together (the crowding problem — caused by the curse of dimensionality). The Student t-distribution has heavier tails, meaning it assigns non-negligible probability to larger distances, giving clusters room to spread out and be visually distinct in the 2D layout.'},
+  {t:'ul5', q:'What does the perplexity parameter control in t-SNE?', opts:['The number of output dimensions (2D or 3D)','The learning rate of gradient descent in step 3','How many neighbouring points each point considers as "local" — it sets the width of the Gaussian in the high-dimensional probability calculation','The number of iterations the algorithm runs'], ans:2, exp:'Perplexity controls the effective number of local neighbours considered for each point. It sets the σ (width) of the Gaussian centred on each point in the high-dimensional space. Small perplexity → only very nearest neighbours matter. Large perplexity → more distant points are also considered neighbours. Typical range: 5–50. Default: 30. Denser datasets benefit from higher perplexity.'},
+  {t:'ul5', q:'What is the crowding problem in t-SNE and how does it solve it?', opts:['Too many clusters are found — solved by increasing perplexity','When compressing from high-D to 2D, there is far less space, so moderately distant points from the original space all get crowded together in 2D — t-SNE solves this by using the Student t-distribution which has heavier tails, allowing those dissimilar points to be pushed further apart','The algorithm creates too many small clusters — solved by using KL divergence','Points with the same label get separated — solved by using symmetric probabilities'], ans:1, exp:'In high-dimensional space there is abundant room for moderately similar points to be spread out. When projected to 2D, all those moderately similar points need to fit in a much smaller space — they get crowded together, obscuring structure. The heavy-tailed t-distribution allows the algorithm to push dissimilar points much further apart in 2D than their original distance would suggest, creating clear visual separation between clusters.'},
+  {t:'ul5', q:'Why is t-SNE non-deterministic and how do you make results reproducible?', opts:['t-SNE is deterministic — it always produces the same result','The KL divergence cost function is non-convex — gradient descent can converge to different local minima from different random starting positions. Set random_state in the TSNE constructor to fix the random seed and get reproducible results.','t-SNE is non-deterministic because it randomly samples data points during training','The perplexity parameter introduces randomness — set it to a fixed integer to get reproducible results'], ans:1, exp:'t-SNE minimises KL divergence using gradient descent. The cost function is non-convex — it has multiple local minima. Starting from a different random initialisation of the 2D point positions leads gradient descent to a different final configuration. Setting random_state=42 (or any fixed seed) fixes the random initialisation so the same result is produced every run. Without it, running t-SNE twice on the same data may yield different layouts.'},
+  {t:'ul5', q:'Why is it recommended to run PCA before t-SNE on high-dimensional data?', opts:['PCA labels must be passed to t-SNE as input','PCA removes all redundant features so t-SNE finds exactly k clusters','t-SNE is slow on data with many features — PCA reduces dimensionality to ~50 components first (retaining most variance), making t-SNE much faster while losing minimal information. This is the standard pipeline for image and genomics data.','t-SNE cannot run on data with more than 100 features without PCA preprocessing'], ans:2, exp:'t-SNE has O(n²) complexity in both rows and features. On 784-feature image data, the pairwise distance calculations are very slow. Running PCA to 50 components first is fast and typically retains 80%+ of the variance — it removes noise and redundancy without losing meaningful structure. t-SNE then works on the 50-dimensional PCA output, which is much faster. This is the standard approach for MNIST and single-cell RNA data.'},
+  {t:'ul5', q:'Which of the following statements about t-SNE output is correct?', opts:['The x and y axis values indicate the most important features','Larger clusters in the t-SNE plot represent denser groups in the original data','The distances between clusters in the 2D plot reliably represent their distances in the original space','Neither the axis positions, cluster sizes, nor distances between clusters in a t-SNE plot are directly interpretable — only the relative proximity of points within the same cluster is meaningful'], ans:3, exp:'t-SNE has three major interpretation pitfalls: (1) Axes mean nothing — x=3.4 has no interpretation. (2) Cluster sizes are not meaningful — t-SNE focuses on local topology and can distort relative densities. (3) Inter-cluster distances are not reliable — the gap between two clusters in 2D does not represent their distance in the original space. Only the local structure (points close together belong to the same group) is trustworthy.'}
 ];
 
 const FLASHCARDS = [
@@ -6972,7 +7156,16 @@ const FLASHCARDS = [
   {t:'ul4', front:'Why does DBSCAN struggle with varying-density clusters?', back:'DBSCAN uses one global eps for the entire dataset.\nA dense cluster needs a small eps; a sparse cluster needs a large eps.\nNo single eps satisfies both simultaneously.\n\nFix: use HDBSCAN — it adapts eps locally across the data space.'},
   {t:'ul4', front:'DBSCAN sklearn — key code pattern?', back:'from sklearn.cluster import DBSCAN\n\ndb = DBSCAN(eps=0.5, min_samples=10)\nlabels = db.fit_predict(X_scaled)  # -1 = noise\n\nn_clusters = len(set(labels)) - (1 if -1 in labels else 0)\nn_noise = (labels == -1).sum()'},
   {t:'ul4', front:'DBSCAN vs K-Means — 3 key differences?', back:'1. Shape: K-Means finds spherical blobs; DBSCAN finds any shape\n2. Outliers: K-Means absorbs them into nearest cluster; DBSCAN labels them -1\n3. k: K-Means requires k upfront; DBSCAN discovers number of clusters from density\n\nTrade-off: K-Means is O(n·k·t) — much faster on large data.'},
-  {t:'ul4', front:'What is HDBSCAN and when should you use it?', back:'Hierarchical DBSCAN — extends DBSCAN by allowing eps to vary across the data.\nFinds clusters of different densities simultaneously.\nRequires only one parameter: min_samples.\n\nUse when: standard DBSCAN fragments sparse clusters or merges dense ones.\nAvailable: sklearn.cluster.HDBSCAN (sklearn ≥ 1.3)'}
+  {t:'ul4', front:'What is HDBSCAN and when should you use it?', back:'Hierarchical DBSCAN — extends DBSCAN by allowing eps to vary across the data.\nFinds clusters of different densities simultaneously.\nRequires only one parameter: min_samples.\n\nUse when: standard DBSCAN fragments sparse clusters or merges dense ones.\nAvailable: sklearn.cluster.HDBSCAN (sklearn ≥ 1.3)'},
+  {t:'ul5', front:'What does t-SNE stand for and what is it for?', back:'t-Distributed Stochastic Neighbour Embedding.\nPurpose: nonlinear dimensionality reduction for VISUALISATION only.\nCompresses high-dimensional data to 2D or 3D while preserving local neighbourhood structure.\nNot a preprocessing step — cannot transform new data.'},
+  {t:'ul5', front:'t-SNE 3-step algorithm?', back:'Step 1: Compute Gaussian probabilities between neighbouring points in high-D space (p)\nStep 2: Compute Student t-distribution probabilities in 2D space (q)\nStep 3: Minimise KL divergence between p and q using gradient descent\n→ The 2D layout that best reproduces the high-D neighbourhoods'},
+  {t:'ul5', front:'Why Student t-distribution in the low-D space (not Gaussian)?', back:'The t-distribution has heavier tails than a Gaussian.\nWhen compressing from high-D to 2D, there is less space → moderately similar points crowd together (crowding problem).\nHeavy tails allow dissimilar points to be placed much further apart → clear visual cluster separation.'},
+  {t:'ul5', front:'Perplexity — what it controls and typical values?', back:'Controls how many neighbours each point considers "local".\nSets the σ width of the Gaussian in the high-D probability step.\n\nToo small (<5): spurious local clumps\nGood range: 5–50\nToo large (>100): clusters blend\nDefault: 30\n\nRule: denser/larger datasets → higher perplexity. Always try multiple values.'},
+  {t:'ul5', front:'Why is t-SNE non-deterministic?', back:'The KL divergence cost function is non-convex — multiple local minima.\nGradient descent starts from a random position → different starts → different layouts.\n\nFix: set random_state=42 in TSNE() to fix the random seed → same result every run.'},
+  {t:'ul5', front:'t-SNE vs PCA — 4 key differences?', back:'1. Linear vs Nonlinear: PCA=linear, t-SNE=nonlinear\n2. Preserves: PCA=global variance, t-SNE=local neighbourhoods\n3. Transform new data: PCA yes, t-SNE no\n4. Axes: PCA=interpretable (% variance), t-SNE=meaningless\n\nUse PCA for feature reduction; t-SNE for visualisation.'},
+  {t:'ul5', front:'3 things t-SNE output does NOT tell you?', back:'1. Axis positions — x/y values have no meaning\n2. Cluster sizes — not proportional to real density\n3. Distances between clusters — gap between blobs ≠ real distance in original space\n\nOnly trustworthy: relative proximity of points WITHIN a cluster.'},
+  {t:'ul5', front:'Why run PCA before t-SNE?', back:'t-SNE is slow: O(n²) in both rows and features.\nFor high-D data (images, genomics), first reduce to ~50 PCA components:\n→ Fast (PCA retains ~80%+ variance)\n→ Removes noise and redundancy\n→ t-SNE on 50D is much faster than on 784D\nStandard pipeline: StandardScaler → PCA(50) → TSNE(2)'},
+  {t:'ul5', front:'UMAP — why is it gaining on t-SNE?', back:'UMAP (Uniform Manifold Approximation and Projection):\n• Faster — scales better to large datasets\n• Can transform new data points (unlike t-SNE)\n• Preserves more global structure\n• Also nonlinear, also preserves local topology\n\nUsage: from umap import UMAP; UMAP().fit_transform(X)'}
 ];
 
 // ===================== STATE =====================
@@ -7000,7 +7193,7 @@ function nav(page) {
   document.getElementById('main').scrollTop = 0;
   const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
   if (navEl) navEl.classList.add('active');
-  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1','pe2','pe3','pe4','pe5','ul1','ul2','ul3','ul4'].includes(page)) {
+  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1','pe2','pe3','pe4','pe5','ul1','ul2','ul3','ul4','ul5'].includes(page)) {
     markVisited(page);
     renderInlineQuiz(page);
   }
@@ -7020,7 +7213,7 @@ function markVisited(w) {
 function updateGlobalProgress() {
   const pct = Math.round((visited.length / 25) * 100);
   document.getElementById('global-progress-bar').style.width = pct + '%';
-  document.getElementById('global-progress-label').textContent = `${visited.length} of 31 lessons visited`;
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 32 lessons visited`;
 }
 
 // ===================== INLINE QUIZ =====================
