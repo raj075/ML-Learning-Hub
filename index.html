@@ -258,6 +258,9 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
   <div class="nav-item nav-item-chapter" onclick="toggleChapter('unsupervised')"><span class="icon">🔍</span> Unsupervised Learning<span class="chapter-arrow" id="arrow-unsupervised">▾</span></div>
   <div class="nav-chapter-items" id="chapter-unsupervised">
     <div class="nav-item nav-item-sub" onclick="nav('ul1')" id="nav-ul1"><span class="icon">🌐</span> L1: Fundamentals<span class="check" id="check-ul1"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('ul2')" id="nav-ul2"><span class="icon">🔵</span> L2: K-Means Clustering<span class="check" id="check-ul2"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('ul3')" id="nav-ul3"><span class="icon">🌳</span> L3: Hierarchical Clustering<span class="check" id="check-ul3"></span></div>
+    <div class="nav-item nav-item-sub" onclick="nav('ul4')" id="nav-ul4"><span class="icon">🔴</span> L4: DBSCAN<span class="check" id="check-ul4"></span></div>
   </div>
 
   <div class="sidebar-section" style="margin-top:10px">Practice</div>
@@ -1275,6 +1278,9 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
         <div class="chip-chapter-label">🔍 Unsupervised Learning</div>
         <div class="topic-chips">
           <div class="topic-chip" id="chip-ul1" onclick="toggleChip('ul1')">L1: Fundamentals</div>
+          <div class="topic-chip" id="chip-ul2" onclick="toggleChip('ul2')">L2: K-Means Clustering</div>
+          <div class="topic-chip" id="chip-ul3" onclick="toggleChip('ul3')">L3: Hierarchical Clustering</div>
+          <div class="topic-chip" id="chip-ul4" onclick="toggleChip('ul4')">L4: DBSCAN</div>
         </div>
       </div>
     </div>
@@ -1382,6 +1388,9 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
       <div class="chip-chapter-label">🔍 Unsupervised Learning</div>
       <div class="topic-chips">
         <div class="topic-chip" id="fc-chip-ul1" onclick="fcFilter('ul1')">L1: Fundamentals</div>
+        <div class="topic-chip" id="fc-chip-ul2" onclick="fcFilter('ul2')">L2: K-Means Clustering</div>
+        <div class="topic-chip" id="fc-chip-ul3" onclick="fcFilter('ul3')">L3: Hierarchical Clustering</div>
+        <div class="topic-chip" id="fc-chip-ul4" onclick="fcFilter('ul4')">L4: DBSCAN</div>
       </div>
     </div>
   </div>
@@ -5623,6 +5632,744 @@ for epoch in range(1500):
   <div class="btn-row">
     <button class="btn btn-primary" onclick="startTopicQuiz('ul1')">📝 Full Topic Quiz</button>
     <button class="btn btn-outline" onclick="nav('pe5')">← Model Selection</button>
+    <button class="btn btn-outline" onclick="nav('ul2')">K-Means Clustering →</button>
+  </div>
+</div>
+
+<div class="page" id="page-ul2">
+  <div class="lesson-header">
+    <div class="breadcrumb">Unsupervised Learning · L2</div>
+    <h1>🔵 K-Means Clustering</h1>
+    <p class="subtitle">Partitioning data into k groups by iteratively assigning points to the nearest centroid</p>
+  </div>
+
+  <h2>What is K-Means?</h2>
+  <p>K-Means partitions <strong>n</strong> data points into exactly <strong>k</strong> clusters. You decide k upfront. Each cluster is defined by its <strong>centroid</strong> — the mean of all points assigned to it. Every point belongs to whichever cluster has the nearest centroid.</p>
+
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <p style="margin:0 0 6px"><strong>Key properties:</strong></p>
+    <ul style="margin:0; font-size:0.88rem; line-height:1.9; color:var(--text-muted); padding-left:18px">
+      <li><strong>Hard clustering</strong> — each point belongs to exactly one cluster, no partial membership</li>
+      <li><strong>Flat structure</strong> — no hierarchy between clusters</li>
+      <li><strong>Sensitive to k</strong> and the random initialisation of centroids</li>
+      <li>Produces exactly k clusters of greatest possible distinction</li>
+    </ul>
+  </div>
+
+  <h2>The Algorithm</h2>
+  <p>Two steps repeated until convergence (assignments stop changing):</p>
+
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.85rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:10px 14px; color:var(--text-muted); width:30%">Step</th>
+        <th style="text-align:left; padding:10px 14px; color:var(--text-muted)">What happens</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:10px 14px"><strong>0. Initialise</strong></td>
+        <td style="padding:10px 14px">Randomly place k centroids in the feature space</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:10px 14px"><strong>1. Assign</strong></td>
+        <td style="padding:10px 14px">Each point is assigned to the nearest centroid (Euclidean distance)</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px"><strong>2. Update</strong></td>
+        <td style="padding:10px 14px">Recalculate each centroid as the mean of all assigned points. Go to step 1.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="callout callout-info">
+    <strong>Convergence:</strong> The loop stops when no point changes its cluster assignment between iterations. The centroids have stabilised.
+  </div>
+
+  <h2>K-Means in sklearn</h2>
+
+  <div class="code-block"><pre><code>from sklearn.cluster import KMeans
+
+# 1. Create the model
+kmeans = KMeans(n_clusters=2, n_init=10, random_state=0)
+
+# 2. Fit to data
+kmeans.fit(data)
+
+# 3. Get cluster labels for each point
+cluster_assignment = kmeans.predict(data)
+# → array([0, 1, 0, 0, 1, 1, ...])
+
+# 4. Inspect centroids
+print(kmeans.cluster_centers_)  # shape: (n_clusters, n_features)</code></pre></div>
+
+  <h3>Practical example — customer spending data</h3>
+
+  <div class="code-block"><pre><code>import pandas as pd
+from sklearn.cluster import KMeans
+import seaborn as sns
+
+customers_data = pd.read_csv('data/retail_dataset.csv', index_col='CustomerID')
+
+non_binary_cols = ['balance', 'max_spent', 'mean_spent',
+                   'min_spent', 'n_orders', 'total_items',
+                   'total_refunded', 'total_spent']
+customers = customers_data[non_binary_cols]
+
+# Cluster on 2 features first
+cust2 = customers[['mean_spent', 'max_spent']]
+kmeans = KMeans(n_clusters=2, random_state=0)
+kmeans.fit(cust2)
+cluster_assignment = kmeans.predict(cust2)</code></pre></div>
+
+  <h3>Visualising clusters with pairplot</h3>
+  <div class="code-block"><pre><code>def pairplot_cluster(df, cols, cluster_assignment):
+    df_tmp = df.copy()                       # never modify the original
+    df_tmp['cluster'] = cluster_assignment   # add labels as a column
+    sns.pairplot(df_tmp, vars=cols, hue='cluster')
+
+pairplot_cluster(customers, ['mean_spent', 'max_spent'], cluster_assignment)</code></pre></div>
+
+  <div class="card" style="border-left:3px solid #10b981">
+    <p style="margin:0 0 6px"><strong>📊 How to read a pairplot:</strong></p>
+    <ul style="margin:0; font-size:0.88rem; line-height:1.9; color:var(--text-muted); padding-left:18px">
+      <li><strong>Diagonal</strong> — KDE density curves showing the distribution of each feature per cluster</li>
+      <li><strong>Off-diagonal</strong> — scatter plots showing the relationship between two features, coloured by cluster</li>
+      <li>Clean separation between colours = well-defined clusters</li>
+      <li>Mixed/overlapping colours = clusters found in other dimensions, not visible in this 2D projection</li>
+    </ul>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>2 features vs all features:</strong> When clustering on 2 features, the boundary is visible in the pairplot — you can draw a line between the colours. When clustering on all 8 features, K-Means finds the boundary in 8D space. Plotting in 2D collapses 6 dimensions of information, so points that are separated in 8D appear to overlap in 2D. The clustering is still valid — the 2D plot just can't show the full separation.
+  </div>
+
+  <h3>Inspecting centroids and comparing clusters</h3>
+
+  <div class="code-block"><pre><code># Get centroids as a readable DataFrame
+centers_df = pd.DataFrame(data=kmeans.cluster_centers_, columns=customers.columns)
+print(centers_df[['mean_spent', 'max_spent']])
+#    mean_spent  max_spent
+# 0   -0.246314  -0.307733   ← cluster 0: below average spenders
+# 1    1.296726   1.620072   ← cluster 1: well above average spenders
+
+# Compare clusters using describe()
+cluster0 = customers[cluster_assignment == 0]   # boolean mask filter
+cluster1 = customers[cluster_assignment == 1]
+
+desc0 = cluster0[['mean_spent', 'max_spent']].describe()
+desc1 = cluster1[['mean_spent', 'max_spent']].describe()
+
+compare = desc0.join(desc1, lsuffix='_cluster0', rsuffix='_cluster1')
+print(compare)</code></pre></div>
+
+  <div class="card" style="border-left:3px solid #10b981">
+    <p style="margin:0 0 6px"><strong>Reading standardised centroid values:</strong></p>
+    <p style="margin:0; font-size:0.88rem; line-height:1.7; color:var(--text-muted)">Values are in standard deviations from the population mean. <strong>0 = average, +1 = one std above, −1 = one std below.</strong> A centroid at +1.3 means that cluster's typical member spends 1.3 standard deviations more than the average customer — a meaningfully high spender.</p>
+  </div>
+
+  <h3>Visualising distributions with a box plot</h3>
+  <div class="code-block"><pre><code>sns.boxplot(data=[cluster0.mean_spent, cluster1.mean_spent])
+plt.xlabel('Cluster')
+plt.ylabel('mean_spent (standardised)')</code></pre></div>
+
+  <p>How to read a box plot:</p>
+  <ul>
+    <li><strong>Middle line</strong> — median (50th percentile)</li>
+    <li><strong>Box edges</strong> — 25th and 75th percentile (the IQR — middle 50% of data)</li>
+    <li><strong>Whiskers</strong> — extend to the furthest non-outlier point (typically 1.5 × IQR)</li>
+    <li><strong>Circles beyond whiskers</strong> — outliers: individual points unusually far from the rest</li>
+    <li><strong>Wide box</strong> — high spread within the cluster; <strong>narrow box</strong> — tight, homogeneous cluster</li>
+  </ul>
+
+  <h2>Inertia — What K-Means Optimises</h2>
+  <p>K-Means minimises a quantity called <strong>inertia</strong> — the within-cluster sum of squared distances from each point to its centroid:</p>
+
+  <div class="card" style="background:var(--surface); text-align:center; padding:14px 20px; font-size:0.95rem">
+    I = Σ Σ D(x, μᵢ)²
+    <p style="margin:8px 0 0; font-size:0.8rem; color:var(--text-muted)">Sum over all clusters i, then all points x in cluster i. D = Euclidean distance to centroid μᵢ</p>
+  </div>
+
+  <div class="code-block"><pre><code>print(f'Inertia: {kmeans.inertia_:.2f}')  # available after fitting</code></pre></div>
+
+  <ul>
+    <li>Lower inertia = tighter, more compact clusters</li>
+    <li>Zero = one point per cluster (useless — too many clusters)</li>
+    <li>The raw value is meaningless alone — only useful for <em>comparison</em> across different k values</li>
+    <li>Assumes <strong>globular (circular) clusters</strong> — works poorly for elongated or irregular shapes</li>
+  </ul>
+
+  <h2>Local Optima — Why n_init Matters</h2>
+  <p>K-Means starts with random centroids and converges to the nearest local optimum. Different random starts can give very different results.</p>
+
+  <div class="code-block"><pre><code># n_init=10 (default): runs K-Means 10 times with different random seeds
+# keeps the run with the lowest inertia
+kmeans = KMeans(n_clusters=3, n_init=10, random_state=0)
+kmeans.fit(data)</code></pre></div>
+
+  <div class="callout callout-warning">
+    <strong>Always scale your features before K-Means.</strong> K-Means uses Euclidean distance. A feature with values in the thousands dominates over a feature ranging 0–1 — not because it's more informative, but purely because of scale. Use StandardScaler or MinMaxScaler first.
+  </div>
+
+  <div class="code-block"><pre><code>from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+customers_scaled = scaler.fit_transform(customers)
+
+kmeans = KMeans(n_clusters=2, n_init=10, random_state=0)
+kmeans.fit(customers_scaled)</code></pre></div>
+
+  <h2>Choosing k: Elbow Method</h2>
+  <p>Plot inertia against k and look for the <strong>elbow</strong> — where the rate of decline levels off. Before the elbow, adding clusters meaningfully tightens them. After it, you're over-splitting noise.</p>
+
+  <div class="code-block"><pre><code>inertias = []
+k_vals = range(1, 21)
+
+for k in k_vals:
+    km = KMeans(n_clusters=k, n_init=10, random_state=0)
+    km.fit(customers_scaled)
+    inertias.append(km.inertia_)
+
+plt.plot(k_vals, inertias, marker='s')
+plt.xlabel('Number of Clusters (k)')
+plt.ylabel('Inertia')
+plt.title('Elbow Method')</code></pre></div>
+
+  <h2>Choosing k: Silhouette Score</h2>
+  <p>The silhouette score measures how well each point fits its assigned cluster vs how close it is to the nearest rival cluster. For each point:</p>
+
+  <div class="card" style="background:var(--surface); padding:14px 20px">
+    <p style="margin:0 0 8px; font-size:0.9rem; text-align:center"><strong>s(i) = (b − a) / max(a, b)</strong></p>
+    <ul style="margin:0; font-size:0.85rem; line-height:1.9; color:var(--text-muted); padding-left:18px">
+      <li><strong>a</strong> = mean distance to all other points in the <em>same</em> cluster (cohesion — want small)</li>
+      <li><strong>b</strong> = mean distance to all points in the <em>nearest other</em> cluster (separation — want large)</li>
+      <li>Score +1 = perfectly placed · Score 0 = on the boundary · Score −1 = in the wrong cluster</li>
+    </ul>
+  </div>
+
+  <div class="code-block"><pre><code>from sklearn.metrics import silhouette_score
+
+k_vals = range(1, 21)
+silhouette_scores = []
+inertias = []
+
+for k in k_vals:
+    km = KMeans(n_clusters=k, n_init=10, random_state=0)
+    km.fit(customers_scaled)
+    inertias.append(km.inertia_)
+
+    if k > 1:   # silhouette undefined for k=1 (no "other cluster" to compare)
+        labels = km.predict(customers_scaled)
+        silhouette_scores.append(silhouette_score(customers_scaled, labels))
+    else:
+        silhouette_scores.append(None)  # placeholder — keeps list lengths equal
+
+# Choose k with highest silhouette score
+print(f'Best k by silhouette: {k_vals[silhouette_scores.index(max(s for s in silhouette_scores if s))]}')</code></pre></div>
+
+  <h3>Reading the dual plot (inertia + silhouette)</h3>
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <p style="margin:0 0 8px"><strong>How to interpret the combined chart:</strong></p>
+    <ul style="margin:0; font-size:0.88rem; line-height:1.9; color:var(--text-muted); padding-left:18px">
+      <li><strong>Inertia (orange)</strong> — always decreases. Look for where the curve bends (elbow)</li>
+      <li><strong>Silhouette (blue)</strong> — higher is better. Pick the peak</li>
+      <li>When both agree on the same k → high confidence that k is the right choice</li>
+      <li>When they disagree → investigate both candidates; silhouette is generally more reliable</li>
+      <li>Secondary peaks in silhouette suggest meaningful sub-clusters worth exploring</li>
+    </ul>
+  </div>
+
+  <h2>Pros and Cons</h2>
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.84rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:8px 14px; color:#10b981">✅ Pros</th>
+        <th style="text-align:left; padding:8px 14px; color:#ef4444">❌ Cons</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 14px">Fast — scales to large datasets</td>
+        <td style="padding:8px 14px">Must choose k upfront</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 14px">Easy to interpret — centroids are meaningful</td>
+        <td style="padding:8px 14px">Converges to local optimum (use n_init)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 14px">Simple two-step algorithm</td>
+        <td style="padding:8px 14px">Assumes globular (circular) cluster shapes</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 14px">Assigning new points is trivial</td>
+        <td style="padding:8px 14px">Sensitive to outliers and feature scale</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-ul2"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('ul2')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('ul1')">← Fundamentals</button>
+    <button class="btn btn-outline" onclick="nav('ul3')">Hierarchical Clustering →</button>
+  </div>
+</div>
+
+<div class="page" id="page-ul3">
+  <div class="lesson-header">
+    <div class="breadcrumb">Unsupervised Learning · L3</div>
+    <h1>🌳 Hierarchical Clustering</h1>
+    <p class="subtitle">Building a tree of nested clusters — no need to choose k upfront, and the dendrogram reveals structure at every level</p>
+  </div>
+
+  <h2>Flat vs Hierarchical Clusters</h2>
+  <p>K-Means gives you <strong>flat clusters</strong> — each point is assigned to exactly one cluster and that's it. There is no relationship between clusters themselves.</p>
+  <p>Hierarchical clustering gives you a <strong>tree of clusters</strong> — clusters are made of smaller sub-clusters, which are made of even smaller sub-clusters. Every point can be related to every other point by how far up the tree you need to go before they share a cluster.</p>
+
+  <div class="callout callout-info">
+    <strong>Why does this matter?</strong> Real-world data is often hierarchically structured. Species group into genera, genera into families. Towns group into counties, counties into countries. Words for "sedan" and "SUV" group under "car", which groups under "vehicle". Hierarchical clustering finds this kind of multi-level structure automatically.
+  </div>
+
+  <h2>Two Approaches: Divisive vs Agglomerative</h2>
+
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.84rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:10px 14px; color:var(--text-muted)">Approach</th>
+        <th style="text-align:left; padding:10px 14px; color:var(--text-muted)">Direction</th>
+        <th style="text-align:left; padding:10px 14px; color:var(--text-muted)">How it works</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:10px 14px"><strong>Divisive</strong></td>
+        <td style="padding:10px 14px">Top-down</td>
+        <td style="padding:10px 14px">Start with all points in one cluster → split repeatedly. Hard to implement — splitting requires searching all possible divisions.</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px"><strong>Agglomerative</strong> ✅</td>
+        <td style="padding:10px 14px">Bottom-up</td>
+        <td style="padding:10px 14px">Start with every point as its own cluster → merge the two nearest repeatedly. Simple — at each step just find the closest pair.</td>
+      </tr>
+    </table>
+  </div>
+
+  <p style="margin-top:12px">In practice, <strong>agglomerative clustering</strong> is the standard. We'll focus on this.</p>
+
+  <h2>The Agglomerative Algorithm</h2>
+
+  <div class="card" style="border-left:3px solid var(--accent)">
+    <ol style="margin:0; font-size:0.88rem; line-height:2; color:var(--text-muted); padding-left:20px">
+      <li><strong>Initialise</strong> — treat every data point as its own cluster (N clusters total)</li>
+      <li><strong>Find</strong> the two clusters with the smallest distance D(cᵢ, cⱼ)</li>
+      <li><strong>Merge</strong> them into one combined cluster</li>
+      <li><strong>Remove</strong> the two old clusters, add the new merged one</li>
+      <li>If only one cluster remains → <strong>stop</strong>. Otherwise → go to step 2</li>
+    </ol>
+  </div>
+
+  <h2>Two Decisions You Must Make</h2>
+
+  <h3>1. Distance measure — how far apart are two individual points?</h3>
+  <p>The standard choice is <strong>Euclidean distance</strong> — the straight-line distance between two points in feature space. Other options include cosine similarity (for text) or Manhattan distance.</p>
+
+  <div class="code-block"><pre><code># X[:,0] = all rows, column 0 — first feature of every point
+# X[:,1] = all rows, column 1 — second feature of every point
+# c=y    = colour each point by its true label
+
+plt.scatter(X[:, 0], X[:, 1], c=y)
+# ↑ quickly shows whether true groups are separable in 2D before clustering</code></pre></div>
+
+  <h3>2. Linkage — how far apart are two clusters (each with multiple points)?</h3>
+
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.83rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:9px 12px; color:var(--text-muted)">Linkage</th>
+        <th style="text-align:left; padding:9px 12px; color:var(--text-muted)">Measures distance between…</th>
+        <th style="text-align:left; padding:9px 12px; color:var(--text-muted)">Risk</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:9px 12px"><strong>Single</strong></td>
+        <td style="padding:9px 12px">The two <em>nearest</em> points across clusters</td>
+        <td style="padding:9px 12px">Chaining — one outlier can pull two clusters together early</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:9px 12px"><strong>Complete</strong></td>
+        <td style="padding:9px 12px">The two <em>furthest</em> points across clusters</td>
+        <td style="padding:9px 12px">One outlier can prevent a natural merge</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:9px 12px"><strong>Average</strong></td>
+        <td style="padding:9px 12px">The distance between cluster <em>centroids</em></td>
+        <td style="padding:9px 12px">Can produce unbalanced clusters of very different sizes</td>
+      </tr>
+      <tr>
+        <td style="padding:9px 12px"><strong>Ward ✅</strong></td>
+        <td style="padding:9px 12px">Merge that minimises the <em>increase in total variance</em></td>
+        <td style="padding:9px 12px">Best default — produces compact, balanced clusters</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="callout callout-warning">
+    <strong>Average vs Ward in practice:</strong> Average linkage can push most data into one huge cluster with a few outlier singletons. Ward's method tends to produce more balanced clusters because it directly minimises within-cluster variance at each merge. <strong>Start with Ward unless you have a reason not to.</strong>
+  </div>
+
+  <h2>Implementation</h2>
+
+  <h3>scipy — builds the full hierarchy</h3>
+  <div class="code-block"><pre><code>from scipy.cluster.hierarchy import linkage, dendrogram
+import matplotlib.pyplot as plt
+
+# Build the full hierarchy — returns a linkage matrix Z
+Z = linkage(customers, method='ward', metric='euclidean')
+#                       ↑ linkage type    ↑ distance measure
+
+# Plot the full dendrogram
+plt.figure(figsize=(18, 6))
+dendrogram(Z)
+plt.ylabel('Distance')
+plt.xlabel('Sample index')
+plt.show()</code></pre></div>
+
+  <h3>sklearn — get flat cluster labels directly</h3>
+  <div class="code-block"><pre><code>from sklearn.cluster import AgglomerativeClustering
+
+agglomerative = AgglomerativeClustering(
+    n_clusters=3,       # how many flat clusters to return
+    linkage='ward',
+    metric='euclidean'
+)
+
+# fit_predict does both fit and predict in one step
+cluster_assignment = agglomerative.fit_predict(customers)</code></pre></div>
+
+  <h2>Dendrograms — How to Read Them</h2>
+  <p>A dendrogram is a tree diagram that records every merge the algorithm made:</p>
+
+  <div class="card" style="border-left:3px solid var(--accent); font-family:monospace; font-size:0.82rem; line-height:2">
+    <p style="margin:0 0 6px; font-family:inherit; color:var(--text-muted)"><strong>Y-axis = Distance</strong> at which two clusters were merged</p>
+    <p style="margin:0 0 6px; font-family:inherit; color:var(--text-muted)"><strong>Horizontal bar height</strong> = how dissimilar those two groups were when they joined</p>
+    <p style="margin:0; font-family:inherit; color:var(--text-muted)"><strong>X-axis</strong> = data points (or cluster sizes in brackets)</p>
+  </div>
+
+  <div class="card" style="background:var(--surface); margin-top:12px; padding:16px 20px">
+    <p style="margin:0 0 10px; font-size:0.85rem; font-weight:600">Reading the dendrogram visually:</p>
+    <pre style="margin:0; font-size:0.8rem; color:var(--text-muted); line-height:1.9">130 ─── biggest merge (most different groups joined here)
+    │
+ 85 ─── second biggest gap ← natural break in the data
+    │
+ 63 ─── within-cluster merges (similar points)
+    │
+ 22 ─── very similar points merging early
+    │
+  0 ─── individual data points at the bottom</pre>
+    <p style="margin:10px 0 0; font-size:0.82rem; color:var(--text-muted)"><strong>Key rule:</strong> A tall vertical gap before a horizontal bar = a natural break. The data on either side of that gap is genuinely different.</p>
+  </div>
+
+  <h3>How to choose k from a dendrogram</h3>
+  <p>Imagine drawing a horizontal line across the chart. Every time your line crosses a vertical branch = one cluster:</p>
+
+  <div class="card" style="background:var(--surface); padding:14px 20px">
+    <pre style="margin:0; font-size:0.82rem; color:var(--text-muted); line-height:2">Cut at height 100  →  line crosses 2 branches  →  2 clusters
+Cut at height 70   →  line crosses 3 branches  →  3 clusters
+Cut at height 40   →  line crosses 5 branches  →  5 clusters
+
+↳ Choose the cut height just below the LARGEST gap — that gives
+  you the most natural number of clusters.</pre>
+  </div>
+
+  <h2>Truncation — Simplifying Large Dendrograms</h2>
+  <p>With 150+ data points the full dendrogram is unreadable. Truncation shows only the top <strong>p</strong> merges:</p>
+
+  <div class="code-block"><pre><code>plt.figure(figsize=(18, 6))
+dendrogram(
+    Z,
+    truncate_mode='lastp',   # show only the last p merges
+    p=20,                    # number of leaf nodes to show
+    color_threshold=70       # colour branches that merge below this height the same colour
+)
+plt.ylabel('Distance')
+plt.xlabel('Sample index or (cluster size)')
+plt.show()
+
+# Numbers in (brackets) = cluster size e.g. (83) means 83 customers merged into this node
+# Numbers without brackets = a single data point's index</code></pre></div>
+
+  <h2>Visualising and Understanding Clusters</h2>
+
+  <div class="code-block"><pre><code># After getting flat cluster labels, use pairplot to visualise
+def pairplot_cluster(df, cols, cluster_assignment):
+    df_tmp = df.copy()
+    df_tmp['cluster'] = cluster_assignment
+    sns.pairplot(df_tmp, vars=cols, hue='cluster')
+
+pairplot_cluster(customers, ['mean_spent', 'max_spent'], cluster_assignment)
+
+# Compare clusters side by side with scatter — true labels vs cluster assignment
+fig, axs = plt.subplots(1, 2, figsize=(12, 4), sharey=True, sharex=True)
+axs[0].scatter(X[:, 0], X[:, 1], c=y)                # true labels
+axs[1].scatter(X[:, 0], X[:, 1], c=cluster_assignment)  # learned clusters
+plt.show()
+# Note: colours won't match between plots — cluster 0 may correspond to species 2
+# What matters is the SHAPE of the groupings, not the colours</code></pre></div>
+
+  <div class="callout callout-info">
+    <strong>Why colours won't match:</strong> Cluster numbering is arbitrary — K-Means or AgglomerativeClustering assigns label "0" to whichever cluster it finds first. The important thing when comparing is whether the same points are grouped together, not what number they were given.
+  </div>
+
+  <h2>Elbow Method for Hierarchical Clustering</h2>
+  <p>If you don't know how many clusters to use, compute the variance within each flat clustering for different values of k:</p>
+
+  <div class="code-block"><pre><code>def cluster_variance(points):
+    """Mean within-cluster variance — lower means tighter clusters."""
+    N = points.shape[0]
+    total = 0
+    for i in range(N):
+        for j in range(N):
+            total += 0.5 * np.linalg.norm(points[i, :] - points[j, :]) ** 2
+    return total / (N ** 2)
+
+# Plot variance vs number of clusters — look for the elbow
+variances = []
+for k in range(2, 15):
+    ac = AgglomerativeClustering(n_clusters=k, linkage='ward')
+    labels = ac.fit_predict(X)
+    cluster_vars = [cluster_variance(X[labels == c]) for c in np.unique(labels)]
+    variances.append(np.mean(cluster_vars))
+
+plt.plot(range(2, 15), variances, marker='s')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Mean Within-Cluster Variance')
+plt.title('Elbow Method')</code></pre></div>
+
+  <h2>Pros and Cons</h2>
+  <div class="card" style="padding:0; overflow:hidden">
+    <table style="width:100%; font-size:0.84rem; border-collapse:collapse">
+      <tr style="background:var(--surface); border-bottom:1px solid var(--border)">
+        <th style="text-align:left; padding:8px 14px; color:#10b981">✅ Pros</th>
+        <th style="text-align:left; padding:8px 14px; color:#ef4444">❌ Cons</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 14px">No need to choose k upfront — cut wherever you like</td>
+        <td style="padding:8px 14px">Slower than K-Means — O(n³) for naive implementation</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 14px">Dendrogram shows structure at ALL levels in one plot</td>
+        <td style="padding:8px 14px">Can give poor results in high-dimensional data</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 14px">Intuitive and easy to explain to non-technical stakeholders</td>
+        <td style="padding:8px 14px">Linkage choice is rarely theoretically justified — mostly heuristic</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 14px">One run gives you every possible flat clustering</td>
+        <td style="padding:8px 14px">Early merges are irreversible — a bad merge can't be undone</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-ul3"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('ul3')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('ul2')">← K-Means</button>
+    <button class="btn btn-outline" onclick="nav('ul4')">DBSCAN →</button>
+  </div>
+</div>
+
+<div class="page" id="page-ul4">
+  <div class="page-header">
+    <div class="chapter-badge">Unsupervised Learning</div>
+    <h1>L4: DBSCAN</h1>
+    <p class="subtitle">Density-Based Spatial Clustering of Applications with Noise — finds clusters of any shape and explicitly labels outliers.</p>
+  </div>
+
+  <div class="card">
+    <h2>Why DBSCAN?</h2>
+    <p>K-Means and Hierarchical clustering share two hard limitations:</p>
+    <ul>
+      <li>They force every point into a cluster — outliers get silently absorbed</li>
+      <li>They only find <strong>convex (blob-shaped)</strong> clusters — rings, crescents, and irregular shapes get split incorrectly</li>
+    </ul>
+    <p>DBSCAN solves both. It finds clusters of <strong>any shape</strong>, requires <strong>no k upfront</strong>, and explicitly labels noise points as <strong>-1</strong>.</p>
+    <div class="key-concept">
+      <div class="label">Core Idea</div>
+      <p>A <strong>cluster is a dense region of points, separated from other clusters by sparse regions</strong>. DBSCAN grows clusters by expanding outward from dense areas — not by measuring distance to a centroid.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>The 2 Parameters</h2>
+    <table class="styled-table">
+      <thead><tr><th>Parameter</th><th>What it means</th><th>Too small</th><th>Too large</th></tr></thead>
+      <tbody>
+        <tr><td><code>eps</code> (ε)</td><td>The search radius around each point</td><td>Most points become noise</td><td>Everything merges into one cluster</td></tr>
+        <tr><td><code>min_samples</code></td><td>Minimum neighbours needed inside eps to be "dense"</td><td>Too many cores, noisy clusters</td><td>Too few cores, most points become noise</td></tr>
+      </tbody>
+    </table>
+    <div class="key-concept">
+      <div class="label">Starting Rule of Thumb</div>
+      <p><strong>min_samples:</strong> start at <code>2 × number of features</code>. For 10 features → <code>min_samples=20</code>. Increase for noisier data.<br>
+      <strong>eps:</strong> use the nearest-neighbour distance histogram (see below).</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>The 3 Point Types</h2>
+    <p>Given eps and min_samples, every point is classified as exactly one of:</p>
+    <table class="styled-table">
+      <thead><tr><th>Type</th><th>Definition</th><th>Label</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Core point</strong></td><td>Has ≥ min_samples neighbours within radius eps (including itself)</td><td>Belongs to a cluster</td></tr>
+        <tr><td><strong>Border point</strong></td><td>Has &lt; min_samples neighbours, but is within eps of a core point</td><td>Belongs to that core's cluster</td></tr>
+        <tr><td><strong>Noise point</strong></td><td>Not within eps of any core point — genuinely isolated</td><td><strong>-1</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="vis-container">
+      <div class="vis-label">Point classification with min_samples = 4</div>
+      <pre style="font-family:monospace; font-size:0.85rem; line-height:1.8; background:var(--bg-secondary); padding:1rem; border-radius:8px; overflow-x:auto;">
+          ┌─── eps radius around A ───┐
+    N     │   •    •    A    •    •   │    B
+ (noise)  │        (core point)       │ (border)
+          └───────────────────────────┘
+
+  A: 4 points inside its circle → core
+  B: inside A's circle but &lt;4 of its own → border
+  N: not within eps of any core → noise (label = -1)</pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>How Clusters Form: Reachability</h2>
+    <ul>
+      <li><strong>Directly reachable:</strong> q is within eps of core point p</li>
+      <li><strong>Reachable:</strong> there is a chain of directly-reachable steps from p to q (all intermediate points must be core points)</li>
+      <li><strong>Cluster:</strong> all points reachable from a core point form one cluster</li>
+    </ul>
+    <p>Border points <em>belong</em> to a cluster but cannot <em>extend</em> it — they are endpoints in the chain, not stepping stones.</p>
+    <div class="key-concept">
+      <div class="label">Noise Point Exception</div>
+      <p>A point labelled noise early on can be "rescued" later — if a different core point's expansion reaches it, it becomes a border point. Labels can change during the full sweep.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>The Algorithm (Step by Step)</h2>
+    <ol>
+      <li>Pick any unvisited point</li>
+      <li>Count all neighbours within eps</li>
+      <li>If neighbours ≥ min_samples → <strong>core point</strong> → start/extend a cluster, add all neighbours, recursively expand from each neighbour</li>
+      <li>If neighbours &lt; min_samples and not reachable from any core → label <strong>noise (-1)</strong></li>
+      <li>Repeat until all points have been visited</li>
+    </ol>
+    <p>No random initialisation — the algorithm is fully deterministic. Run it twice on the same data and you get the same result.</p>
+  </div>
+
+  <div class="card">
+    <h2>Choosing eps: Nearest-Neighbour Histogram</h2>
+    <p>Before fitting DBSCAN, measure how far each point is from its closest neighbour. This reveals what "typical distance" looks like in your scaled data space.</p>
+    <div class="code-block"><pre><span class="kw">from</span> sklearn.metrics.pairwise <span class="kw">import</span> pairwise_distances
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+<span class="cm"># n × n distance matrix — every point vs every other point</span>
+all_distances = pairwise_distances(X_scaled, metric=<span class="st">'euclidean'</span>)
+
+<span class="cm"># For each point, find distance to nearest neighbour (exclude self = 0)</span>
+neig_distances = [np.min(row[np.nonzero(row)]) <span class="kw">for</span> row <span class="kw">in</span> all_distances]
+
+<span class="cm"># np.nonzero(row) returns indices where row != 0 (excludes the 0.0 self-distance)</span>
+<span class="cm"># np.min(...) picks the smallest remaining distance = nearest neighbour</span>
+
+plt.hist(neig_distances, bins=<span class="num">100</span>)
+plt.xlabel(<span class="st">'Distance to nearest neighbour'</span>)
+plt.ylabel(<span class="st">'Count'</span>)
+plt.show()</pre></div>
+    <div class="vis-container">
+      <div class="vis-label">How to read the histogram</div>
+      <pre style="font-family:monospace; font-size:0.85rem; line-height:1.8; background:var(--bg-secondary); padding:1rem; border-radius:8px;">
+ Count
+   │ ████
+   │ ████████
+   │ ████████████
+   │ ████████████████
+   │ ████████████████████▄▄___
+   └────────────────────────────→ distance
+      dense region here   ↑
+                    pick eps in the right tail</pre>
+    </div>
+    <p>Pick eps at the <strong>right tail</strong> — where the histogram thins out. Start slightly high and tune downward. Too low → almost everything becomes noise. Too high → everything merges into one cluster.</p>
+    <div class="key-concept">
+      <div class="label">O(n²) Warning</div>
+      <p><code>pairwise_distances</code> computes n × n distances. For 8,636 points that is ~74 million calculations — fine here, but too slow for 100k+ rows. For large data, use <code>sklearn.neighbors.NearestNeighbors(n_neighbors=2).fit(X)</code> instead — it only finds the nearest k neighbours, not all pairwise distances.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Full sklearn Workflow</h2>
+    <div class="code-block"><pre><span class="kw">from</span> sklearn.cluster <span class="kw">import</span> DBSCAN
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
+<span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+<span class="cm"># 1. Scale — eps is a distance, so raw scales dominate without this</span>
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+<span class="cm"># 2. Fit DBSCAN</span>
+db = DBSCAN(eps=<span class="num">0.5</span>, min_samples=<span class="num">10</span>)
+labels = db.fit_predict(X_scaled)
+
+<span class="cm"># 3. Summarise results</span>
+n_clusters = len(set(labels)) - (<span class="num">1</span> <span class="kw">if</span> -<span class="num">1</span> <span class="kw">in</span> labels <span class="kw">else</span> <span class="num">0</span>)
+n_noise    = (labels == -<span class="num">1</span>).sum()
+print(<span class="st">f"Clusters: {n_clusters},  Noise points: {n_noise} ({n_noise/len(labels)*100:.1f}%)"</span>)
+
+<span class="cm"># 4. Visualise via PCA (reduce to 2D for plotting)</span>
+X_2d = PCA(n_components=<span class="num">2</span>).fit_transform(X_scaled)
+plt.scatter(X_2d[:, <span class="num">0</span>], X_2d[:, <span class="num">1</span>], c=labels, s=<span class="num">5</span>, cmap=<span class="st">'tab10'</span>)
+plt.colorbar(label=<span class="st">'Cluster  (-1 = noise)'</span>)
+plt.title(<span class="st">'DBSCAN clusters (PCA projection)'</span>)
+plt.show()</pre></div>
+    <div class="key-concept">
+      <div class="label">Why clusters can overlap in the PCA plot</div>
+      <p>DBSCAN separates points in the <strong>full feature space</strong> (all dimensions). PCA compresses that to 2D — dimensions are lost. Points that are well-separated in high-D can appear at the same position in 2D. The clustering is still valid; the plot just cannot show the full separation.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>DBSCAN vs K-Means vs Hierarchical</h2>
+    <table class="styled-table">
+      <thead><tr><th></th><th>K-Means</th><th>Hierarchical</th><th>DBSCAN</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Need k upfront?</strong></td><td>Yes</td><td>No (dendrogram)</td><td>No</td></tr>
+        <tr><td><strong>Cluster shapes</strong></td><td>Spherical only</td><td>Any (Ward ≈ spherical)</td><td>Any shape</td></tr>
+        <tr><td><strong>Handles outliers?</strong></td><td>No — absorbs them</td><td>No — absorbs them</td><td>Yes — labels as -1</td></tr>
+        <tr><td><strong>Deterministic?</strong></td><td>No (random init)</td><td>Yes</td><td>Yes</td></tr>
+        <tr><td><strong>Speed</strong></td><td>O(n·k·t) — fast</td><td>O(n²)–O(n³)</td><td>O(n²) naive</td></tr>
+        <tr><td><strong>Best for</strong></td><td>Known k, clean data, blobs, large datasets</td><td>Exploration, taxonomy, small data</td><td>Irregular shapes, anomaly detection, noisy data</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Pros and Cons</h2>
+    <table class="styled-table">
+      <thead><tr><th>Pros</th><th>Cons</th></tr></thead>
+      <tbody>
+        <tr><td>No k needed — discovers number of clusters from data density</td><td>eps and min_samples are hard to tune without domain knowledge</td></tr>
+        <tr><td>Finds clusters of any shape</td><td>Struggles with clusters of <strong>varying density</strong> — one global eps cannot fit all</td></tr>
+        <tr><td>Explicitly marks outliers as -1</td><td>O(n²) distance computation — slow on large datasets</td></tr>
+        <tr><td>Deterministic — same result every run</td><td>Must scale features — eps is distance-sensitive</td></tr>
+        <tr><td>Robust to input outliers (does not pull clusters toward them)</td><td>High dimensionality: all distances become similar (curse of dimensionality)</td></tr>
+      </tbody>
+    </table>
+    <div class="key-concept">
+      <div class="label">HDBSCAN — the next step</div>
+      <p>HDBSCAN (Hierarchical DBSCAN) allows eps to vary across the data — it finds clusters of different densities simultaneously and requires only one parameter (min_samples). Available via the <code>hdbscan</code> package and sklearn ≥ 1.3 (<code>sklearn.cluster.HDBSCAN</code>).</p>
+    </div>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-ul4"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('ul4')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('ul3')">← Hierarchical Clustering</button>
     <button class="btn btn-outline" onclick="nav('quiz')">Practice All Topics</button>
   </div>
 </div>
@@ -5660,7 +6407,10 @@ const TOPICS = {
   pe3: 'PME L3: Feature Selection',
   pe4: 'PME L4: Model Optimisation',
   pe5: 'PME L5: Model Selection',
-  ul1: 'UL L1: Fundamentals'
+  ul1: 'UL L1: Fundamentals',
+  ul2: 'UL L2: K-Means Clustering',
+  ul3: 'UL L3: Hierarchical Clustering',
+  ul4: 'UL L4: DBSCAN'
 };
 
 const ALL_QUESTIONS = [
@@ -5918,7 +6668,31 @@ const ALL_QUESTIONS = [
   {t:'ul1', q:'What is a major application of generative models in unsupervised learning?', opts:['Detecting errors in data','Supervising other models','Improving data labels','Generating synthetic data by learning the data distribution P(X)'], ans:3, exp:'Generative models learn the full data distribution P(X) and use it to synthesise new realistic examples. Applications include image generation, text generation, data augmentation for rare classes, and privacy-preserving synthetic datasets. The explosion of image generators and large language models is driven by deep generative models.'},
   {t:'ul1', q:'How is the performance of an unsupervised learning algorithm typically assessed?', opts:['By the accuracy of predictions against correct labels','By standard supervised learning metrics like precision and recall','By evaluating how useful the discovered information is for a downstream task or process','By matching predictions with held-out test data'], ans:2, exp:'Unsupervised models have no labels to compare predictions against. Evaluation is done either extrinsically (checking if discovered clusters align with available labels when they exist) or through utility assessment (do the customer clusters differ in behaviour? does dimensionality reduction improve the classifier?). There is no single universal metric — evaluation is inherently more qualitative.'},
   {t:'ul1', q:'Which task is an example of something that could be approached with BOTH supervised and unsupervised learning?', opts:['Predicting stock market trends','Labelling email as spam','Calculating interest rates','Noise removal from images'], ans:3, exp:'Image denoising can be done supervised (train on pairs of noisy/clean images) or unsupervised (train an autoencoder on clean images only — the model learns a compressed representation that discards noise). This illustrates that the supervised/unsupervised boundary is task-framing, not an inherent property of the problem.'},
-  {t:'ul1', q:'What does unsupervised learning help uncover in complex high-dimensional datasets?', opts:['Supervised patterns requiring labels','Accurate predictions of future outcomes','Insights buried within data — structure, groupings, and relationships not visible through direct inspection','Labelled structures confirmed by experts'], ans:2, exp:'With even 4–5 dimensions, manual visualisation becomes impractical. Unsupervised learning provides tools to surface structure — which clusters exist, which features co-vary, what the outliers look like — that would otherwise be buried in a combinatorial explosion of possible charts. It makes complex data comprehensible without requiring labels.'}
+  {t:'ul1', q:'What does unsupervised learning help uncover in complex high-dimensional datasets?', opts:['Supervised patterns requiring labels','Accurate predictions of future outcomes','Insights buried within data — structure, groupings, and relationships not visible through direct inspection','Labelled structures confirmed by experts'], ans:2, exp:'With even 4–5 dimensions, manual visualisation becomes impractical. Unsupervised learning provides tools to surface structure — which clusters exist, which features co-vary, what the outliers look like — that would otherwise be buried in a combinatorial explosion of possible charts. It makes complex data comprehensible without requiring labels.'},
+  // UL L2 — K-Means Clustering
+  {t:'ul2', q:'What does the K in K-Means refer to?', opts:['The number of iterations the algorithm runs','The number of clusters you specify before training — K-Means always produces exactly this many clusters','The number of features in the dataset','The kernel function used to compute distances'], ans:1, exp:'K is the number of clusters and must be specified by the practitioner before training begins. K-Means always produces exactly K clusters. Choosing K well is one of the main challenges — too small and clusters are too coarse; too large and you over-split natural groupings.'},
+  {t:'ul2', q:'Why must you scale features before applying K-Means?', opts:['Scaling is required by the sklearn API','K-Means uses Euclidean distance — features with larger numeric ranges dominate the distance calculation regardless of their actual importance. Scaling puts all features on equal footing.','Scaling speeds up convergence significantly','Unscaled features cause K-Means to converge to zero clusters'], ans:1, exp:'K-Means assigns points based on Euclidean distance. A feature ranging 0–10,000 has 10,000× more influence on distances than a binary 0/1 feature — not because it is more informative, but purely because of scale. StandardScaler or MinMaxScaler normalises each feature so all contribute equally.'},
+  {t:'ul2', q:'What is inertia in K-Means and what does it measure?', opts:['The number of iterations until convergence','The within-cluster sum of squared distances from each point to its centroid — lower means tighter, more compact clusters','The silhouette score averaged across all points','The total number of centroid updates performed'], ans:1, exp:'Inertia = Σ Σ D(x, μᵢ)². It sums the squared Euclidean distance from every point to its assigned centroid, across all clusters. K-Means minimises this quantity. Lower inertia means points sit closer to their cluster centres. The raw value is not interpretable in isolation — it is only useful for comparing clusterings with different k values.'},
+  {t:'ul2', q:'Why does K-Means sometimes give different results when run multiple times?', opts:['The Euclidean distance formula is non-deterministic','K-Means initialises centroids randomly and converges to a local optimum — different random starts can lead to different final clusterings. The solution is to run multiple times (n_init) and keep the lowest-inertia result.','The algorithm uses a random subset of data each run','sklearn uses a different k each run by default'], ans:1, exp:'K-Means is a greedy iterative algorithm that converges to the nearest local minimum of inertia from its starting point. Two different random initialisations can converge to two different local minima. n_init=10 (the default) runs the whole algorithm 10 times from different random seeds and keeps the best result.'},
+  {t:'ul2', q:'In the silhouette score formula s(i) = (b−a) / max(a,b), what do a and b represent?', opts:['a = cluster size, b = number of features','a = mean distance to points in the same cluster (cohesion), b = mean distance to points in the nearest other cluster (separation)','a = inertia of own cluster, b = inertia of nearest cluster','a = silhouette of nearest neighbour, b = silhouette of centroid'], ans:1, exp:'a(i) measures cohesion — how tightly packed the point is within its own cluster (want small). b(i) measures separation — how far the point is from the nearest rival cluster (want large). When b >> a, the score approaches +1. When b ≈ a, the point sits on a boundary (score ≈ 0). When b < a, the point is closer to another cluster than its own (score negative — wrong cluster).'},
+  {t:'ul2', q:'Why can K-Means clusters appear mixed when visualised in 2D even though the clustering is valid?', opts:['K-Means failed to converge properly','The pairplot function has a bug','The clustering was found in high-dimensional space. A 2D plot collapses all other dimensions — points that are well-separated in the full feature space can overlap when projected onto just two dimensions.','Standardisation removed the cluster structure'], ans:2, exp:'When you cluster on 8 features, K-Means finds boundaries in 8D space. Plotting two of those features discards the other 6 dimensions. Points that are far apart in 8D (well-separated) can end up at the same position in 2D (overlapping). The clusters are real — the 2D projection just cannot show the full separation.'},
+  {t:'ul2', q:'What is the elbow method and what limitation does it have?', opts:['A way to choose the best distance metric; limited to Euclidean distance only','Plot inertia vs k and look for where the rate of decline levels off. Limitation: the elbow is often gradual and subjective — it can be unclear which k is the true elbow, especially on real noisy data.','A method for initialising centroids; limited to small datasets','Plot silhouette vs k; limited because silhouette requires labels'], ans:1, exp:'As k increases, inertia always decreases (more clusters = tighter fit). The elbow is where adding another cluster gives diminishing returns. However, on real data the "elbow" is often a gentle bend rather than a sharp corner, making the choice ambiguous. This is why silhouette score is used as a complementary method — it provides an objective score rather than a visual judgement.'},
+  // UL3
+  {t:'ul3', q:'What is the fundamental difference between agglomerative and divisive hierarchical clustering?', opts:['Agglomerative uses Euclidean distance; divisive uses cosine distance','Agglomerative starts with every point as its own cluster and merges upwards (bottom-up); divisive starts with all points in one cluster and splits downwards (top-down)','Agglomerative requires k to be specified upfront; divisive does not','Agglomerative is supervised; divisive is unsupervised'], ans:1, exp:'Agglomerative (bottom-up): N clusters → 1 cluster by repeatedly merging the two closest clusters. Divisive (top-down): 1 cluster → N clusters by repeatedly splitting. Agglomerative is far more common in practice because it is computationally cheaper — you only need to evaluate local merge decisions rather than all possible splits.'},
+  {t:'ul3', q:'A dendrogram shows a very tall vertical line before two branches merge at the top. What does this indicate?', opts:['A computational error — tall lines mean the algorithm diverged','The two branches being merged were very far apart — a tall gap indicates a natural break, suggesting those should remain as separate clusters','The number of features is too high','The distance metric is inappropriate for the data'], ans:1, exp:'In a dendrogram, the height of a horizontal bar represents the distance at which a merge occurred. A very tall vertical gap means the two subtrees being merged are far apart — they were dissimilar. This is a natural break point: cutting the dendrogram just below that tall bar gives you clusters that are internally similar but externally distinct. Tall gaps = strong cluster boundaries.'},
+  {t:'ul3', q:'Which linkage method is generally recommended as the default for agglomerative clustering, and why?', opts:['Single linkage — it finds the nearest neighbours fastest','Complete linkage — it always produces perfectly spherical clusters','Ward linkage — it minimises the increase in total within-cluster variance at each merge step, producing compact, balanced clusters','Average linkage — it is the mathematical average of the other methods'], ans:2, exp:"Ward's method evaluates each potential merge by asking: how much does combining these two clusters increase the total within-cluster variance? It chooses the merge that increases variance the least. This makes Ward produce compact, roughly equal-sized clusters and tends to give the clearest dendrograms. It is the sklearn default and usually the best starting point unless you have a specific reason to use another linkage."},
+  {t:'ul3', q:'What does single linkage measure, and what problem does it have?', opts:['Distance between the two most distant points in each cluster — causes all clusters to be the same size','Distance between the two nearest points across two clusters — can cause chaining, where clusters elongate and merge via a single close pair rather than reflecting overall group similarity','Distance between the two cluster centroids — biased towards large clusters','Variance within each cluster — tends to produce too many small clusters'], ans:1, exp:"Single linkage defines the distance between two clusters as the distance between their closest pair of points. This causes 'chaining' — a long chain of nearby points can cause two very different groups to merge early because one pair of points happened to be close, even if the groups as wholes are far apart. This makes single linkage bad at finding compact, blob-shaped clusters but good at finding elongated or irregular-shaped clusters."},
+  {t:'ul3', q:'How do you choose the number of clusters k from a dendrogram?', opts:['Always use k = square root of n (number of data points)','Draw a horizontal line across the dendrogram. The number of vertical branches it crosses equals k. Choose a height in a region of tall vertical gaps for the most natural k.','Count the number of leaf nodes and divide by 10','k is always determined by the silhouette score — dendrograms cannot suggest k'], ans:1, exp:'Draw an imaginary horizontal line across the dendrogram. Every vertical line it crosses represents one cluster — the total count is k. To find a natural k, look for regions where vertical bars are very tall (large gaps) and place your cut just below them. The tall gaps indicate that further merges would be forcing together groups that are genuinely dissimilar. This is the dendrogram equivalent of the elbow method.'},
+  {t:'ul3', q:'What is a key advantage of hierarchical clustering over K-Means?', opts:['Hierarchical clustering always runs faster than K-Means','Hierarchical clustering produces a full tree of all possible partitions — you do not need to decide k before running the algorithm; you can explore many values of k from a single run','Hierarchical clustering can only use Euclidean distance, making it more consistent','Hierarchical clustering never requires feature scaling'], ans:1, exp:"K-Means requires you to fix k before running — if you want to try k=3, k=4, and k=5, you must run it three separate times. Hierarchical clustering builds the full merge tree in one pass; the dendrogram encodes every possible k simultaneously. You can explore different k values by changing where you cut the tree, without re-running the algorithm. This makes it much more exploratory-friendly. The trade-off is O(n²) or O(n³) computational cost vs K-Means's O(n·k·t)."},
+  {t:'ul3', q:'Which scipy function builds the linkage matrix for hierarchical clustering, and what does the linkage matrix contain?', opts:['scipy.cluster.hierarchy.dendro() — contains one row per cluster','scipy.cluster.hierarchy.linkage() — contains one row per merge, recording which two clusters merged, the distance at merge, and the size of the resulting cluster','scipy.spatial.hierarchy.merge() — contains centroid coordinates','sklearn.cluster.Hierarchical() — contains cluster labels directly'], ans:1, exp:"scipy.cluster.hierarchy.linkage(X, method='ward') returns a matrix Z of shape (n−1, 4). Each row represents one merge step: [cluster_a, cluster_b, merge_distance, new_cluster_size]. With n data points there are always n−1 merges (each merge reduces cluster count by 1). This matrix is then passed to dendrogram() for visualisation, or you can cut it with fcluster() to extract labels for a specific k."},
+  // UL4
+  {t:'ul4', q:'What does a DBSCAN label of -1 mean?', opts:['The point belongs to cluster zero','The algorithm failed to converge for that point','The point is classified as noise — it is not within eps of any core point and does not belong to any cluster','The point is a border point shared between two clusters'], ans:2, exp:'DBSCAN assigns -1 to noise points — points that are not within eps of any core point. They are genuinely isolated in the data space. This is one of DBSCAN\'s key advantages over K-Means and Hierarchical clustering, which silently force every point into a cluster regardless of how isolated it is.'},
+  {t:'ul4', q:'What is a core point in DBSCAN?', opts:['The centroid of a cluster','Any point that was visited first by the algorithm','A point that has at least min_samples neighbours within a radius of eps — it sits in a dense region and can extend the cluster','A point at the geometric centre of the data'], ans:2, exp:'A core point has at least min_samples other points (including itself) within a radius of eps. Core points are the backbone of clusters — they are the ones that can "pull in" nearby points and extend the cluster. Border points and noise points cannot extend the cluster.'},
+  {t:'ul4', q:'Why must you scale features before applying DBSCAN?', opts:['sklearn requires scaled input for DBSCAN to run','DBSCAN uses Euclidean distance to measure eps — features with larger numeric ranges dominate the distance calculation, making small-scale features irrelevant to the clustering','Scaling speeds up the O(n²) distance computation','Unscaled features cause DBSCAN to always produce a single cluster'], ans:1, exp:'eps is a distance threshold. If one feature ranges 0–10,000 and another 0–1, the large-scale feature dominates every distance calculation regardless of its actual relevance. StandardScaler puts all features on equal footing so DBSCAN can meaningfully compare distances in the full feature space.'},
+  {t:'ul4', q:'What is the key advantage of DBSCAN over K-Means when data contains outliers?', opts:['DBSCAN runs faster when outliers are present','DBSCAN ignores all outliers during training and never assigns them','DBSCAN explicitly labels outliers as -1 instead of forcing them into a cluster — K-Means absorbs outliers into whichever cluster centroid is nearest, which distorts the centroid position','DBSCAN automatically removes outliers from the dataset'], ans:2, exp:'K-Means must assign every point to one of k clusters. An extreme outlier gets assigned to the nearest centroid and shifts it away from the true cluster centre. DBSCAN labels isolated points as noise (-1) — they are identified without distorting the discovered clusters. This makes DBSCAN much more robust for anomaly detection and noisy datasets.'},
+  {t:'ul4', q:'What is the main limitation of DBSCAN when clusters have different densities?', opts:['DBSCAN cannot handle more than 2 clusters','A single global eps value cannot be optimal for all clusters simultaneously — a dense cluster needs a small eps while a sparse cluster needs a large eps. One eps will either split the dense cluster or merge the sparse ones.','DBSCAN requires the same number of points in each cluster','DBSCAN cannot run on datasets with more than 1000 points'], ans:1, exp:'DBSCAN uses one eps value for the entire dataset. If cluster A is very dense and cluster B is more spread out, no single eps works perfectly for both. Too small and cluster B gets fragmented or becomes noise; too large and clusters merge. HDBSCAN solves this by allowing eps to vary across the space.'},
+  {t:'ul4', q:'What is the rule of thumb for choosing min_samples in DBSCAN?', opts:['Always use min_samples=5 regardless of data','min_samples = number of rows / 100','Start at 2 × number of features. Increase for noisier data.','min_samples = square root of the number of data points'], ans:2, exp:'The standard starting point is min_samples = 2 × D, where D is the number of features (dimensions). For a dataset with 8 features, start with min_samples=16. This ensures each core point is truly in a dense region and not just a pair. Increase the value if the data is noisy or you want more stringent cluster definitions.'},
+  {t:'ul4', q:'How do you use the nearest-neighbour distance histogram to choose eps?', opts:['Choose eps as the mean of all pairwise distances','Compute the distance from each point to its nearest neighbour, plot as a histogram, and pick eps at the right tail — where distances start to spread out. This represents where points transition from being in dense regions to being isolated.','Choose eps as the standard deviation of all pairwise distances','Choose eps as the distance between the two most similar points in the dataset'], ans:1, exp:'Most points in dense clusters have a very small nearest-neighbour distance — this shows up as a tall bar on the left of the histogram. Isolated points have larger distances — the right tail. Picking eps at the right tail means: dense-region points will find neighbours within eps (core points), while truly isolated points will not (noise). Starting slightly high and tuning down is the practical approach.'}
 ];
 
 const FLASHCARDS = [
@@ -6170,6 +6944,35 @@ const FLASHCARDS = [
   {t:'ul1', front:'What is a GAN and why does it blur the supervised/unsupervised line?', back:'GAN = Generative Adversarial Network.\nGenerator: unsupervised — creates synthetic data from random noise.\nDiscriminator: supervised — classifies real vs fake (binary label).\nThey compete: generator tries to fool the discriminator; discriminator tries to detect fakes.'},
   {t:'ul1', front:'Why is evaluating unsupervised models harder than supervised?', back:'No labels to compare against. Two approaches:\n1. Extrinsic: check if discovered structure aligns with available labels (e.g. Wikipedia clusters vs categories)\n2. Utility: does the output help a downstream task? Do clusters show different behaviour? Does PCA improve accuracy?'},
   {t:'ul1', front:'Why does high dimensionality make unsupervised learning essential?', back:'At 4–5 features, manual visualisation is already impractical. At 100+ features, the number of possible relationships is a combinatorial explosion. Unsupervised learning surfaces structure — clusters, co-varying features, outliers — that would otherwise be completely hidden.'},
+  // UL L2 — K-Means Clustering
+  {t:'ul2', front:'K-Means algorithm — 3 steps?', back:'1. Initialise: randomly place k centroids\n2. Assign: each point → nearest centroid (Euclidean distance)\n3. Update: recalculate each centroid as mean of assigned points\nRepeat steps 2-3 until assignments stop changing (convergence).'},
+  {t:'ul2', front:'Hard vs soft clustering — what is K-Means?', back:'Hard clustering — each point belongs to exactly ONE cluster. No partial memberships or probabilities.\nSoft clustering (e.g. Gaussian Mixture Models) assigns each point a probability of belonging to each cluster.'},
+  {t:'ul2', front:'What is inertia in K-Means?', back:'Within-cluster sum of squared distances from each point to its centroid.\nI = Σ Σ D(x, μᵢ)²\nK-Means minimises this. Lower = tighter clusters. Zero = one point per cluster (useless). Raw value only meaningful for comparing different k values.'},
+  {t:'ul2', front:'Why does K-Means converge to a local optimum and how do you fix it?', back:'Centroids are initialised randomly — the algorithm converges to the nearest local minimum from that start. Different starts → different results.\nFix: n_init=10 (default) runs K-Means 10 times with different random seeds and keeps the result with the lowest inertia.'},
+  {t:'ul2', front:'Why must you scale features before K-Means?', back:'K-Means uses Euclidean distance. Features with larger numeric ranges dominate regardless of importance. A feature 0–10,000 has 10,000× more influence than a binary feature.\nFix: StandardScaler or MinMaxScaler before fitting.'},
+  {t:'ul2', front:'Silhouette score — a and b?', back:'a(i) = mean distance to other points in SAME cluster → cohesion (want SMALL)\nb(i) = mean distance to points in NEAREST OTHER cluster → separation (want LARGE)\ns(i) = (b−a) / max(a,b) → range [−1, +1]\n+1 = perfect, 0 = boundary, negative = wrong cluster'},
+  {t:'ul2', front:'Elbow method vs silhouette — when to use each?', back:'Elbow: plot inertia vs k, find where decline levels off. Visual/subjective — elbow can be unclear.\nSilhouette: plot mean score vs k, pick the peak. More objective.\nUse both together — when they agree, high confidence. Silhouette is generally more reliable when they disagree.'},
+  {t:'ul2', front:'Why do clusters appear mixed in a 2D pairplot when clustering on many features?', back:'K-Means finds the boundary in the full N-dimensional feature space. A 2D plot collapses all other dimensions — points separated in ND can overlap in 2D. The clustering is valid; the projection loses the information needed to see the separation.'},
+  {t:'ul2', front:'How to read a box plot?', back:'Middle line = median\nBox edges = 25th and 75th percentile (IQR = middle 50%)\nWhiskers = furthest non-outlier point (≈1.5×IQR)\nCircles beyond whiskers = outliers\nWide box = high spread within cluster; Narrow box = tight, homogeneous cluster'},
+  {t:'ul2', front:'kmeans.cluster_centers_ — what type is it and how do you use it?', back:'It is a numpy array of shape (n_clusters, n_features). To inspect by feature name:\ncenters_df = pd.DataFrame(kmeans.cluster_centers_, columns=df.columns)\nprint(centers_df[["feature1", "feature2"]])\nYou cannot index it directly by column name — wrap in DataFrame first.'},
+  {t:'ul3', front:'Agglomerative vs divisive clustering — core difference?', back:'Agglomerative (bottom-up): start with N singleton clusters, repeatedly merge the two closest → ends at 1 cluster.\nDivisive (top-down): start with 1 cluster, repeatedly split → ends at N clusters.\nAgglomerative is standard in practice (cheaper to compute).'},
+  {t:'ul3', front:'What do the 4 linkage methods measure?', back:'Single: distance between the two CLOSEST points across clusters (chaining problem)\nComplete: distance between the two FURTHEST points (compact clusters)\nAverage: mean pairwise distance between all point pairs\nWard: increase in total within-cluster variance — generally best default'},
+  {t:'ul3', front:'How to read a dendrogram?', back:'Y-axis = merge distance (height of the horizontal bar)\nX-axis = individual data points (leaves)\nTall vertical gap before a merge = the two groups are far apart = natural cluster boundary\nCut the tree horizontally: number of vertical lines crossed = number of clusters k'},
+  {t:'ul3', front:'Why is Ward linkage usually the best default?', back:"Ward chooses the merge that increases total within-cluster variance the least. Result: compact, balanced clusters and clear dendrograms.\nsklearn default: AgglomerativeClustering(linkage='ward')\nAvoid single linkage for blob-shaped clusters — causes chaining."},
+  {t:'ul3', front:'scipy hierarchical clustering — key functions?', back:'from scipy.cluster.hierarchy import linkage, dendrogram\nfrom scipy.spatial.distance import pdist\n\nZ = linkage(X, method="ward")  # build merge tree\ndendrogram(Z)                   # visualise\ndendrogram(Z, truncate_mode="lastp", p=10)  # show last 10 merges only'},
+  {t:'ul3', front:'sklearn agglomerative clustering — usage?', back:'from sklearn.cluster import AgglomerativeClustering\n\nmodel = AgglomerativeClustering(n_clusters=3, linkage="ward")\nlabels = model.fit_predict(X)\n\nNote: sklearn does NOT produce a dendrogram — use scipy for exploration, sklearn for prediction.'},
+  {t:'ul3', front:'Hierarchical vs K-Means — key trade-offs?', back:'Hierarchical advantages:\n• No k needed upfront — explore all k from one run\n• Deterministic — same result every time (no random init)\n• Dendrogram gives visual insight\n\nK-Means advantages:\n• O(n·k·t) vs O(n²) or O(n³) — much faster on large data\n• Better for very large datasets'},
+  {t:'ul3', front:'What is dendrogram truncation and when do you use it?', back:'On large datasets, showing every leaf makes the dendrogram unreadable.\ndendrogram(Z, truncate_mode="lastp", p=10) shows only the final p merges — compresses the bottom of the tree.\nUse when n > ~50 data points to keep the dendrogram interpretable.'},
+  {t:'ul3', front:'What is the chaining problem with single linkage?', back:"Single linkage defines cluster distance as the distance between the two NEAREST points across clusters.\nThis causes 'chaining': a long chain of individually close points causes very different groups to merge early.\nResult: elongated, irregular-shaped clusters instead of compact blobs.\nFix: use Ward, complete, or average linkage for blob detection."},
+  {t:'ul4', front:'DBSCAN — what does the name stand for?', back:'Density-Based Spatial Clustering of Applications with Noise.\nKey words:\n• Density-based: clusters = dense regions, not centroids\n• Noise: explicitly labels outliers as -1\n• Spatial: uses distance (eps radius) to define neighbourhoods'},
+  {t:'ul4', front:'The 3 point types in DBSCAN?', back:'Core point: ≥ min_samples neighbours within eps → sits inside a dense region\nBorder point: < min_samples neighbours, but within eps of a core → edge of cluster\nNoise: not within eps of any core → labelled -1\n\nOnly core points can extend a cluster.'},
+  {t:'ul4', front:'DBSCAN: eps too small vs too large?', back:'eps too small → most points have no neighbours within radius → almost everything labelled noise (-1)\neps too large → every point reaches every other → all clusters merge into one\n\nGoal: eps in the right tail of the nearest-neighbour distance histogram.'},
+  {t:'ul4', front:'How to choose eps using the nearest-neighbour histogram?', back:'1. Compute pairwise_distances(X_scaled)\n2. For each point, find distance to closest neighbour: np.min(row[np.nonzero(row)])\n3. Plot histogram\n4. Pick eps at the right tail — where dense-region points end and isolated points begin\nStart high, tune down.'},
+  {t:'ul4', front:'Rule of thumb for min_samples?', back:'Start at min_samples = 2 × number of features\n→ 8 features: start with min_samples=16\n\nIncrease for noisier data or if you want tighter cluster definitions.\nSmaller values → more and smaller clusters.\nLarger values → fewer, denser clusters, more noise.'},
+  {t:'ul4', front:'Why does DBSCAN struggle with varying-density clusters?', back:'DBSCAN uses one global eps for the entire dataset.\nA dense cluster needs a small eps; a sparse cluster needs a large eps.\nNo single eps satisfies both simultaneously.\n\nFix: use HDBSCAN — it adapts eps locally across the data space.'},
+  {t:'ul4', front:'DBSCAN sklearn — key code pattern?', back:'from sklearn.cluster import DBSCAN\n\ndb = DBSCAN(eps=0.5, min_samples=10)\nlabels = db.fit_predict(X_scaled)  # -1 = noise\n\nn_clusters = len(set(labels)) - (1 if -1 in labels else 0)\nn_noise = (labels == -1).sum()'},
+  {t:'ul4', front:'DBSCAN vs K-Means — 3 key differences?', back:'1. Shape: K-Means finds spherical blobs; DBSCAN finds any shape\n2. Outliers: K-Means absorbs them into nearest cluster; DBSCAN labels them -1\n3. k: K-Means requires k upfront; DBSCAN discovers number of clusters from density\n\nTrade-off: K-Means is O(n·k·t) — much faster on large data.'},
+  {t:'ul4', front:'What is HDBSCAN and when should you use it?', back:'Hierarchical DBSCAN — extends DBSCAN by allowing eps to vary across the data.\nFinds clusters of different densities simultaneously.\nRequires only one parameter: min_samples.\n\nUse when: standard DBSCAN fragments sparse clusters or merges dense ones.\nAvailable: sklearn.cluster.HDBSCAN (sklearn ≥ 1.3)'}
 ];
 
 // ===================== STATE =====================
@@ -6197,7 +7000,7 @@ function nav(page) {
   document.getElementById('main').scrollTop = 0;
   const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
   if (navEl) navEl.classList.add('active');
-  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1','pe2','pe3','pe4','pe5','ul1'].includes(page)) {
+  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1','pe2','pe3','pe4','pe5','ul1','ul2','ul3','ul4'].includes(page)) {
     markVisited(page);
     renderInlineQuiz(page);
   }
@@ -6217,7 +7020,7 @@ function markVisited(w) {
 function updateGlobalProgress() {
   const pct = Math.round((visited.length / 25) * 100);
   document.getElementById('global-progress-bar').style.width = pct + '%';
-  document.getElementById('global-progress-label').textContent = `${visited.length} of 28 lessons visited`;
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 31 lessons visited`;
 }
 
 // ===================== INLINE QUIZ =====================
