@@ -264,6 +264,11 @@ hr { border: none; border-top: 1px solid var(--card-border); margin: 24px 0; }
     <div class="nav-item nav-item-sub" onclick="nav('ul5')" id="nav-ul5"><span class="icon">🌀</span> L5: t-SNE<span class="check" id="check-ul5"></span></div>
   </div>
 
+  <div class="nav-item nav-item-chapter" onclick="toggleChapter('timeseries')"><span class="icon">📚</span> Time Series Analysis<span class="chapter-arrow" id="arrow-timeseries">▾</span></div>
+  <div class="nav-chapter-items" id="chapter-timeseries">
+    <div class="nav-item nav-item-sub" onclick="nav('ts1')" id="nav-ts1"><span class="icon">📈</span> L1: Introduction to Time Series<span class="check" id="check-ts1"></span></div>
+  </div>
+
   <div class="sidebar-section" style="margin-top:10px">Practice</div>
   <div class="nav-item" onclick="nav('quiz')"><span class="icon">📝</span> Quiz</div>
   <div class="nav-item" onclick="nav('flashcards')"><span class="icon">🃏</span> Flashcards</div>
@@ -1285,6 +1290,10 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
           <div class="topic-chip" id="chip-ul5" onclick="toggleChip('ul5')">L5: t-SNE</div>
         </div>
       </div>
+      <div class="chip-chapter-label">📚 Time Series Analysis</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <div class="topic-chip" id="chip-ts1" onclick="toggleChip('ts1')">L1: Intro to Time Series</div>
+        </div>
     </div>
     <div class="card" style="max-width:400px">
       <p style="margin:0 0 6px; font-size:0.82rem; color:var(--text-muted)">Number of questions</p>
@@ -1394,6 +1403,10 @@ X_reduced = pca.<span class="fn">transform</span>(X_scaled)          <span class
         <div class="topic-chip" id="fc-chip-ul3" onclick="fcFilter('ul3')">L3: Hierarchical Clustering</div>
         <div class="topic-chip" id="fc-chip-ul4" onclick="fcFilter('ul4')">L4: DBSCAN</div>
         <div class="topic-chip" id="fc-chip-ul5" onclick="fcFilter('ul5')">L5: t-SNE</div>
+      </div>
+      <div class="chip-chapter-label">📚 Time Series Analysis</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <div class="topic-chip" id="fc-chip-ts1" onclick="fcFilter('ts1')">L1: Intro to Time Series</div>
       </div>
     </div>
   </div>
@@ -6549,6 +6562,250 @@ plt.show()</pre></div>
   </div>
 </div>
 
+<div class="page" id="page-ts1">
+  <div class="page-header">
+    <div class="chapter-badge">Time Series Analysis</div>
+    <h1>L1: Introduction to Time Series</h1>
+    <p class="subtitle">Understanding time-ordered data — trend, seasonality, autocorrelation, and stationarity.</p>
+  </div>
+
+  <div class="card">
+    <h2>What is a Time Series?</h2>
+    <p>A <strong>time series</strong> is a sequence of data points recorded in <strong>chronological order</strong>. This is fundamentally different from standard ML data:</p>
+    <table class="styled-table">
+      <thead><tr><th>Standard ML</th><th>Time Series</th></tr></thead>
+      <tbody>
+        <tr><td>No ordering — rows are interchangeable</td><td>Ordering matters — time is the index</td></tr>
+        <tr><td>Data points assumed <strong>independent</strong></td><td>Past values influence future values</td></tr>
+        <tr><td>Shuffle rows freely</td><td>Shuffling destroys all meaning</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Examples:</strong> stock prices, temperature readings, bike rentals, passenger counts, sales figures, heart rate signals.</p>
+    <div class="key-concept">
+      <div class="label">Why time series needs special treatment</div>
+      <p>Standard ML applied to time series data would treat each row as independent — losing the crucial information that yesterday's value tells you something about today's. Time series models explicitly exploit this temporal dependency.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>The 3 Components of a Time Series</h2>
+    <p>Any time series can be decomposed into three parts. The forecasting model captures all three:</p>
+    <div class="code-block"><pre><span class="cm"># The general forecasting formula:</span>
+<span class="cm"># x(t+1) = f(X_t) + T_t + S_t + N_t</span>
+<span class="cm">#</span>
+<span class="cm"># f(X_t) = what the model learns from past data</span>
+<span class="cm"># T_t    = trend component</span>
+<span class="cm"># S_t    = seasonality component</span>
+<span class="cm"># N_t    = noise component</span></pre></div>
+    <table class="styled-table">
+      <thead><tr><th>Component</th><th>What it means</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Trend (T)</strong></td><td>Long-term direction — upward, downward, or flat</td><td>Passenger numbers rising year over year</td></tr>
+        <tr><td><strong>Seasonality (S)</strong></td><td>Repeating pattern tied to a fixed period</td><td>Bike rentals high in summer, low in winter</td></tr>
+        <tr><td><strong>Noise (N)</strong></td><td>Random fluctuations — unpredictable</td><td>Day-to-day random variation</td></tr>
+      </tbody>
+    </table>
+    <div class="key-concept">
+      <div class="label">Why decomposition matters</div>
+      <p>Trend and seasonality must usually be <strong>removed by preprocessing</strong> before fitting a model, because most time series models assume the data is stationary (flat). The model then learns the pattern in the cleaned residual.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Univariate vs Multivariate</h2>
+    <table class="styled-table">
+      <thead><tr><th></th><th>Univariate</th><th>Multivariate</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Columns</strong></td><td>1 variable + time index</td><td>2+ variables + time index</td></tr>
+        <tr><td><strong>Example</strong></td><td>Daily temperature only</td><td>Temperature + humidity + wind + bike rentals</td></tr>
+        <tr><td><strong>Question</strong></td><td>What will temperature be tomorrow?</td><td>What will bike rentals be, given forecast temperature and humidity?</td></tr>
+      </tbody>
+    </table>
+    <p>With multivariate data, variables can <strong>influence each other</strong>. Check correlations between them with <code>df.corr()</code>.</p>
+  </div>
+
+  <div class="card">
+    <h2>Loading and Visualising Time Series</h2>
+    <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+<span class="kw">import</span> plotly.express <span class="kw">as</span> px
+
+<span class="cm"># parse_dates converts the date column from string to datetime</span>
+<span class="cm"># index_col makes the date the row index — essential for time series</span>
+bikes = pd.read_csv(<span class="st">"data/bikes.csv"</span>, parse_dates=[<span class="st">"date"</span>], index_col=<span class="st">"date"</span>)
+
+<span class="cm"># Static plot with matplotlib</span>
+bikes.plot()
+plt.show()
+
+<span class="cm"># Interactive plot — click legend to toggle variables</span>
+fig = px.line(bikes.reset_index(), x=<span class="st">"date"</span>, y=bikes.columns, title=<span class="st">"Bikes Data"</span>)
+fig.show()
+
+<span class="cm"># Correlations between variables</span>
+bikes.corr()</pre></div>
+    <div class="key-concept">
+      <div class="label">Why parse_dates and index_col matter</div>
+      <p><code>parse_dates</code> tells pandas to treat that column as datetime objects, not strings. <code>index_col</code> makes time the index — pandas then enables time-aware operations: rolling windows, resampling, time-based slicing, and correct time-ordered plots all work automatically.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Autocorrelation</h2>
+    <p><strong>Correlation</strong> between two different variables you already know. <strong>Autocorrelation</strong> is the correlation of a series <strong>with itself at a time lag</strong> — how similar is today's value to the value from k periods ago?</p>
+    <div class="code-block"><pre><span class="cm"># Compute autocorrelation at different lags and plot</span>
+lags = range(<span class="num">1</span>, <span class="num">15</span>)
+autocorrs = [series.autocorr(lag=lag) <span class="kw">for</span> lag <span class="kw">in</span> lags]
+
+plt.stem(lags, autocorrs)
+plt.xlabel(<span class="st">"Lag"</span>)
+plt.ylabel(<span class="st">"Autocorrelation"</span>)
+plt.show()
+
+<span class="cm"># Or use statsmodels ACF plot (includes significance band)</span>
+<span class="kw">from</span> statsmodels.graphics.tsaplots <span class="kw">import</span> plot_acf
+plot_acf(series, lags=<span class="num">15</span>)
+plt.show()</pre></div>
+
+    <h3>How to read an ACF plot</h3>
+    <div class="vis-container">
+      <div class="vis-label">ACF plot — quarterly seasonality (alcohol consumption data)</div>
+      <pre style="font-family:monospace; font-size:0.82rem; line-height:1.7; background:var(--bg-secondary); padding:1rem; border-radius:8px; overflow-x:auto;">
+ Autocorrelation
+  1.0 │
+  0.9 │         ████                    ████
+  0.5 │ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  ← significance band
+  0.1 │  ██  ██      ██  ██
+  0.0 │──────────────────────────────────────
+      └──────────────────────────────────────
+         1   2   3   4   5   6   7   8   ...
+                  ↑               ↑
+             big spike        echo of lag 4
+             at lag 4        (not direct)</pre>
+    </div>
+    <table class="styled-table">
+      <thead><tr><th>What you see in ACF</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td>Spikes at regular intervals (e.g. 4, 8, 12)</td><td><strong>Seasonality</strong> — the gap between spikes = season length</td></tr>
+        <tr><td>All lags highly correlated, slowly declining</td><td><strong>Trend</strong> — series is non-stationary</td></tr>
+        <tr><td>Only lag 1 significant, rest near zero</td><td>AR(1) structure — today depends only on yesterday</td></tr>
+        <tr><td>Spikes inside the shaded band</td><td>Not significant — just noise</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Partial Autocorrelation (PACF)</h2>
+    <p>The problem with regular ACF: if lag 4 is correlated, lag 8 appears correlated too — just because of the lag-4 effect being passed forward, not a direct relationship. <strong>PACF removes the influence of shorter lags</strong> to show only the <em>direct</em> effect at each lag.</p>
+    <div class="key-concept">
+      <div class="label">Human analogy</div>
+      <p>Grandparents correlate with grandchild height — but is that direct, or just because grandparents → parents → grandchild? PACF is like controlling for the parents. After accounting for the parent's height, does the grandparent's height still add information? If yes → direct. If no → it was passing through an intermediary.</p>
+    </div>
+    <div class="code-block"><pre><span class="kw">from</span> statsmodels.graphics.tsaplots <span class="kw">import</span> plot_pacf
+
+plot_pacf(series, method=<span class="st">"ywm"</span>, lags=<span class="num">15</span>)
+plt.show()</pre></div>
+
+    <h3>How to read a PACF plot</h3>
+    <div class="vis-container">
+      <div class="vis-label">PACF plot — same quarterly data</div>
+      <pre style="font-family:monospace; font-size:0.82rem; line-height:1.7; background:var(--bg-secondary); padding:1rem; border-radius:8px; overflow-x:auto;">
+ Partial Autocorrelation
+  1.0 │ ████
+  0.8 │ ████        ████
+  0.25│ ░░░░░░░░░░░░░░░░░░░░░░  ← upper significance band
+  0.0 │──────────────────────────────────
+ -0.25│ ░░░░░░░░░░░░░░░░░░░░░░  ← lower significance band
+      └──────────────────────────────────
+         0   1   2   3   4   5   6  ...
+              ↑           ↑
+          significant   significant
+          (direct)      (direct — seasonality)</pre>
+    </div>
+    <table class="styled-table">
+      <thead><tr><th>What you see in PACF</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td>Spike outside band at lag k</td><td>Direct relationship at that lag</td></tr>
+        <tr><td>Spikes inside band</td><td>Not significant — chain effect from shorter lags, not direct</td></tr>
+        <tr><td>ACF has spikes at 4, 8, 12 but PACF only at 4</td><td>Lags 8 and 12 were echoes of lag 4 — only lag 4 is a direct dependency</td></tr>
+        <tr><td>PACF cuts off after lag p</td><td>Use AR(<strong>p</strong>) model — the last significant PACF lag gives you p</td></tr>
+      </tbody>
+    </table>
+    <div class="key-concept">
+      <div class="label">ACF vs PACF — one line each</div>
+      <p><strong>ACF</strong>: everything that correlates with today (direct + indirect chain effects).<br>
+      <strong>PACF</strong>: only what directly correlates with today, once chain effects are stripped out.<br>
+      Use PACF to choose the AR order <strong>p</strong> for ARIMA.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Stationarity</h2>
+    <p>Most time series models assume the data is <strong>stationary</strong> — statistical properties do not change over time:</p>
+    <ul>
+      <li><strong>Mean</strong> is constant (no trend)</li>
+      <li><strong>Variance</strong> is constant (no expanding/contracting spread)</li>
+      <li><strong>Autocorrelation</strong> structure is constant (no changing seasonality)</li>
+    </ul>
+    <p>A series with a trend or seasonality is <strong>non-stationary</strong>. You must remove those components before fitting most models.</p>
+    <table class="styled-table">
+      <thead><tr><th>ACF pattern</th><th>Likely cause</th><th>Stationary?</th></tr></thead>
+      <tbody>
+        <tr><td>All lags high, slowly declining</td><td>Trend</td><td>No</td></tr>
+        <tr><td>Spikes at regular intervals</td><td>Seasonality</td><td>No</td></tr>
+        <tr><td>Only lag 1 significant, rest near zero</td><td>AR(1) with no trend</td><td>Yes</td></tr>
+        <tr><td>All lags near zero</td><td>White noise</td><td>Yes</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Augmented Dickey-Fuller (ADF) Test</h3>
+    <p>Statistical test for stationarity. Null hypothesis: series has a unit root (= non-stationary).</p>
+    <div class="code-block"><pre><span class="kw">from</span> statsmodels.tsa.stattools <span class="kw">import</span> adfuller
+
+<span class="kw">def</span> test_stationarity(x, alpha=<span class="num">0.05</span>):
+    <span class="cm"># x     = the time series (pandas Series or array)</span>
+    <span class="cm"># alpha = significance level (default 0.05 = 5%)</span>
+    result = adfuller(x)
+    pvalue = result[<span class="num">1</span>]          <span class="cm"># index [1] is the p-value</span>
+    <span class="kw">if</span> pvalue &lt; alpha:
+        <span class="kw">return</span> <span class="st">"Stationary ✓ (reject null)"</span>
+    <span class="kw">else</span>:
+        <span class="kw">return</span> <span class="st">"Non-stationary ✗ (fail to reject null)"</span>
+
+<span class="cm"># Usage</span>
+print(test_stationarity(bikes[<span class="st">"humidity"</span>]))
+print(test_stationarity(alcohol_consumption.TotalWine))</pre></div>
+    <div class="key-concept">
+      <div class="label">Interpreting the result</div>
+      <p><strong>p-value &lt; 0.05</strong> → stationary ✓ — safe to model directly.<br>
+      <strong>p-value ≥ 0.05</strong> → non-stationary ✗ — needs preprocessing (differencing, log transform, or seasonal decomposition) before modelling.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Key Takeaways</h2>
+    <table class="styled-table">
+      <thead><tr><th>Concept</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Time series</strong></td><td>Data ordered in time — past influences future, rows are NOT independent</td></tr>
+        <tr><td><strong>Trend</strong></td><td>Long-term direction (up/down/flat)</td></tr>
+        <tr><td><strong>Seasonality</strong></td><td>Repeating pattern at fixed intervals</td></tr>
+        <tr><td><strong>Noise</strong></td><td>Random, unpredictable fluctuations</td></tr>
+        <tr><td><strong>ACF</strong></td><td>Correlation with past values — shows all effects (direct + indirect)</td></tr>
+        <tr><td><strong>PACF</strong></td><td>Direct correlation only — use to choose AR order p</td></tr>
+        <tr><td><strong>Stationarity</strong></td><td>Mean, variance, autocorrelation constant over time — required by most models</td></tr>
+        <tr><td><strong>ADF test</strong></td><td>p &lt; 0.05 → stationary; p ≥ 0.05 → non-stationary, needs preprocessing</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="inline-quiz"><h3>🧪 Quick Check</h3><div id="inline-q-ts1"></div></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startTopicQuiz('ts1')">📝 Full Topic Quiz</button>
+    <button class="btn btn-outline" onclick="nav('quiz')">Practice All Topics</button>
+  </div>
+</div>
+
 </div><!-- end main -->
 
 <script>
@@ -6586,7 +6843,8 @@ const TOPICS = {
   ul2: 'UL L2: K-Means Clustering',
   ul3: 'UL L3: Hierarchical Clustering',
   ul4: 'UL L4: DBSCAN',
-  ul5: 'UL L5: t-SNE'
+  ul5: 'UL L5: t-SNE',
+  ts1: 'TS L1: Intro to Time Series'
 };
 
 const ALL_QUESTIONS = [
@@ -6876,7 +7134,15 @@ const ALL_QUESTIONS = [
   {t:'ul5', q:'What is the crowding problem in t-SNE and how does it solve it?', opts:['Too many clusters are found — solved by increasing perplexity','When compressing from high-D to 2D, there is far less space, so moderately distant points from the original space all get crowded together in 2D — t-SNE solves this by using the Student t-distribution which has heavier tails, allowing those dissimilar points to be pushed further apart','The algorithm creates too many small clusters — solved by using KL divergence','Points with the same label get separated — solved by using symmetric probabilities'], ans:1, exp:'In high-dimensional space there is abundant room for moderately similar points to be spread out. When projected to 2D, all those moderately similar points need to fit in a much smaller space — they get crowded together, obscuring structure. The heavy-tailed t-distribution allows the algorithm to push dissimilar points much further apart in 2D than their original distance would suggest, creating clear visual separation between clusters.'},
   {t:'ul5', q:'Why is t-SNE non-deterministic and how do you make results reproducible?', opts:['t-SNE is deterministic — it always produces the same result','The KL divergence cost function is non-convex — gradient descent can converge to different local minima from different random starting positions. Set random_state in the TSNE constructor to fix the random seed and get reproducible results.','t-SNE is non-deterministic because it randomly samples data points during training','The perplexity parameter introduces randomness — set it to a fixed integer to get reproducible results'], ans:1, exp:'t-SNE minimises KL divergence using gradient descent. The cost function is non-convex — it has multiple local minima. Starting from a different random initialisation of the 2D point positions leads gradient descent to a different final configuration. Setting random_state=42 (or any fixed seed) fixes the random initialisation so the same result is produced every run. Without it, running t-SNE twice on the same data may yield different layouts.'},
   {t:'ul5', q:'Why is it recommended to run PCA before t-SNE on high-dimensional data?', opts:['PCA labels must be passed to t-SNE as input','PCA removes all redundant features so t-SNE finds exactly k clusters','t-SNE is slow on data with many features — PCA reduces dimensionality to ~50 components first (retaining most variance), making t-SNE much faster while losing minimal information. This is the standard pipeline for image and genomics data.','t-SNE cannot run on data with more than 100 features without PCA preprocessing'], ans:2, exp:'t-SNE has O(n²) complexity in both rows and features. On 784-feature image data, the pairwise distance calculations are very slow. Running PCA to 50 components first is fast and typically retains 80%+ of the variance — it removes noise and redundancy without losing meaningful structure. t-SNE then works on the 50-dimensional PCA output, which is much faster. This is the standard approach for MNIST and single-cell RNA data.'},
-  {t:'ul5', q:'Which of the following statements about t-SNE output is correct?', opts:['The x and y axis values indicate the most important features','Larger clusters in the t-SNE plot represent denser groups in the original data','The distances between clusters in the 2D plot reliably represent their distances in the original space','Neither the axis positions, cluster sizes, nor distances between clusters in a t-SNE plot are directly interpretable — only the relative proximity of points within the same cluster is meaningful'], ans:3, exp:'t-SNE has three major interpretation pitfalls: (1) Axes mean nothing — x=3.4 has no interpretation. (2) Cluster sizes are not meaningful — t-SNE focuses on local topology and can distort relative densities. (3) Inter-cluster distances are not reliable — the gap between two clusters in 2D does not represent their distance in the original space. Only the local structure (points close together belong to the same group) is trustworthy.'}
+  {t:'ul5', q:'Which of the following statements about t-SNE output is correct?', opts:['The x and y axis values indicate the most important features','Larger clusters in the t-SNE plot represent denser groups in the original data','The distances between clusters in the 2D plot reliably represent their distances in the original space','Neither the axis positions, cluster sizes, nor distances between clusters in a t-SNE plot are directly interpretable — only the relative proximity of points within the same cluster is meaningful'], ans:3, exp:'t-SNE has three major interpretation pitfalls: (1) Axes mean nothing — x=3.4 has no interpretation. (2) Cluster sizes are not meaningful — t-SNE focuses on local topology and can distort relative densities. (3) Inter-cluster distances are not reliable — the gap between two clusters in 2D does not represent their distance in the original space. Only the local structure (points close together belong to the same group) is trustworthy.'},
+  // TS1
+  {t:'ts1', q:'What is the key difference between a time series and a standard ML dataset?', opts:['Time series always has more rows than standard ML data','Time series data points are ordered chronologically and are dependent on each other — past values influence future values. Standard ML assumes rows are independent and interchangeable.','Time series only works with numerical data','Time series requires more features than standard ML'], ans:1, exp:'In standard ML, rows are assumed independent — you can shuffle them without losing information. In time series, the chronological order IS the information. Yesterday\'s temperature tells you something about today\'s. Shuffling a time series destroys this dependency and makes the data meaningless for forecasting.'},
+  {t:'ts1', q:'What are the three components that make up a time series?', opts:['Mean, variance and covariance','Input, output and noise','Trend, seasonality and noise — trend is the long-term direction, seasonality is a repeating pattern at fixed intervals, and noise is random unpredictable fluctuation','Features, labels and residuals'], ans:2, exp:'Any time series can be decomposed into: Trend (long-term increase or decrease), Seasonality (repeating pattern tied to a fixed period — e.g. higher bike rentals every summer), and Noise (random fluctuations no model can predict). The forecasting model is: x(t+1) = f(X_t) + T_t + S_t + N_t.'},
+  {t:'ts1', q:'What does autocorrelation measure in a time series?', opts:['The correlation between two different time series','The correlation of a series with a lagged version of itself — how similar is today\'s value to the value k periods ago','The correlation between features and the target variable','The variance of the series over time'], ans:1, exp:'Autocorrelation measures internal self-similarity at different time lags. If a series has high autocorrelation at lag 4, it means values 4 periods apart tend to be similar. Spikes at regular intervals in an ACF plot reveal seasonality. A slow, gradual decline across all lags reveals a trend.'},
+  {t:'ts1', q:'An ACF plot shows large spikes at lags 4, 8, and 12, with values near zero elsewhere. What does this indicate?', opts:['The series has a strong upward trend','The series is stationary and ready to model','The series has quarterly seasonality — it repeats every 4 periods. The spikes at 8 and 12 are echoes of the lag-4 effect.','The series has no structure and is pure noise'], ans:2, exp:'Regular spikes at multiples of k in an ACF plot = seasonality with period k. Here k=4 (quarterly). The spikes at 8 and 12 appear because lag 4 correlates with lag 8 which correlates with lag 12 — but they are indirect chain effects, not direct relationships. PACF would show a spike only at lag 4.'},
+  {t:'ts1', q:'What is the key difference between ACF and PACF?', opts:['ACF uses Gaussian distributions; PACF uses t-distributions','ACF measures correlation between different variables; PACF measures correlation within one variable','ACF captures all correlations at each lag (direct and indirect chain effects); PACF isolates only the direct correlation at each lag by removing the influence of intermediate lags','ACF is for stationary series; PACF is for non-stationary series'], ans:2, exp:'ACF at lag 8 is high partly because: today correlates with lag 4, and lag 4 correlates with lag 8. It cannot separate direct from indirect. PACF at lag 8 removes the effects of lags 1–7 — if nothing is left, lag 8 has no direct relationship. This is why PACF is used to determine the AR order p for ARIMA: p = the last lag where PACF is significant.'},
+  {t:'ts1', q:'What does it mean for a time series to be stationary, and why does it matter?', opts:['The series has no missing values and is ready to use','The series has constant mean, variance and autocorrelation structure over time — no trend, no seasonality. It matters because most time series models assume stationarity.','The series only contains positive values','The series has been scaled using StandardScaler'], ans:1, exp:'A stationary series looks flat — no upward or downward drift, no expanding variance, no repeating seasonal pattern. Most classical time series models (ARIMA, exponential smoothing) assume stationarity. If your data has a trend or seasonality, the model\'s assumptions are violated and forecasts will be unreliable. You must remove trend/seasonality first via preprocessing (differencing, log transforms, seasonal decomposition).'},
+  {t:'ts1', q:'In the Augmented Dickey-Fuller test, what does a p-value of 0.03 tell you?', opts:['The series is non-stationary — it has a unit root','The series is stationary — p < 0.05 means you reject the null hypothesis of a unit root','The series has strong seasonality at lag 3','The series needs 3 rounds of differencing'], ans:1, exp:'The ADF null hypothesis is that the series has a unit root (= non-stationary). A p-value of 0.03 is below the 0.05 threshold, so you reject the null — the series is stationary. A p-value ≥ 0.05 would mean you fail to reject the null, indicating non-stationarity that needs preprocessing before modelling.'}
 ];
 
 const FLASHCARDS = [
@@ -7165,7 +7431,15 @@ const FLASHCARDS = [
   {t:'ul5', front:'t-SNE vs PCA — 4 key differences?', back:'1. Linear vs Nonlinear: PCA=linear, t-SNE=nonlinear\n2. Preserves: PCA=global variance, t-SNE=local neighbourhoods\n3. Transform new data: PCA yes, t-SNE no\n4. Axes: PCA=interpretable (% variance), t-SNE=meaningless\n\nUse PCA for feature reduction; t-SNE for visualisation.'},
   {t:'ul5', front:'3 things t-SNE output does NOT tell you?', back:'1. Axis positions — x/y values have no meaning\n2. Cluster sizes — not proportional to real density\n3. Distances between clusters — gap between blobs ≠ real distance in original space\n\nOnly trustworthy: relative proximity of points WITHIN a cluster.'},
   {t:'ul5', front:'Why run PCA before t-SNE?', back:'t-SNE is slow: O(n²) in both rows and features.\nFor high-D data (images, genomics), first reduce to ~50 PCA components:\n→ Fast (PCA retains ~80%+ variance)\n→ Removes noise and redundancy\n→ t-SNE on 50D is much faster than on 784D\nStandard pipeline: StandardScaler → PCA(50) → TSNE(2)'},
-  {t:'ul5', front:'UMAP — why is it gaining on t-SNE?', back:'UMAP (Uniform Manifold Approximation and Projection):\n• Faster — scales better to large datasets\n• Can transform new data points (unlike t-SNE)\n• Preserves more global structure\n• Also nonlinear, also preserves local topology\n\nUsage: from umap import UMAP; UMAP().fit_transform(X)'}
+  {t:'ul5', front:'UMAP — why is it gaining on t-SNE?', back:'UMAP (Uniform Manifold Approximation and Projection):\n• Faster — scales better to large datasets\n• Can transform new data points (unlike t-SNE)\n• Preserves more global structure\n• Also nonlinear, also preserves local topology\n\nUsage: from umap import UMAP; UMAP().fit_transform(X)'},
+  {t:'ts1', front:'Time series vs standard ML — core difference?', back:'Standard ML: rows are independent, no ordering — shuffle freely.\nTime series: chronological order IS the information — past influences future.\n\nKey assumption broken: independence. Yesterday\'s value tells you something about today\'s.'},
+  {t:'ts1', front:'The 3 components of a time series?', back:'Trend (T): long-term direction — up, down, or flat\nSeasonality (S): repeating pattern at fixed intervals (e.g. annual, quarterly)\nNoise (N): random unpredictable fluctuation\n\nForecasting model: x(t+1) = f(X_t) + T_t + S_t + N_t'},
+  {t:'ts1', front:'How to load a time series in pandas?', back:'pd.read_csv("file.csv", parse_dates=["date"], index_col="date")\n\nparse_dates: converts string column to datetime objects\nindex_col: makes time the row index → enables time-aware operations\n(rolling windows, resampling, correct plots all work automatically)'},
+  {t:'ts1', front:'Univariate vs multivariate time series?', back:'Univariate: one variable tracked over time (e.g. temperature only)\nMultivariate: multiple variables tracked together (e.g. temperature + humidity + bike rentals)\n\nWith multivariate: variables can influence each other → check with df.corr()'},
+  {t:'ts1', front:'What is autocorrelation and what does an ACF plot reveal?', back:'Autocorrelation = correlation of a series with itself at a time lag k.\n\nACF plot spikes:\n• At regular intervals (e.g. 4, 8, 12) → seasonality (period = gap between spikes)\n• All lags high, slowly declining → trend (non-stationary)\n• Only lag 1 significant → AR(1) structure\n• All near zero → white noise (stationary)'},
+  {t:'ts1', front:'ACF vs PACF — what is the difference?', back:'ACF: all correlations at each lag — direct AND indirect chain effects\nPACF: only DIRECT correlations — removes influence of shorter lags\n\nIf ACF shows spikes at 4, 8, 12 but PACF only at 4:\n→ Lags 8 and 12 were echoes. Only lag 4 is a direct dependency.\n\nUse PACF to choose AR order p: p = last significant PACF lag'},
+  {t:'ts1', front:'What is stationarity and how do you test for it?', back:'Stationary = constant mean, variance, and autocorrelation over time (no trend, no seasonality).\n\nAugmented Dickey-Fuller (ADF) test:\nfrom statsmodels.tsa.stattools import adfuller\nresult = adfuller(series)\npvalue = result[1]\n\np < 0.05 → stationary ✓\np ≥ 0.05 → non-stationary ✗ (needs preprocessing)'},
+  {t:'ts1', front:'How to read a PACF plot?', back:'Shaded band = significance threshold\nSpike OUTSIDE band → statistically significant direct relationship at that lag\nSpike INSIDE band → not significant (just noise or chain effect)\n\nSharp cut-off after lag p → AR(p) model\nOnly lag 4 outside band → one seasonal dependency at period 4'}
 ];
 
 // ===================== STATE =====================
@@ -7193,7 +7467,7 @@ function nav(page) {
   document.getElementById('main').scrollTop = 0;
   const navEl = document.querySelector(`[onclick="nav('${page}')"]`);
   if (navEl) navEl.classList.add('active');
-  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1','pe2','pe3','pe4','pe5','ul1','ul2','ul3','ul4','ul5'].includes(page)) {
+  if (['w1','w2','w3','w4','w5','w6','w7','w8','w9','nb','w10','w11','w12','w13','w14','w15','w16','mc','en1','en2','en3','en4','pe1','pe2','pe3','pe4','pe5','ul1','ul2','ul3','ul4','ul5','ts1'].includes(page)) {
     markVisited(page);
     renderInlineQuiz(page);
   }
@@ -7213,7 +7487,7 @@ function markVisited(w) {
 function updateGlobalProgress() {
   const pct = Math.round((visited.length / 25) * 100);
   document.getElementById('global-progress-bar').style.width = pct + '%';
-  document.getElementById('global-progress-label').textContent = `${visited.length} of 32 lessons visited`;
+  document.getElementById('global-progress-label').textContent = `${visited.length} of 33 lessons visited`;
 }
 
 // ===================== INLINE QUIZ =====================
